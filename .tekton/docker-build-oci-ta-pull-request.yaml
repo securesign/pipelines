@@ -28,6 +28,12 @@ spec:
     value: 5d
   - name: dockerfile
     value: pipeline-tests/Dockerfile
+  - name: build-source-image
+    value: true
+  - name: prefetch-input
+    value: '{"path": "pipeline-tests", "type": "gomod"}'
+  - name: hermetic
+    value: true
   pipelineSpec:
     description: |
       This pipeline is ideal for building container images from a Containerfile while maintaining trust after pipeline customization.
