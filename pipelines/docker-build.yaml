@@ -470,18 +470,17 @@ spec:
         - name: url
           value: 'https://github.com/securesign/pipelines.git'
         - name: revision
-          value: '655f32df7857dbdc02f542b0c5ec07cbb52e3119'
+          value: '2a9cf4de126d5da1de45c6bd2bb15ed66652f8b6'
         - name: pathInRepo
           value: 'tasks/go-unit-test.yaml'
     params:
-    - name: SOURCE_ARTIFACT
-      value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-    - name: CACHI2_ARTIFACT
-      value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
     - name: GO_TEST_COMMAND
       value: $(params.go_test_command)
     - name: GO_BASE_IMAGE
       value: $(params.go_base_image)
+    workspaces:
+    - name: source
+      workspace: workspace
     when:
     - input: "$(params.go_unit_test)"
       operator: in

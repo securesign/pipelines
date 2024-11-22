@@ -451,9 +451,9 @@ spec:
         - name: url
           value: 'https://github.com/securesign/pipelines.git'
         - name: revision
-          value: '655f32df7857dbdc02f542b0c5ec07cbb52e3119'
+          value: '2a9cf4de126d5da1de45c6bd2bb15ed66652f8b6'
         - name: pathInRepo
-          value: 'tasks/go-unit-test.yaml'
+          value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
     - name: SOURCE_ARTIFACT
       value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
