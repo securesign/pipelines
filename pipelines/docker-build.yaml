@@ -470,7 +470,7 @@ spec:
         - name: url
           value: 'https://github.com/securesign/pipelines.git'
         - name: revision
-          value: 'main'
+          value: '655f32df7857dbdc02f542b0c5ec07cbb52e3119'
         - name: pathInRepo
           value: 'tasks/go-unit-test.yaml'
     params:
