@@ -96,6 +96,18 @@ spec:
     description: Path to a file with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
     name: build-args-file
     type: string
+  - name: go_unit_test
+    type: string
+    description: Set to 'true' to enable unit tests
+    default: "false"
+  - description: The go command used to run the go unit test
+    name: go_test_command
+    type: string
+    default: go test ./...
+  - description: The Go base image used to run the unit tests
+    name: go_base_image
+    type: string
+    default: registry.access.redhat.com/ubi9/go-toolset@sha256:c7bfd2501cb1be171366434a368db669b32f08a0198c1473b9bff0a379613fc3
   results:
   - description: ""
     name: IMAGE_URL
@@ -449,6 +461,32 @@ spec:
       operator: in
       values:
       - "false"
+  - name: run-unit-test
+    runAfter:
+    - prefetch-dependencies
+    taskRef:
+      resolver: git
+      params:
+        - name: url
+          value: 'https://github.com/securesign/pipelines.git'
+        - name: revision
+          value: 'main'
+        - name: pathInRepo
+          value: 'tasks/go-unit-test.yaml'
+    params:
+    - name: SOURCE_ARTIFACT
+      value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
+    - name: CACHI2_ARTIFACT
+      value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+    - name: GO_TEST_COMMAND
+      value: $(params.go_test_command)
+    - name: GO_BASE_IMAGE
+      value: $(params.go_base_image)
+    when:
+    - input: "$(params.go_unit_test)"
+      operator: in
+      values: 
+      - "true"
   workspaces:
   - name: workspace
   - name: git-auth
