@@ -8,6 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
       == "main"
+    pipelinesascode.tekton.dev/pipeline: "pipelines/docker-build-oci-ta.yaml"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: pipelines
@@ -36,14 +37,7 @@ spec:
   - name: go_test_command
     value: cd pipeline-tests && go test ./...
   pipelineRef:
-    resolver: git
-    params:
-      - name: url
-        value: 'https://github.com/securesign/pipelines.git'
-      - name: revision
-        value: 'main'
-      - name: pathInRepo
-        value: 'pipelines/docker-build-oci-ta.yaml'
+    name: docker-build-oci-ta
   taskRunTemplate: {}
   workspaces:
   - name: git-auth
