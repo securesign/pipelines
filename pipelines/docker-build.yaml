@@ -2,6 +2,8 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: docker-build
+  annotations:
+    pipelinesascode.tekton.dev/task: "[tasks/go-unit-test.yaml]"
 spec: 
   finally:
   - name: show-sbom
@@ -465,14 +467,7 @@ spec:
     runAfter:
     - prefetch-dependencies
     taskRef:
-      resolver: git
-      params:
-        - name: url
-          value: 'https://github.com/securesign/pipelines.git'
-        - name: revision
-          value: '2a9cf4de126d5da1de45c6bd2bb15ed66652f8b6'
-        - name: pathInRepo
-          value: 'tasks/go-unit-test.yaml'
+      name: go-unit-test-oci-ta
     params:
     - name: GO_TEST_COMMAND
       value: $(params.go_test_command)
