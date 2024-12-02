@@ -6,8 +6,8 @@ metadata:
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main" && 
+      ( "pipeline-tests/fbc/***".pathChanged() || ".tekton/fbc-builder-push.yaml".pathChanged() || "pipeline-tests/fbc/catalog.Dockerfile".pathChanged() || "pipelines/fbc-builder.yaml".pathChanged() )
     pipelinesascode.tekton.dev/pipeline: "pipelines/fbc-builder.yaml"
   creationTimestamp: null
   labels:

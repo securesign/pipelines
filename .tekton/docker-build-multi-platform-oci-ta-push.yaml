@@ -6,8 +6,8 @@ metadata:
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main" && 
+      ( ".tekton/docker-build-multi-platform-oci-ta-push.yaml".pathChanged() || "pipeline-tests".pathChanged() || "pipelines/docker-build-multi-platform-oci-ta.yaml".pathChanged() )
     pipelinesascode.tekton.dev/pipeline: "pipelines/docker-build-multi-platform-oci-ta.yaml"
   creationTimestamp: null
   labels:
