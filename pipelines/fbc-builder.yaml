@@ -167,7 +167,7 @@ spec:
       - name: name
         value: buildah
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-buildah:0.2@sha256:7d3f090943ecb839cc505b3a5e5305c0203dfc6dbc0096713c0add9ef1e45d90
+        value: quay.io/konflux-ci/tekton-catalog/task-buildah:0.2@sha256:aebfe04c80f7fd937628fad760c095c6a0efacb048f2c98e5d5e7f2b0f134cf9
       - name: kind
         value: task
       resolver: bundles
@@ -199,7 +199,7 @@ spec:
       - name: name
         value: build-image-index
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-build-image-index:0.1@sha256:7b2c5ab5d711d1d487693072dec6a10ede0076290dabc673bc6ccde9a322674a
+        value: quay.io/konflux-ci/tekton-catalog/task-build-image-index:0.1@sha256:a89c141c8d35b2e9d9904c92c9b128f7ccf36681adac7f7422b4537b8bb077e7
       - name: kind
         value: task
       resolver: bundles
@@ -245,7 +245,7 @@ spec:
       - name: kind
         value: task
       resolver: bundles
-  - name: inspect-image
+  - name: validate-fbc
     params:
     - name: IMAGE_URL
       value: $(tasks.build-image-index.results.IMAGE_URL)
@@ -256,9 +256,9 @@ spec:
     taskRef:
       params:
       - name: name
-        value: inspect-image
+        value: validate-fbc
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-inspect-image:0.1@sha256:b4f8b61baf43ca503aae76078bb4cfe718ca21a5ab293d982978d6fd564bf1b6
+        value: quay.io/konflux-ci/tekton-catalog/task-validate-fbc:0.1@sha256:f370a6cb7b854d81cf779f8afc00e053df3a7619af9cf45c54e31ced1a4c5034
       - name: kind
         value: task
       resolver: bundles
@@ -267,56 +267,6 @@ spec:
       operator: in
       values:
       - "false"
-    workspaces:
-    - name: source
-      workspace: workspace
-  - name: fbc-validate
-    params:
-    - name: IMAGE_URL
-      value: $(tasks.build-image-index.results.IMAGE_URL)
-    - name: IMAGE_DIGEST
-      value: $(tasks.build-image-index.results.IMAGE_DIGEST)
-    - name: BASE_IMAGE
-      value: $(tasks.inspect-image.results.BASE_IMAGE)
-    runAfter:
-    - inspect-image
-    taskRef:
-      params:
-      - name: name
-        value: fbc-validation
-      - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-fbc-validation:0.1@sha256:bf72968f8b36b92b4e8322f4208f20f07be1195be4551a7916d0b598c613ed4c
-      - name: kind
-        value: task
-      resolver: bundles
-    when:
-    - input: $(params.skip-checks)
-      operator: in
-      values:
-      - "false"
-    workspaces:
-    - name: workspace
-      workspace: workspace
-  - name: fbc-related-image-check
-    runAfter:
-    - fbc-validate
-    taskRef:
-      params:
-      - name: name
-        value: fbc-related-image-check
-      - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-fbc-related-image-check:0.1@sha256:17dc33ef07a8f87d1a8a2f6d4f496123e0db5d29bbe7ff7956462dc5d95c3170
-      - name: kind
-        value: task
-      resolver: bundles
-    when:
-    - input: $(params.skip-checks)
-      operator: in
-      values:
-      - "false"
-    workspaces:
-    - name: workspace
-      workspace: workspace
   workspaces:
   - name: workspace
   - name: git-auth
