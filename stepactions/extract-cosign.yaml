@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: extract-cosign
+spec:
+  description: >-
+    This StepAction extract cosign binary from image to specified volume.
+  image: registry.redhat.io/rhtas/cosign-rhel9:1.1.0-1730377925
+  params:
+    - name: volume
+      type: string
+      description: Name of the volume to be used for extraction.
+    - name: volumePath
+      type: string
+      description: The directory path to use.
+      default: ""
+  volumeMounts:
+    - name: "$(params.volume)"
+      mountPath: /binaries
+  env:
+    - name: VOLUME_PATH
+      value: "$(params.volumePath)"
+  script: cp /usr/local/bin/cosign /binaries$VOLUME_PATH

@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: install-keycloak-from-repository
+spec:
+  description: >-
+    This StepAction install RHSSO operator and create Keycloak instance using predefined script.
+  image: registry.redhat.io/openshift4/ose-cli
+  params:
+    - name: credentials
+      type: string
+      description: Name of the volume with credentials.
+    - name: repository
+      type: string
+      description: Volume with resources to be applied.
+    - name: workdir
+      type: string
+      description: Repository home directory.
+      default: ""
+    - name: KUBECONFIG
+      type: string
+      description: KUBECONFIG path.
+  results:
+    - name: oidc-hostname
+      description: Hostname of the installed OIDC provider
+  volumeMounts:
+    - name: "$(params.credentials)"
+      mountPath: /credentials
+    - name: "$(params.repository)"
+      mountPath: /repository
+  env:
+    - name: KUBECONFIG
+      value: "/credentials/$(params.KUBECONFIG)"
+    - name: WORKDIR
+      value: "$(params.workdir)"
+  script: |
+    cd /repository/$WORKDIR
+    ci/openshift/tas-keycloak-install.sh
+    oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}' > "$(step.results.oidc-hostname.path)"
