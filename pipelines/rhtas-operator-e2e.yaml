@@ -23,18 +23,16 @@ spec:
       taskRef:
         resolver: git
         params:
-        - name: url
-          value: https://github.com/securesign/pipelines.git
-        - name: revision
-          value: main
-        - name: pathInRepo
-          value: tasks/parse-metadata.yaml
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-metadata.yaml
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
     - name: provision-eaas-space
-      runAfter:
-        - parse-metadata
       taskRef:
         resolver: bundles
         params:
@@ -140,20 +138,37 @@ spec:
                   - source: registry.redhat.io/rhtas/client-server-rhel9
                     mirrors:
                     - quay.io/securesign/client-server
-    - name: e2e
+    - name: install-operator
       runAfter:
         - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-bundle.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: bundleImage
+          value: "$(tasks.parse-metadata.results.bundle-container-image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+    - name: run-e2e
+      runAfter:
+        - install-operator
       params:
         - name: bundleImage
           value: "$(tasks.parse-metadata.results.bundle-container-image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
-        params:
-          - name: bundleImage
-            type: string
-          - name: namespace
-            type: string
         volumes:
           - name: credentials
             emptyDir: {}
@@ -179,58 +194,67 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: run-operator
-            image: quay.io/operator-framework/operator-sdk:latest
-            env:
-              - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-            volumeMounts:
-              - name: credentials
-                mountPath: /credentials
-            args:
-              - run
-              - bundle
-              - --namespace
-              - "$(params.namespace)"
-              - --timeout
-              - "10m"
-              - "$(params.bundleImage)"
+           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
             image: registry.access.redhat.com/ubi9/go-toolset@sha256:c7bfd2501cb1be171366434a368db669b32f08a0198c1473b9bff0a379613fc3
             volumeMounts:
               - name: repository
                 mountPath: /repository
             script: |
-              git clone https://github.com/securesign/secure-sign-operator.git /repository
-          - name: install-keykloak
-            image: registry.redhat.io/openshift4/ose-cli
-            env:
-              - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-            volumeMounts:
-              - name: credentials
-                mountPath: /credentials
-              - name: repository
-                mountPath: /repository
-            script: |
               cd /repository
-              ci/openshift/tas-keycloak-install.sh
-              oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}' > /repository/oidc_host
+              git clone $(tasks.parse-metadata.results.bundle-source-url) source
+              cd source
+              git checkout $(tasks.parse-metadata.results.bundle-source-revision)
+          - name: install-keycloak
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/install-keycloak.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
           - name: get-tuftool
-            image: registry.redhat.io/rhtas/tuftool-rhel9:1.1.0-1730740139
-            volumeMounts:
-              - name: binaries
-                mountPath: /binaries
-            script: cp /usr/bin/tuftool /binaries
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/extract-tuftool.yaml
+            params:
+              - name: volume
+                value: binaries
           - name: get-cosign
-            image: registry.redhat.io/rhtas/cosign-rhel9:1.1.0-1730377925
-            volumeMounts:
-              - name: binaries
-                mountPath: /binaries
-            script: cp /usr/local/bin/cosign /binaries
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/extract-cosign.yaml
+            params:
+              - name: volume
+                value: binaries
           - name: execute-e2e
             image: registry.access.redhat.com/ubi9/go-toolset@sha256:c7bfd2501cb1be171366434a368db669b32f08a0198c1473b9bff0a379613fc3
             env:
+              - name: OIDC_HOST
+                value: "$(steps.install-keycloak.results.oidc-hostname)"
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             volumeMounts:
@@ -241,9 +265,8 @@ spec:
               - name: binaries
                 mountPath: /binaries
             script: |
-              cd /repository
+              cd /repository/source
               export PATH="$PATH:/binaries"
-              OIDC_HOST=$(cat /repository/oidc_host)
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert

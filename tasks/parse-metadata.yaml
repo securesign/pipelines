@@ -12,6 +12,10 @@ spec:
       description: "Stores information about the Konflux component that was built in case of the component-type Snapshot."
     - name: operator-container-image
       description: "Stores information about the component's container that was built in case of the component-type Snapshot."
+    - name: bundle-source-url
+      description: "Stores information about the component's source url."
+    - name: bundle-source-revision
+      description: "Stores information about the component's source revision."
   params:
     - name: SNAPSHOT
       description: The JSON string of the Snapshot under test
@@ -34,19 +38,23 @@ spec:
         #!/bin/sh
 
         # Derive additional environment variables from SNAPSHOT
-        OPERATOR_CONTAINER_IMAGE=$(jq -r '.components[] | select(.name == "operator") | .containerImage' <<< "${SNAPSHOT}")
         BUNDLE_CONTAINER_IMAGE=$(jq -r '.components[] | select(.name == "bundle") | .containerImage' <<< "${SNAPSHOT}")
+        BUNDLE_GIT_URL=$(jq -r '.components[] | select(.name == "bundle") | .source.git.url' <<< "${SNAPSHOT}")
+        BUNDLE_GIT_REVISION=$(jq -r '.components[] | select(.name == "bundle") | .source.git.revision' <<< "${SNAPSHOT}")
 
         # Log declared environment variables
         echo "Snapshot metadata:"
         echo "  SNAPSHOT: ${SNAPSHOT}"
         echo "  EVENT_TYPE: ${EVENT_TYPE}"
         echo "  APPLICATION_NAME: ${APPLICATION_NAME}"
-        echo "  OPERATOR_CONTAINER_IMAGE: ${OPERATOR_CONTAINER_IMAGE}"
         echo "  BUNDLE_CONTAINER_IMAGE: ${BUNDLE_CONTAINER_IMAGE}"
+        echo "  BUNDLE_GIT_URL: ${BUNDLE_GIT_URL}"
+        echo "  BUNDLE_GIT_REVISION: ${BUNDLE_GIT_REVISION}"
 
         # Write each environment variable to its respective results:
         echo -n "${EVENT_TYPE}" > $(results.test-event-type.path)
         echo -n "${APPLICATION_NAME}" > $(results.application-name.path)
         echo -n "${OPERATOR_CONTAINER_IMAGE}" > $(results.operator-container-image.path)
         echo -n "${BUNDLE_CONTAINER_IMAGE}" > $(results.bundle-container-image.path)
+        echo -n "${BUNDLE_GIT_URL}" > $(results.bundle-source-url.path)
+        echo -n "${BUNDLE_GIT_REVISION}" > $(results.bundle-source-revision.path)
