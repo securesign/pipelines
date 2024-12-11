@@ -38,9 +38,9 @@ spec:
         #!/bin/sh
 
         # Derive additional environment variables from SNAPSHOT
-        BUNDLE_CONTAINER_IMAGE=$(jq -r '.components[] | select(.name == "bundle") | .containerImage' <<< "${SNAPSHOT}")
-        BUNDLE_GIT_URL=$(jq -r '.components[] | select(.name == "bundle") | .source.git.url' <<< "${SNAPSHOT}")
-        BUNDLE_GIT_REVISION=$(jq -r '.components[] | select(.name == "bundle") | .source.git.revision' <<< "${SNAPSHOT}")
+        BUNDLE_CONTAINER_IMAGE=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .containerImage' <<< "${SNAPSHOT}")
+        BUNDLE_GIT_URL=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .source.git.url' <<< "${SNAPSHOT}")
+        BUNDLE_GIT_REVISION=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .source.git.revision' <<< "${SNAPSHOT}")
 
         # Log declared environment variables
         echo "Snapshot metadata:"
