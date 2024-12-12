@@ -8,13 +8,13 @@ spec:
       description: "Stores information about the event type that indicates if a job is running for a Pull Request or Push event"
     - name: application-name
       description: "Stores information about the Konflux application that the Snapshot was created for."
-    - name: bundle-container-image
-      description: "Stores information about the Konflux component that was built in case of the component-type Snapshot."
-    - name: operator-container-image
+    - name: component
+      description: "Stores information about the Konflux component that was built."
+    - name: image
       description: "Stores information about the component's container that was built in case of the component-type Snapshot."
-    - name: bundle-source-url
+    - name: git-url
       description: "Stores information about the component's source url."
-    - name: bundle-source-revision
+    - name: git-revision
       description: "Stores information about the component's source revision."
   params:
     - name: SNAPSHOT
@@ -30,6 +30,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['pac.test.appstudio.openshift.io/event-type']
+        - name: COMPONENT_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['appstudio.openshift.io/component']
         - name: APPLICATION_NAME
           valueFrom:
             fieldRef:
@@ -38,23 +42,24 @@ spec:
         #!/bin/sh
 
         # Derive additional environment variables from SNAPSHOT
-        BUNDLE_CONTAINER_IMAGE=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .containerImage' <<< "${SNAPSHOT}")
-        BUNDLE_GIT_URL=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .source.git.url' <<< "${SNAPSHOT}")
-        BUNDLE_GIT_REVISION=$(jq -r '.components[] | select(.name == "rhtas-operator-bundle") | .source.git.revision' <<< "${SNAPSHOT}")
+        IMAGE=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .containerImage' <<< "${SNAPSHOT}")
+        GIT_URL=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.url' <<< "${SNAPSHOT}")
+        GIT_REVISION=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.revision' <<< "${SNAPSHOT}")
 
         # Log declared environment variables
         echo "Snapshot metadata:"
         echo "  SNAPSHOT: ${SNAPSHOT}"
         echo "  EVENT_TYPE: ${EVENT_TYPE}"
         echo "  APPLICATION_NAME: ${APPLICATION_NAME}"
-        echo "  BUNDLE_CONTAINER_IMAGE: ${BUNDLE_CONTAINER_IMAGE}"
-        echo "  BUNDLE_GIT_URL: ${BUNDLE_GIT_URL}"
-        echo "  BUNDLE_GIT_REVISION: ${BUNDLE_GIT_REVISION}"
+        echo "  COMPONENT: ${COMPONENT_NAME}"
+        echo "  IMAGE: ${IMAGE}"
+        echo "  GIT_URL: ${GIT_URL}"
+        echo "  GIT_REVISION: ${GIT_REVISION}"
 
         # Write each environment variable to its respective results:
         echo -n "${EVENT_TYPE}" > $(results.test-event-type.path)
         echo -n "${APPLICATION_NAME}" > $(results.application-name.path)
-        echo -n "${OPERATOR_CONTAINER_IMAGE}" > $(results.operator-container-image.path)
-        echo -n "${BUNDLE_CONTAINER_IMAGE}" > $(results.bundle-container-image.path)
-        echo -n "${BUNDLE_GIT_URL}" > $(results.bundle-source-url.path)
-        echo -n "${BUNDLE_GIT_REVISION}" > $(results.bundle-source-revision.path)
+        echo -n "${COMPONENT_NAME}" > $(results.component.path)
+        echo -n "${IMAGE}" > $(results.image.path)
+        echo -n "${GIT_URL}" > $(results.git-url.path)
+        echo -n "${GIT_REVISION}" > $(results.git-revision.path)

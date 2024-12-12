@@ -138,7 +138,7 @@ spec:
                   - source: registry.redhat.io/rhtas/client-server-rhel9
                     mirrors:
                     - quay.io/securesign/client-server
-    - name: install-operator
+    - name: install-operator-from-bundle
       runAfter:
         - provision-cluster
         - parse-metadata
@@ -150,22 +150,54 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: tasks/install-operator-bundle.yaml
+            value: tasks/install-operator-from-bundle.yaml
       params:
         - name: eaasSpaceSecretRef
           value: $(tasks.provision-eaas-space.results.secretRef)
         - name: clusterName
           value: "$(tasks.provision-cluster.results.clusterName)"
         - name: bundleImage
-          value: "$(tasks.parse-metadata.results.bundle-container-image)"
+          value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: ["rhtas-operator-bundle"]
+    - name: install-operator-from-image
+      runAfter:
+        - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-image.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: operatorImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+        - name: resources_url
+          value: "$(tasks.parse-metadata.results.git-url).git/config/default?ref=$(tasks.parse-metadata.results.git-revision)"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: ["rhtas-operator"]
     - name: run-e2e
       runAfter:
-        - install-operator
+        # run after either one
+        - install-operator-from-image
+        - install-operator-from-bundle
       params:
-        - name: bundleImage
-          value: "$(tasks.parse-metadata.results.bundle-container-image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
@@ -202,9 +234,9 @@ spec:
                 mountPath: /repository
             script: |
               cd /repository
-              git clone $(tasks.parse-metadata.results.bundle-source-url) source
+              git clone $(tasks.parse-metadata.results.git-url) source
               cd source
-              git checkout $(tasks.parse-metadata.results.bundle-source-revision)
+              git checkout $(tasks.parse-metadata.results.git-revision)
           - name: install-keycloak
             ref:
               resolver: git
