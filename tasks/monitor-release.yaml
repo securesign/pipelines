@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: monitor-release
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+  params:
+    - name: release
+      type: string
+      description: Release to monitor
+  steps:
+    - name: monitor-release
+      workingDir: /workspace/output/source
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        RELEASE_FILE="$(params.release)"
+
+        while true; do
+            RELEASED_REASON=$(oc get -f "$RELEASE_FILE" -o jsonpath='{.status.conditions[?(@.type=="Released")].reason}' || true)
+            VALIDATED_REASON=$(oc get -f "$RELEASE_FILE" -o jsonpath='{.status.conditions[?(@.type=="Validated")].reason}' || true)
+
+            if [[ "$RELEASED_REASON" == "Failed" || "$VALIDATED_REASON" == "Failed" ]]; then
+                echo "Release failed."
+                oc get -f "$RELEASE_FILE" -o yaml
+                exit 1
+            fi
+
+            if [[ "$RELEASED_REASON" == "Succeeded" && "$VALIDATED_REASON" == "Succeeded" ]]; then
+                echo "Release succeeded."
+                exit 0
+            fi
+
+            sleep 60
+        done
