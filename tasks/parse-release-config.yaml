@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: parse-release-config
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: releases
+      description: "An array of YAML-defined release configurations"
+  results:
+    - name: runComponentRelease
+      description: Indicates whether to execute the component release process
+    - name: componentReleasePlanDirectory
+      description: Directory where the component release plans are stored
+    - name: componentReleaseDirectory
+      description: Directory where the component releases are stored
+    - name: runFbcRelease
+      description: Indicates whether to execute the FBC release process
+    - name: fbcReleasePlanDirectory
+      description: Directory where the FBC release plans are stored
+    - name: fbcReleaseDirectory
+      description: Directory where the FBC releases are stored
+  steps:
+    - name: parse-release-config
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        RELEASES="$(params.releases)"
+        RUN_COMPONENT_RELEASE="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .run')"
+        COMPONENT_RELEASE_PLAN_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .releasePlanDir')"
+        COMPONENT_RELEASE_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .releaseDir')"
+
+        RUN_FBC_RELEASE="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .run')"
+        FBC_RELEASE_PLAN_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .releasePlanDir')"
+        FBC_RELEASE_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .releaseDir')"
+
+        echo "RUN_COMPONENT_RELEASE: $RUN_COMPONENT_RELEASE"
+        echo "COMPONENT_RELEASE_PLAN_DIR: $COMPONENT_RELEASE_PLAN_DIR"
+        echo "COMPONENT_RELEASE_DIR: $COMPONENT_RELEASE_DIR"
+        echo "RUN_FBC_RELEASE: $RUN_FBC_RELEASE"
+        echo "FBC_RELEASE_PLAN_DIR: $FBC_RELEASE_PLAN_DIR"
+        echo "FBC_RELEASE_DIR: $FBC_RELEASE_DIR"
+
+        echo -n "$RUN_COMPONENT_RELEASE" > $(results.runComponentRelease.path)
+        echo -n "$COMPONENT_RELEASE_PLAN_DIR" > $(results.componentReleasePlanDirectory.path)
+        echo -n "$COMPONENT_RELEASE_DIR" > $(results.componentReleaseDirectory.path)
+        echo -n "$RUN_FBC_RELEASE" > $(results.runFbcRelease.path)
+        echo -n "$FBC_RELEASE_PLAN_DIR" > $(results.fbcReleasePlanDirectory.path)
+        echo -n "$FBC_RELEASE_DIR" > $(results.fbcReleaseDirectory.path)

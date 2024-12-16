@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhtas-release
+  namespace: rhtas-tenant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhtas-release-role
+  namespace: rhtas-tenant
+rules:
+  - apiGroups: ["appstudio.redhat.com"]
+    resources: ["releaseplans", "releases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhtas-release-rolebinding
+  namespace: rhtas-tenant
+subjects:
+  - kind: ServiceAccount
+    name: rhtas-release
+    namespace: rhtas-tenant
+roleRef:
+  kind: Role
+  name: rhtas-release-role
+  apiGroup: rbac.authorization.k8s.io

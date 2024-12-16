@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: segment-backup-job-staging
+  namespace: rhtas-tenant
+spec:
+  releasePlan: segment-backup-job-staging
+  snapshot: segment-backup-job-sjhhh
