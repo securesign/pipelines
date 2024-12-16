@@ -1,0 +1,267 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: rhtas-release
+  namespace: rhtas-tenant
+spec:
+  description: |
+    A pipeline used to process and apply release and releasePlan objects for RHTAS.
+  params:
+    - name: git-url
+      type: string
+      description: Source Repository URL
+    - name: revision
+      type: string
+      default: ""
+      description: Revision of the Source Repository
+    - name: releases
+      default: ""
+      description: "An array of yaml defined release configurations"
+    - name: env
+      type: string
+      default: stage
+      description: Release environment should be one of stage/prod
+  tasks:
+    - name: clone-repository
+      params:
+      - name: url
+        value: $(params.git-url)
+      - name: revision
+        value: $(params.revision)
+      taskRef:
+        params:
+        - name: name
+          value: git-clone
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1@sha256:d091a9e19567a4cbdc5acd57903c71ba71dc51d749a4ba7477e689608851e981
+        - name: kind
+          value: task
+        resolver: bundles
+      workspaces:
+      - name: output
+        workspace: workspace
+      - name: basic-auth
+        workspace: git-auth
+      when:
+        - input: "$(params.releases)"
+          operator: notin
+          values:
+            - ""
+    - name: parse-release-config
+      runAfter:
+        - clone-repository
+      params:
+        - name: env
+          value: $(params.env)
+        - name: releases
+          value: $(params.releases)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-release-config.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+      when:
+        - input: "$(params.releases)"
+          operator: notin
+          values:
+            - ""
+    - name: process-release-plans
+      runAfter:
+        - parse-release-config
+      params:
+        - name: component-release-plan-dir
+          value: "$(tasks.parse-release-config.results.componentReleasePlanDirectory)"
+        - name: fbc-release-plan-dir
+          value: "$(tasks.parse-release-config.results.fbcReleasePlanDirectory)"
+        - name: env
+          value: $(params.env)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/process-release-plans.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+      when:
+        - input: "$(params.releases)"
+          operator: notin
+          values:
+            - ""
+    - name: process-releases
+      runAfter:
+        - clone-repository
+      params:
+        - name: component-release-dir
+          value: "$(tasks.parse-release-config.results.componentReleaseDirectory)"
+        - name: fbc-release-dir
+          value: "$(tasks.parse-release-config.results.fbcReleaseDirectory)"
+        - name: env
+          value: $(params.env)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/process-releases.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+      when:
+        - input: "$(params.releases)"
+          operator: notin
+          values:
+            - ""
+    - name: apply-component-release-plans
+      runAfter:
+        - process-release-plans
+        - process-releases
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseComponent)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-release-plans.results.component-release-plans)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/apply-manifest.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: apply-component-release
+      runAfter:
+        - apply-component-release-plans
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseComponent)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-releases.results.component-releases)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/apply-manifest.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: monitor-component-release
+      runAfter:
+        - apply-component-release
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseComponent)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-releases.results.component-releases)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/monitor-release.yaml
+      timeout: "1h"
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: apply-fbc-release-plans
+      runAfter:
+        - monitor-component-release
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseFBC)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-release-plans.results.fbc-release-plans)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/apply-manifest.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: apply-fbc-release
+      runAfter:
+        - apply-fbc-release-plans
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseFBC)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-releases.results.fbc-releases)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/apply-manifest.yaml
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: monitor-fbc-release
+      runAfter:
+        - apply-fbc-release
+      params:
+        - name: release
+          value: "$(tasks.parse-release-config.results.releaseFBC)"
+      matrix:
+        params:
+          - name: manifest
+            value: "$(tasks.process-releases.results.fbc-releases)"
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/monitor-release.yaml
+      timeout: "1h"
+      workspaces:
+        - name: output
+          workspace: workspace
+  workspaces:
+  - name: workspace
+  - name: git-auth
+    optional: true

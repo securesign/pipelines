@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: monitor-release
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: manifest
+      type: string
+      description: Release manifest to monitor
+    - name: release
+      type: string
+      default: "false"
+      description: whether or not to apply the manifest for a component
+  steps:
+    - name: monitor-release
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [ "$(params.release)" == "false" ]; then
+          echo "Release is false, skipping task..."
+          exit 0
+        fi
+
+        RELEASE_FILE="$(params.manifest)"
+        while true; do
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Checking release status..."
+
+            RELEASED_REASON=$(oc get -f "$RELEASE_FILE" -o jsonpath='{.status.conditions[?(@.type=="Released")].reason}' || true)
+            VALIDATED_REASON=$(oc get -f "$RELEASE_FILE" -o jsonpath='{.status.conditions[?(@.type=="Validated")].reason}' || true)
+
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] ReleasedReason: ${RELEASED_REASON:-<none>} | ValidatedReason: ${VALIDATED_REASON:-<none>}"
+
+            if [[ "$RELEASED_REASON" == "Failed" || "$VALIDATED_REASON" == "Failed" ]]; then
+                echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Release has failed. Printing resource for debugging..."
+                oc get -f "$RELEASE_FILE" -o yaml
+                exit 1
+            fi
+
+            if [[ "$RELEASED_REASON" == "Succeeded" && "$VALIDATED_REASON" == "Succeeded" ]]; then
+                echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Both Released and Validated conditions report 'Succeeded'."
+                exit 0
+            fi
+
+            echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Release not yet complete. Sleeping for 60 seconds before next check..."
+            sleep 60
+        done

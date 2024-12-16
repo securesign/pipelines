@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: apply-manifests
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: manifest
+      type: string
+      description: Manifest to apply
+    - name: release
+      type: string
+      default: "false"
+      description: whether or not to apply the manifest
+  steps:
+    - name: apply-manifest
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Applying: $(params.manifest)"
+        cat "$(params.manifest)"
+        echo ""
+
+        if [ "$(params.release)" == "true" ]; then
+          oc apply -f "$(params.manifest)"
+        else
+          echo "Performing DRY RUN"
+          oc apply --dry-run=server -f "$(params.manifest)"
+        fi

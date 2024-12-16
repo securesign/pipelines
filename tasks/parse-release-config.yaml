@@ -1,0 +1,112 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: parse-release-config
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: releases
+      description: "An array of YAML-defined release configurations"
+    - name: env
+      description: Release environment should be one of stage/prod
+  results:
+    - name: releaseComponent
+      description: Indicates whether to execute the component release process
+    - name: componentReleasePlanDirectory
+      description: Directory where the component release plans are stored
+    - name: componentReleaseDirectory
+      description: Directory where the component releases are stored
+    - name: releaseFBC
+      description: Indicates whether to execute the FBC release process
+    - name: fbcReleasePlanDirectory
+      description: Directory where the FBC release plans are stored
+    - name: fbcReleaseDirectory
+      description: Directory where the FBC releases are stored
+  steps:
+    - name: validate-config
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        RELEASES="$(params.releases)"
+        ENV="$(params.env)"
+
+        # Only one componant release is allowed
+        COMPONENT_COUNT=$(echo "$RELEASES" | yq '[.[] | select(.type == "component")] | length')
+        if [ "$COMPONENT_COUNT" -gt 1 ]; then
+          echo "ERROR: Found $COMPONENT_COUNT component items. Only 1 is allowed."
+          exit 1
+        fi
+
+        # Only one fbc release is allowed
+        FBC_COUNT=$(echo "$RELEASES" | yq '[.[] | select(.type == "fbc")] | length')
+        if [ "$FBC_COUNT" -gt 1 ]; then
+          echo "ERROR: Found $FBC_COUNT fbc items. Only 1 is allowed."
+          exit 1
+        fi
+
+        # Type should only be equal to component or fbc
+        INVALID_TYPES="$(echo "$RELEASES" | yq '.[].type' | grep -vE '^(component|fbc)$' || true)"
+        if [[ -n "${INVALID_TYPES}" ]]; then
+          echo "ERROR: Invalid 'type' found in release(s): ${INVALID_TYPES}"
+          echo "       Valid types are 'component' or 'fbc' only."
+          exit 1
+        fi
+
+        # Env should only be equal to stage or prod
+        if [[ "$ENV" != "stage" && "$ENV" != "prod" ]]; then
+          echo "ERROR: Invalid 'env' parameter. Must be 'stage' or 'prod', got: ${ENV}"
+          exit 1
+        fi
+
+        # Make sure `release` is strictly `true` or `false`
+        INVALID_RELEASES="$(echo "$RELEASES" | yq '.[].release' | grep -vE '^(true|false)$' || true)"
+        if [[ -n "$INVALID_RELEASES" ]]; then
+          echo "ERROR: Invalid 'release' value(s) found: ${INVALID_RELEASES}"
+          echo "       Valid 'release' values are 'true' or 'false' only."
+          exit 1
+        fi
+
+        echo "Release Config Validated..."
+
+    - name: parse-release-config
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        RELEASES="$(params.releases)"
+        RELEASE_COMPONENT="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .release')"
+        COMPONENT_RELEASE_PLAN_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .releasePlanDir')"
+        COMPONENT_RELEASE_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "component") | .releaseDir')"
+
+        RELEASE_FBC="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .release')"
+        FBC_RELEASE_PLAN_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .releasePlanDir')"
+        FBC_RELEASE_DIR="$(echo "$RELEASES" | yq '.[] | select(.type == "fbc") | .releaseDir')"
+
+        echo "Environment: "$(params.env)""
+
+        echo ""
+        echo "Component Config:"
+        echo "RELEASE_COMPONENT: $RELEASE_COMPONENT"
+        echo "COMPONENT_RELEASE_PLAN_DIR: $COMPONENT_RELEASE_PLAN_DIR"
+        echo "COMPONENT_RELEASE_DIR: $COMPONENT_RELEASE_DIR"
+
+        echo ""
+        echo "FBC Config:"
+        echo "RELEASE_FBC: $RELEASE_FBC"
+        echo "FBC_RELEASE_PLAN_DIR: $FBC_RELEASE_PLAN_DIR"
+        echo "FBC_RELEASE_DIR: $FBC_RELEASE_DIR"
+
+        echo -n "$RELEASE_COMPONENT" > $(results.releaseComponent.path)
+        echo -n "$COMPONENT_RELEASE_PLAN_DIR" > $(results.componentReleasePlanDirectory.path)
+        echo -n "$COMPONENT_RELEASE_DIR" > $(results.componentReleaseDirectory.path)
+        echo -n "$RELEASE_FBC" > $(results.releaseFBC.path)
+        echo -n "$FBC_RELEASE_PLAN_DIR" > $(results.fbcReleasePlanDirectory.path)
+        echo -n "$FBC_RELEASE_DIR" > $(results.fbcReleaseDirectory.path)
