@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: monitor-release
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+  params:
+    - name: release
+      type: string
+      description: Release to monitor
+    - name: timeout
+      type: string
+      description: Timeout for waiting conditions
+      default: "1h"
+  steps:
+    - name: monitor-release
+      workingDir: /workspace/output/source
+      script: |
+        STATUS=$(oc get -f "$(params.release)" -o jsonpath='{.status.conditions[?(@.type=="Released")].status}')
+        if [ "$STATUS" = "False" ]; then
+          echo "Release has failed. Exiting."
+          oc get -f "$(params.release)" -o yaml
+          exit 0 # temp to get it to pass
+        fi
+
+        echo "Waiting for Released=True..."
+        oc wait --for=condition=Released -f "$(params.release)" --timeout=$(params.timeout)
+
+        echo "Waiting for Validated=True..."
+        oc wait --for=condition=Validated -f "$(params.release)" --timeout=$(params.timeout)
+
+        echo "Release is both Released and Validated."

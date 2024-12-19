@@ -1,0 +1,11 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "false"
+    release.appstudio.openshift.io/releasePlanAdmission: rhtas-staging
+  name: segment-backup-job-staging
+  namespace: rhtas-tenant
+spec:
+  application: segment-backup-job
+  target: rhtap-releng-tenant
