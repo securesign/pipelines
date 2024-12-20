@@ -1,0 +1,107 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: process-releases
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+  params:
+    - name: component-release-dir
+      type: string
+      default: ""
+      description: The directory where the component releases are located.
+    - name: fbc-release-dir
+      type: string
+      default: ""
+      description: The directory where the FBC releases are located.
+  results:
+    - name: component-releases
+      type: array
+    - name: fbc-releases
+      type: array
+  steps:
+    - name: validate-kind
+      workingDir: /workspace/output/source
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        validate_kind() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo "Validating kind in file: $file"
+                KIND=$(yq e '.kind' "$file")
+                if [ "$KIND" != "Release" ]; then
+                  echo "Error: File $file has kind $KIND, expected Release"
+                  exit 1
+                fi
+              fi
+            done
+          fi
+        }
+
+        validate_kind "$(params.component-release-dir)"
+        validate_kind "$(params.fbc-release-dir)"
+
+    - name: gather-file-paths
+      workingDir: /workspace/output/source
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        list_files() {
+          local dir=$1
+          local result=$2
+
+          if [ -n "$dir" ]; then
+            dir="/workspace/output/source/$dir"
+            if [ -d "$dir" ]; then
+              files=$(find "$dir" -name '*.yaml' -print | jq -R -s 'split("\n")[:-1]')
+              echo "$files" > "$result"
+            else
+              echo "[]" > "$result"
+            fi
+          else
+            echo "[]" > "$result"
+          fi
+        }
+
+        list_files "$(params.component-release-dir)" "$(results.component-releases.path)"
+        list_files "$(params.fbc-release-dir)" "$(results.fbc-releases.path)"
+
+    - name: check-existing-release
+      workingDir: /workspace/output/source
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        check_and_delete_failed_release() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                if oc get -f "$file" &>/dev/null; then
+                  STATUS=$(oc get -f "$file" -o jsonpath='{.status.conditions[?(@.type=="Released")].status}')
+                  if [ "$STATUS" = "False" ]; then
+                    echo "Deleting failed release: $file"
+                    oc delete -f "$file"
+                  fi
+                fi
+              fi
+            done
+          fi
+        }
+
+        check_and_delete_failed_release "$(params.component-release-dir)"
+        check_and_delete_failed_release "$(params.fbc-release-dir)"
+
+## Other steps can be defined here for extra processing or validation
