@@ -85,6 +85,8 @@ spec:
                 value: "$(steps.pick-version.results.version)"
               - name: instanceType
                 value: m5.large
+              - name: timeout
+                value: 40m
               - name: imageContentSources
                 value: |
                   - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
