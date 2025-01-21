@@ -291,6 +291,8 @@ spec:
                 value: "$(steps.install-keycloak.results.oidc-hostname)"
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: CI
+                value: "true"
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
