@@ -1,0 +1,187 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: process-release-plans
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: component-release-plan-dir
+      type: string
+      default: ""
+      description: The directory where the component release plans are located.
+    - name: fbc-release-plan-dir
+      type: string
+      default: ""
+      description: The directory where the FBC release plans are located.
+    - name: env
+      type: string
+      description: Release environment should be one of stage/prod
+  results:
+    - name: component-release-plans
+      type: array
+    - name: fbc-release-plans
+      type: array
+  steps:
+    - name: validate-kind
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        validate_kind() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo "Validating kind in file: $file"
+                KIND=$(yq e '.kind' "$file")
+                if [ "$KIND" != "ReleasePlan" ]; then
+                  echo "Error: File $file has kind $KIND, expected ReleasePlan"
+                  exit 1
+                fi
+              fi
+            done
+          fi
+        }
+
+        validate_kind "$(params.component-release-plan-dir)"
+        validate_kind "$(params.fbc-release-plan-dir)"
+
+    - name: validate-stage-label
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        ENV="$(params.env)"
+        if [ "$ENV" == "prod" ]; then
+          echo "Production enviroment found, skipping step..."
+          exit 0
+        fi
+
+        validate_stage_label() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo "Checking presence of 'release.rhtas.stage/releasePlanAdmission' label in file: $file"
+                
+                label_value=$(yq e '.metadata.labels."release.rhtas.stage/releasePlanAdmission" // "null"' "$file")
+                if [ "$label_value" = "null" ]; then
+                  echo "Error: File $file is missing the label 'release.rhtas.stage/releasePlanAdmission'"
+                  exit 1
+                fi
+              fi
+            done
+          fi
+        }
+
+        validate_stage_label "$(params.component-release-plan-dir)"
+        validate_stage_label "$(params.fbc-release-plan-dir)"
+
+    - name: generate-staging-resources
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        ENV="$(params.env)"
+        if [ "$ENV" == "prod" ]; then
+          echo "Production enviroment found, skipping step..."
+          exit 0
+        fi
+
+        generate_staging_resources() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo ""
+                stage_rpa=$(yq e '.metadata.labels."release.rhtas.stage/releasePlanAdmission"' "$file")
+                prod_rpa=$(yq e '.metadata.labels."release.appstudio.openshift.io/releasePlanAdmission"' "$file")
+                echo "Replacing prod RPA: '${prod_rpa}' with the staging one: '${stage_rpa}' in file: ${file}"
+                yq e -i '.metadata.labels."release.appstudio.openshift.io/releasePlanAdmission" = "'"$stage_rpa"'"' "$file"
+
+                rp_name=$(yq e '.metadata.name' "$file")
+                echo "Appending '-stage' to ReleasePlan name: '${rp_name}' in file: ${file}"
+                yq e -i '.metadata.name |= . + "-stage"' "$file"
+
+                new_rp_name=$(yq e '.metadata.name' "$file")
+                echo "New RP name: '${new_rp_name}'"
+              fi
+            done
+          fi
+        }
+
+        generate_staging_resources "$(params.component-release-plan-dir)"
+        generate_staging_resources "$(params.fbc-release-plan-dir)"
+
+    - name: gather-file-paths
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        list_files() {
+          local dir=$1
+          local result=$2
+
+          if [ -n "$dir" ]; then
+            dir="/workspace/output/source/$dir"
+            if [ -d "$dir" ]; then
+              files=$(find "$dir" -maxdepth 1 -type f -name '*.yaml' -print | jq -R -s 'split("\n")[:-1]')
+              echo "$files" > "$result"
+            else
+              echo "[]" > "$result"
+            fi
+          else
+            echo "[]" > "$result"
+          fi
+        }
+
+        list_files "$(params.component-release-plan-dir)" "$(results.component-release-plans.path)"
+        list_files "$(params.fbc-release-plan-dir)" "$(results.fbc-release-plans.path)"
+
+        echo "Component Release Plans:"
+        cat "$(results.component-release-plans.path)"
+        echo ""
+        echo "FBC Release Plans:"
+        cat "$(results.fbc-release-plans.path)"
+
+
+    - name: remove-outdated-release-plans
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        ENV="$(params.env)"
+        if [ "$ENV" == "prod" ]; then
+          echo "Production enviroment found, skipping step..."
+          exit 0
+        fi
+
+        remove_outdated_release_plans() {
+          local dir="$1"
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                if oc get -f "$file" &>/dev/null; then
+                  echo "Deleting outdated release Plans: $file"
+                  oc delete -f "$file"
+                fi
+              fi
+            done
+          fi
+        }
+
+        remove_outdated_release_plans "$(params.component-release-plan-dir)"
+        remove_outdated_release_plans "$(params.fbc-release-plan-dir)"
+
+## Other steps can be defined here for extra processing or validation

@@ -1,0 +1,156 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: process-releases
+spec:
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: component-release-dir
+      type: string
+      default: ""
+      description: The directory where the component releases are located.
+    - name: fbc-release-dir
+      type: string
+      default: ""
+      description: The directory where the FBC releases are located.
+    - name: env
+      type: string
+      description: Release environment should be one of stage/prod
+  results:
+    - name: component-releases
+      type: array
+    - name: fbc-releases
+      type: array
+  steps:
+    - name: validate-kind
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        validate_kind() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo "Validating kind in file: $file"
+                KIND=$(yq e '.kind' "$file")
+                if [ "$KIND" != "Release" ]; then
+                  echo "Error: File $file has kind $KIND, expected Release"
+                  exit 1
+                fi
+              fi
+            done
+          fi
+        }
+
+        validate_kind "$(params.component-release-dir)"
+        validate_kind "$(params.fbc-release-dir)"
+
+    - name: generate-staging-resources
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        ENV="$(params.env)"
+        if [ "$ENV" == "prod" ]; then
+          echo "Production enviroment found, skipping step..."
+          exit 0
+        fi
+
+        generate_staging_resources() {
+          local dir=$1
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                echo ""
+                release_name=$(yq e '.metadata.name' "$file")
+                echo "Appending '-stage' to Release name: '${release_name}' in file: ${file}"
+                yq e -i '.metadata.name |= . + "-stage"' "$file"
+
+                new_release_name=$(yq e '.metadata.name' "$file")
+                echo "New RP name: '${new_release_name}'"
+
+                rp_name=$(yq e '.spec.releasePlan' "$file")
+                echo "Appending '-stage' to ReleasePlan name: '${rp_name}' in file: ${file}"
+                yq e -i '.spec.releasePlan |= . + "-stage"' "$file"
+
+                new_rp_name=$(yq e '.spec.releasePlan' "$file")
+                echo "New RP name: '${new_rp_name}'"
+              fi
+            done
+          fi
+        }
+
+        generate_staging_resources "$(params.component-release-dir)"
+        generate_staging_resources "$(params.fbc-release-dir)"
+
+    - name: gather-file-paths
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        list_files() {
+          local dir=$1
+          local result=$2
+
+          if [ -n "$dir" ]; then
+            dir="/workspace/output/source/$dir"
+            if [ -d "$dir" ]; then
+              files=$(find "$dir" -maxdepth 1 -type f -name '*.yaml' -print | jq -R -s 'split("\n")[:-1]')
+              echo "$files" > "$result"
+            else
+              echo "[]" > "$result"
+            fi
+          else
+            echo "[]" > "$result"
+          fi
+        }
+
+        list_files "$(params.component-release-dir)" "$(results.component-releases.path)"
+        list_files "$(params.fbc-release-dir)" "$(results.fbc-releases.path)"
+
+        echo "Component Releases:"
+        cat "$(results.component-releases.path)"
+        echo ""
+        echo "FBC Releases:"
+        cat "$(results.fbc-releases.path)"
+
+    - name: remove-outdated-releases
+      script: |
+        #!/bin/bash
+        set -euo pipefail
+
+        ENV="$(params.env)"
+        if [ "$ENV" == "prod" ]; then
+          echo "Production enviroment found, skipping step..."
+          exit 0
+        fi
+
+        remove_outdated_releases() {
+          local dir="$1"
+
+          if [ -n "$dir" ] && [ -d "$dir" ]; then
+            for file in "$dir"/*.yaml; do
+              if [ -f "$file" ]; then
+                if oc get -f "$file" &>/dev/null; then
+                  echo "Deleting outdated release: $file"
+                  oc delete -f "$file"
+                fi
+              fi
+            done
+          fi
+        }
+
+        remove_outdated_releases "$(params.component-release-dir)"
+        remove_outdated_releases "$(params.fbc-release-dir)"
+
+## Other steps can be defined here for extra processing or validation
