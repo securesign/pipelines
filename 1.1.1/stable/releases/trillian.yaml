@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: trillian-1-1-1
+  namespace: rhtas-tenant
+spec:
+  releasePlan: trillian-1-1-1
+  snapshot: trillian-x9zqb

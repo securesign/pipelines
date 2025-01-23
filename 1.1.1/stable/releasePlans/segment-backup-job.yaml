@@ -1,0 +1,27 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "false"
+    release.appstudio.openshift.io/releasePlanAdmission: "prod"
+    release.rhtas.stage/releasePlanAdmission: rhtas-staging
+  name: segment-backup-job-1-1-1
+  namespace: rhtas-tenant
+spec:
+  data:
+    releaseNotes:
+      type: "RHSA"
+      synopsis: "RHTAS 1.1.1 - Red Hat Trusted Artifact Signer Release"
+      topic: |
+        The 1.1.1 release of Red Hat Trusted Artifact Signer OpenShift Operator.
+        For more details see [product documentation](https://access.redhat.com/documentation/en-us/red_hat_trusted_artifact_signer/1).
+      description: "The RHTAS Operator can be used with OpenShift Container Platform 4.14, 4.15, 4.16 and 4.17."
+      solution: |
+        Red Hat Trusted Artifact Signer simplifies cryptographic signing and verifying of software artifacts such as container images, binaries and source code changes. It is a self-managed on-premise deployment of the [Sigstore project](https://sigstore.dev/). Platform Engineers, Software Developers and Security Professionals may use RHTAS to ensure the integrity, transparency and assurance of their organization's software supply chain.
+        For details on using the operator, refer to [product documentation](https://access.redhat.com/documentation/en-us/red_hat_trusted_artifact_signer/1).
+        You can find the release notes for this version of Red Hat Trusted Artifact Signer [here](https://access.redhat.com/documentation/en-us/red_hat_trusted_artifact_signer/1.1/html-single/release_notes/index).
+      references:
+        - "https://access.redhat.com/documentation/en-us/red_hat_trusted_artifact_signer/1"
+        - "https://access.redhat.com/documentation/en-us/red_hat_trusted_artifact_signer/1.1/html-single/release_notes/index"
+  application: segment-backup-job
+  target: rhtap-releng-tenant

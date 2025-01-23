@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: fbc-v4-17-1-1-1
+  namespace: rhtas-tenant
+spec:
+  releasePlan: fbc-v4-17-1-1-1
+  snapshot: fbc-v4-17-zdh2p

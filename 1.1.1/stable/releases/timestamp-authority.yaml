@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: timestamp-authority-1-1-1
+  namespace: rhtas-tenant
+spec:
+  releasePlan: timestamp-authority-1-1-1
+  snapshot: timestamp-authority-gxhnb

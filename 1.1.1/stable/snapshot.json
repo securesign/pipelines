@@ -1,0 +1,94 @@
+{
+  "day": "2025-01-14",
+  "time": "17-36-19",
+  "timestamp-authority": {
+    "snapshot_name": "timestamp-authority-gxhnb",
+    "timestamp-authority-image": "quay.io/securesign/timestamp-authority@sha256:cd5949f18df0fea83b6ba37041c7eba7d296ff2329d3e2c985812951e4238d52"
+  },
+  "certificate-transparency-go": {
+    "snapshot_name": "certificate-transparency-go-l7c2t",
+    "ctlog-image": "quay.io/securesign/certificate-transparency-go@sha256:9872e1a63aed2317dc2353078824d9bfc61f833521d00de1ad41259b0b69f8b5" 
+  },
+  "cli": {
+    "snapshot_name": "cli-77rcw",
+    "fetch-tsa-certs-cli-image": "quay.io/securesign/fetch-tsa-certs@sha256:7b961ddaf56f3409a0f1e2ad4ebeb89bf6db242b4b0b473c11d16cf28b96a12d",
+    "gitsign-cli-image": "quay.io/securesign/gitsign@sha256:4d5d374593bb41777884d24137b201a783040201ca056fad5503990febdd57a4",
+    "client-server-image": "quay.io/securesign/client-server@sha256:698ee5b504c25801d194435e19e31b10421118f7a91605077a290b0916401b10",
+    "client-server-cg-image": "quay.io/securesign/cli-client-server-cg@sha256:d5b284508547a1b4159576ff7ca6935e9e4b42280ccd36a5e108598fb18cbd77",
+    "client-server-f-image": "quay.io/securesign/client-server-f@sha256:9a2c4073cc89278069d2b889a3928afdddfd25d80e1859978529a1f8d10074d6",
+    "client-server-re-image": "quay.io/securesign/client-server-re@sha256:0b86b79c1262e61c20e3cf95caeecc67c66d3088c0a6f52f4f062d9a78446bf0",
+    "cosign-cli-image": "quay.io/securesign/cli-cosign@sha256:1b30a7cc28abce4b5e1a3aff84dafbdaa66ac7ff6c9f494aeedf71aaf243ce53"
+  },
+  "fbc-v4-13": {
+    "snapshot_name": "fbc-v4-13-d45fv",
+    "fbc-v4-13": "quay.io/securesign/fbc-v4-13@sha256:d762a6501a0384b65ac490567b673d21ff8d10e7c0cfe23de96841c2a49bf542"
+  },
+  "fbc-v4-14": {
+    "snapshot_name": "fbc-v4-14-s56fj",
+    "fbc-v4-14": "quay.io/securesign/fbc-v4-14@sha256:5bcb90a07ca729432b7cbadb1062dff194595b7ba295e4c37c4e00daba874f07"
+  },
+  "fbc-v4-15": {
+    "snapshot_name": "fbc-v4-15-tjctc",
+    "fbc-v4-15": "quay.io/securesign/fbc-v4-15@sha256:a0fb7a2f5244dae60c47994940f875abb9ac3cf7e90b1832bd3e168d46039661"
+  },
+  "fbc-v4-16": {
+    "snapshot_name": "fbc-v4-16-8sjpd",
+    "fbc-v4-16": "quay.io/securesign/fbc-v4-16@sha256:2be0cfe917b913f09f74afa7afa1117865e1fbe79582e83fb5d3a04743644f40"
+  },
+  "fbc-v4-17": {
+    "snapshot_name": "fbc-v4-17-zdh2p",
+    "fbc-v4-17": "quay.io/securesign/fbc-v4-17@sha256:d09938754b5ab48556499dfd1701f7b8f7c2fc16619b80e840013ecfab6148a8"
+  },
+  "fulcio": {
+    "snapshot_name": "fulcio-psdjp",
+    "fulcio-server-image": "quay.io/securesign/fulcio-server@sha256:d974b5321a1d8dc7396983c68f4040858e9f5bd0c5aa1e79f97a1ef752ca323f"
+  },
+  "operator": {
+    "snapshot_name": "operator-v1-1-565nx",
+    "rhtas-operator-image": "quay.io/securesign/rhtas-operator-v1-1@sha256:fcbbcadbcbfd1cf34b37e33fb9329c947cbfa7c353b59682508b995cebed8021",
+    "rhtas-operator-bundle-image": "quay.io/securesign/rhtas-operator-bundle-v1-1@sha256:d242d0ad5bfe638036796f2f69809ae9135ca8e07483f15bf64870eeb10717cd"
+  },
+  "rekor": {
+    "snapshot_name": "rekor-6dfs4",
+    "rekor-cli-image": "quay.io/securesign/rekor-cli@sha256:4b564d7a27fb6916797d7cc9e0ab25181636accb5578cdb683f9d9440192c4aa",
+    "rekor-server-image": "quay.io/securesign/rekor-server@sha256:2fd07c321e0a8e859d43580d060c54e453e0ba2c6f2152de9721952a852dd7d0",
+    "backfill-redis-image": "quay.io/securesign/rekor-backfill-redis@sha256:4ab47035967b86b84a864bb1c64fa16f71d00a3edd7d293743ec036d005740eb"
+  },
+  "rekor-search": {
+    "snapshot_name": "rekor-search-fg882",
+    "rekor-search-ui-image": "quay.io/securesign/rekor-search-ui@sha256:ab85e4f3fe88f7c6a376445273ce5b76c10dc805e438314fbab6d668e75ed53d"
+  },
+  "scaffold": {
+    "snapshot_name": "scaffold-2tk62",
+    "ctlog-managectroots-image": "quay.io/securesign/scaffold-ctlog-managectroots@sha256:442b576f81dedfdbf68f64dd23dcd8ffbc778c6d5df2775a039f590fd5b66d26",
+    "fulcio-createcerts-image": "quay.io/securesign/scaffold-fulcio-createcerts@sha256:fb85cafe62b91c25bc368c80e9133a0cb3435b2027092f0642bd47f8b997fd09",
+    "trillian-createdb-image": "quay.io/securesign/scaffold-trillian-createdb@sha256:9a336e8ad0711b5fa061fc2bb402a90021ef811a60c63d2dddc364eb4b39886c",
+    "trillian-createtree-image": "quay.io/securesign/scaffold-trillian-createtree@sha256:238677fd95b52b179a88ff8ad9980ba25a61180b8a60892d2526b2a5dc584841",
+    "tuf-server-image": "quay.io/securesign/scaffold-tuf-server@sha256:e4074ee97fd88f98c526985ec13955a2e23ef18165e4835229bdda8d63445597",
+    "createctconfig-image": "quay.io/securesign/scaffold-createctconfig@sha256:236c8831c04a861d258616fea54175dab84286230521e879e500d3adb845e60e"
+  },
+  "segment-backup-job": {
+    "snapshot_name": "segment-backup-job-bq8g2",
+    "segment-backup-job-image": "quay.io/securesign/segment-backup-job@sha256:d8e65cbeb56bcc0a2ff0cd3afea3d35448695787835fe44c85a8991e6920bdb5"
+  },
+  "trillian": {
+    "snapshot_name": "trillian-x9zqb",
+    "updatetree-image": "quay.io/securesign/trillian-updatetree@sha256:804b1eb4af35c93fa3f36d845906a0e4c9dcd958f6185631a483ce79d7a5353d",
+    "createtree-image": "quay.io/securesign/trillian-createtree@sha256:6c754e9cd35d7d413c81c93c93294b96a0659bed0346ac3ee6abd53b912c15a0",
+    "trillian-db-image": "quay.io/securesign/trillian-database@sha256:d2878a957fa67eb1b20f1fd2837cd1d6b2d670f79b139f751e18236ec08c2e2e",
+    "trillian-log-server-image": "quay.io/securesign/trillian-logserver@sha256:6afced48a9e972617e8dabaf9b4e17219ece6861f6e725f76bf1b72da5d83d3e",
+    "trillian-log-signer-image": "quay.io/securesign/trillian-logsigner@sha256:8b85bebbaaf59dcbd0fc8bf362382841b1d6700371763660bbe63452c619acc2",
+    "rekor-redis-image": "quay.io/securesign/trillian-redis@sha256:78d946d1182b0d3837097de826b6b2d3f89891e0812795571adfb51194e2c469"
+  },
+  "tough": {
+    "snapshot_name": "tough-kq42t",
+    "tuf-tool-image": "quay.io/securesign/cli-tuftool@sha256:0ef40ec09ba3a202d764553ba1e8dff2261d024c5f5f3a4b52eac214f82fa810",
+    "tuf-image": "quay.io/securesign/tuffer@sha256:8495aca9de2d20811acf226fcc9a6730edb78166b2aac03516bda5e32063d5a3"
+  },
+  "artifact-signer-ansible": {
+    "collection": {
+       "url": "https://github.com/securesign/artifact-signer-ansible/actions/runs/11705765669/artifacts/2152648141",
+       "sha256": "4da3d330f9e82a65d93b242e0cc14b5912d4bf65d0eac31fe1d226e4c6ae11f5"
+     }
+  }
+}

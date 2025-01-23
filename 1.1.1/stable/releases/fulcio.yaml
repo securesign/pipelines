@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: fulcio-1-1-1
+  namespace: rhtas-tenant
+spec:
+  releasePlan: fulcio-1-1-1
+  snapshot: fulcio-psdjp

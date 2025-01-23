@@ -25,6 +25,16 @@ spec:
     value: '{{revision}}'
   - name: env
     value: stage
+  - name: releases
+    value: |
+      - type: component
+        release: true
+        releasePlanDir: 1.1.1/stable/releasePlans
+        releaseDir: 1.1.1/stable/releases
+      - type: fbc
+        release: true
+        releasePlanDir: 1.1.1/stable/releasePlans/FBCs
+        releaseDir: 1.1.1/stable/releases/FBCs
   pipelineRef:
     name: rhtas-release
   taskRunTemplate:

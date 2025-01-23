@@ -1,0 +1,8 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Release
+metadata:
+  name: operator-1-1-1
+  namespace: rhtas-tenant
+spec:
+  releasePlan: operator-1-1-1
+  snapshot: operator-v1-1-565nx
