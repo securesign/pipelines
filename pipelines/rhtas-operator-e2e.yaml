@@ -230,7 +230,7 @@ spec:
                 value: credentials
            # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
-            image: registry.access.redhat.com/ubi9/go-toolset@sha256:c519abb7022c15cc521e4b30af9b3a549b9e3851b3b17bfe3f45866d9b6a7812
+            image: registry.access.redhat.com/ubi9/go-toolset@sha256:80086a5f16a5a4a7eedaf8d3fa0696f3013df80cfe68e1dd8ab4d0ae5cf0c886
             volumeMounts:
               - name: repository
                 mountPath: /repository
@@ -285,7 +285,7 @@ spec:
               - name: volume
                 value: binaries
           - name: execute-e2e
-            image: registry.access.redhat.com/ubi9/go-toolset@sha256:c519abb7022c15cc521e4b30af9b3a549b9e3851b3b17bfe3f45866d9b6a7812
+            image: registry.access.redhat.com/ubi9/go-toolset@sha256:80086a5f16a5a4a7eedaf8d3fa0696f3013df80cfe68e1dd8ab4d0ae5cf0c886
             env:
               - name: OIDC_HOST
                 value: "$(steps.install-keycloak.results.oidc-hostname)"
