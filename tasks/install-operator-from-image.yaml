@@ -52,7 +52,7 @@ spec:
         kustomize localize --no-verify "$(params.resources_url)" /storage/resources
         cd /storage/resources/config/manager && kustomize edit set image controller=$(params.operatorImage)
         echo "I am going to install following resources"
-        kustomize build /storage/resources/config/default
+        kustomize build /storage/resources/config/env/openshift
 
     - name: run-operator
       image: registry.redhat.io/openshift4/ose-cli
@@ -64,4 +64,4 @@ spec:
           mountPath: /credentials
         - name: resources
           mountPath: /storage
-      script: oc create -k /storage/resources/config/default
+      script: oc create -k /storage/resources/config/env/openshift
