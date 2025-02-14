@@ -18,9 +18,9 @@ spec:
       description: Resource directory to be kustomized and applied
   volumes:
     - name: credentials
-      emptyDir: {}
+      emptyDir: { }
     - name: resources
-      emptyDir: {}
+      emptyDir: { }
   steps:
     - name: get-kubeconfig
       ref:
@@ -64,4 +64,6 @@ spec:
           mountPath: /credentials
         - name: resources
           mountPath: /storage
-      script: oc create -k /storage/resources/config/env/openshift
+      script: |
+        oc create -k /storage/resources/config/env/openshift
+        oc wait --for=condition=available deployment/rhtas-operator-controller-manager --timeout=120s -n openshift-rhtas-operator

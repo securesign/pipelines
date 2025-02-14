@@ -165,7 +165,7 @@ spec:
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: ["rhtas-operator-bundle"]
+          values: [ "rhtas-operator-bundle" ]
     - name: install-operator-from-image
       runAfter:
         - provision-cluster
@@ -193,7 +193,7 @@ spec:
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: ["rhtas-operator"]
+          values: [ "rhtas-operator" ]
     - name: run-e2e
       runAfter:
         # run after either one
@@ -205,11 +205,16 @@ spec:
       taskSpec:
         volumes:
           - name: credentials
-            emptyDir: {}
+            emptyDir: { }
           - name: repository
-            emptyDir: {}
+            emptyDir: { }
           - name: binaries
-            emptyDir: {}
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
         steps:
           - name: get-kubeconfig
             ref:
@@ -228,7 +233,7 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
+          # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
             image: registry.access.redhat.com/ubi9/go-toolset@sha256:80086a5f16a5a4a7eedaf8d3fa0696f3013df80cfe68e1dd8ab4d0ae5cf0c886
             volumeMounts:
@@ -286,6 +291,10 @@ spec:
                 value: binaries
           - name: execute-e2e
             image: registry.access.redhat.com/ubi9/go-toolset@sha256:80086a5f16a5a4a7eedaf8d3fa0696f3013df80cfe68e1dd8ab4d0ae5cf0c886
+            onError: continue
+            results:
+              - name: status
+                type: string
             env:
               - name: OIDC_HOST
                 value: "$(steps.install-keycloak.results.oidc-hostname)"
@@ -300,10 +309,59 @@ spec:
                 mountPath: /repository
               - name: binaries
                 mountPath: /binaries
+              - name: dump
+                mountPath: /dump
             script: |
+              #!/bin/sh
+              set +e
               cd /repository/source
               export PATH="$PATH:/binaries"
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
               make test-e2e
+              
+              if [ $? -eq 0 ]; then
+                echo -n "success" > "$(step.results.status.path)"
+              else
+                cp test/**/k8s-dump-*.tar.gz /dump
+                echo "Dumping files:"
+                ls /dump
+                echo -n "fail" >  "$(step.results.status.path)"
+                exit 1
+              fi
+          - name: secure-push-oci
+            when:
+              - input: "$(steps.execute-e2e.results.status)"
+                operator: notin
+                values: [ "success" ]
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/secure-push-oci.yaml
+            params:
+              - name: oci-ref
+                value: "quay.io/securesign/test-dump-oci:$(tasks.parse-metadata.results.git-revision)"
+              - name: credentials-volume-name
+                value: push-creds
+              - name: artifacts-volume-name
+                value: dump
+              - name: oci-tag-expiration
+                value: 1d
+            # workaround - extract dump-push step to separate action once KONFLUX-5535 is resolved
+          - name: report-status
+            image: registry.access.redhat.com/ubi9/go-toolset@sha256:80086a5f16a5a4a7eedaf8d3fa0696f3013df80cfe68e1dd8ab4d0ae5cf0c886
+            env:
+              - name: STATUS
+                value: "$(steps.execute-e2e.results.status)"
+            script: |
+              #!/bin/bash
+              if [ "$STATUS" != "success" ]; then
+              echo "Test failure"
+              exit 1 
+              fi
