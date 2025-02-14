@@ -189,7 +189,7 @@ spec:
         - name: namespace
           value: "$(params.NAMESPACE)"
         - name: resources_url
-          value: "$(tasks.parse-metadata.results.git-url).git/config/default?ref=$(tasks.parse-metadata.results.git-revision)"
+          value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
