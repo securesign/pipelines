@@ -89,9 +89,16 @@ spec:
                 value: 40m
               - name: imageContentSources
                 value: |
+                  - source: registry.redhat.io/rhtas/rhtas-operator-bundle
+                    mirrors:
+                      - quay.io/securesign/rhtas-operator-bundle
+                      - quay.io/securesign/rhtas-operator-bundle-v1-0
+                      - quay.io/securesign/rhtas-operator-bundle-v1-1
                   - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
                     mirrors:
                       - quay.io/securesign/rhtas-operator
+                      - quay.io/securesign/rhtas-operator-v1-0
+                      - quay.io/securesign/rhtas-operator-v1-1
                   - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
                     mirrors:
                     - quay.io/securesign/trillian-logsigner
@@ -140,6 +147,9 @@ spec:
                   - source: registry.redhat.io/rhtas/client-server-rhel9
                     mirrors:
                     - quay.io/securesign/client-server
+                  - source: registry.redhat.io/rhtas/tuffer-rhel9
+                    mirrors:
+                    - quay.io/securesign/tuffer
     - name: install-operator-from-bundle
       runAfter:
         - provision-cluster
@@ -194,11 +204,40 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "rhtas-operator" ]
+    - name: install-operator-from-fbc
+      timeout: "0h5m0s"
+      runAfter:
+        - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-fbc.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: fbcImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: [ "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
     - name: run-e2e
       runAfter:
         # run after either one
         - install-operator-from-image
         - install-operator-from-bundle
+        - install-operator-from-fbc
       params:
         - name: namespace
           value: "$(params.NAMESPACE)"
@@ -241,9 +280,16 @@ spec:
                 mountPath: /repository
             script: |
               cd /repository
-              git clone $(tasks.parse-metadata.results.git-url) source
+              if [[ "$(tasks.parse-metadata.results.component)" == "rhtas-operator" || "$(tasks.parse-metadata.results.component)" == "rhtas-operator-bundle" ]]; then
+                echo "Cloning from $(tasks.parse-metadata.results.git-url)"
+                git clone "$(tasks.parse-metadata.results.git-url)" source
+                git checkout $(tasks.parse-metadata.results.git-revision)
+              else
+                echo "Cloning from default url"
+                git clone "https://github.com/securesign/secure-sign-operator.git" source
+              fi
               cd source
-              git checkout $(tasks.parse-metadata.results.git-revision)
+
           - name: install-keycloak
             ref:
               resolver: git
@@ -319,7 +365,7 @@ spec:
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
-              make test-e2e
+              make test-e2e | tee /dump/testOutput.log
               
               if [ $? -eq 0 ]; then
                 echo -n "success" > "$(step.results.status.path)"
