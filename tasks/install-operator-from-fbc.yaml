@@ -1,0 +1,90 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: install-operator-from-fbc
+spec:
+  params:
+    - name: eaasSpaceSecretRef
+      type: string
+      description: Name of a secret containing credentials for accessing an EaaS space.
+    - name: clusterName
+      type: string
+      description: The name of a ClusterTemplateInstance.
+    - name: fbcImage
+      description: Fbc image to be installed from
+    - name: namespace
+      description: Namespace to be used for installation
+  volumes:
+    - name: credentials
+      emptyDir: { }
+    - name: resources
+      emptyDir: { }
+  steps:
+    - name: get-kubeconfig
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: "$(params.eaasSpaceSecretRef)"
+        - name: clusterName
+          value: "$(params.clusterName)"
+        - name: credentials
+          value: credentials
+    - name: run-operator
+      image: registry.redhat.io/openshift4/ose-cli
+      env:
+        - name: KUBECONFIG
+          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+      volumeMounts:
+        - name: credentials
+          mountPath: /credentials
+        - name: resources
+          mountPath: /storage
+      script: |
+        oc create -f - <<EOF
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          namespace: openshift-marketplace
+          name: tas-test
+        spec:
+          displayName: Operator Catalog
+          image:  $(params.fbcImage)
+          publisher: grpc
+          sourceType: grpc
+        EOF
+        sleep 2
+        oc wait --for=jsonpath='{.status.connectionState.lastObservedState}'=READY catalogsource tas-test -n openshift-marketplace --timeout=3m
+        
+        oc create -f - <<EOF
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+          name: rhtas-operator
+          namespace: openshift-operators
+        spec:
+          channel: stable
+          installPlanApproval: Automatic
+          name: rhtas-operator
+          source: tas-test
+          sourceNamespace: openshift-marketplace
+        EOF
+        
+        oc get csv -n openshift-operators -o yaml
+        oc get pods -n openshift-marketplace -o yaml
+         oc get catalogsource tas-test -n openshift-marketplace -o yaml
+        
+        
+        until oc get deployment rhtas-operator-controller-manager -n openshift-operators &>/dev/null; do
+          echo "Waiting for the deployment to be created..."
+          sleep 5
+        done
+        oc wait --for=condition=available deployment/rhtas-operator-controller-manager --timeout=2m -n openshift-operators
+
