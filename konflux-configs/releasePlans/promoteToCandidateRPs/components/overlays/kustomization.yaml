@@ -1,0 +1,11 @@
+resources:
+  - trillian
+  - tough
+  - timestamp-authority
+  - segment-backup-job
+  - scaffold
+  - rekor-search
+  - rekor
+  - fulcio
+  - cli
+  - certificate-transparency-go

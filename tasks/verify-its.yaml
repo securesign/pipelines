@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: verify-its
+spec:
+  workspaces:
+    - name: output
+  description: >
+    Tekton task to verify that App Studio Integration Tests (ITS) passed.
+  params:
+    - name: snapshotStatus
+      description: A JSON object containing Snapshot info
+  steps:
+    - name: verify-its
+      image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+      workingDir: /workspace/output/source
+      env:
+        - name: SNAPSHOT_STATUS
+          value: '$(params.snapshotStatus)'
+      script: |
+        #!/usr/bin/env sh
+        set -eo pipefail
+
+        echo "==== SNAPSHOT STATUS ===="
+        echo "${SNAPSHOT_STATUS}" | jq .
+
+        echo "==== Verifying required conditions are True ===="
+        if ! echo "${SNAPSHOT_STATUS}" | \
+          jq -e '
+            ( .snapshot_status.conditions[] | select(.type == "AddedToGlobalCandidateList") | .status ) == "True"
+            and
+            ( .snapshot_status.conditions[] | select(.type == "AppStudioIntegrationStatus") | .status ) == "True"
+            and
+            ( .snapshot_status.conditions[] | select(.type == "AppStudioTestSucceeded") | .status ) == "True"
+          '
+        then
+          echo "Required conditions (AddedToGlobalCandidateList, AppStudioIntegrationStatus, AppStudioTestSucceeded) are not all True."
+          exit 1
+        fi
+
+        echo "All required conditions are True."

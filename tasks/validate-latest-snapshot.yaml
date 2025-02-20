@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: validate-latest-snapshot
+spec:
+  description: >
+    Tekton task to check if the provided snapshot is the latest available.
+  workspaces:
+    - name: output
+  params:
+    - name: snapshotSpec
+      description: A JSON object containing Snapshot info
+  results:
+    - name: isLatest
+      description: "A true/false value indicating whether the snapshot is the latest one."
+  steps:
+    - name: wait-for-pipelineruns
+      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      workingDir: /workspace/output/source
+      env:
+        - name: SNAPSHOT_SPEC
+          value: '$(params.snapshotSpec)'
+        - name: HOME
+          value: /workspace
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        COMMIT_SHA=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_sha')
+        echo "Waiting for PipelineRuns with commit SHA ${COMMIT_SHA} to reach Succeeded condition..."
+
+        for pipelineRun in $(oc get pipelineruns -l "pipelinesascode.tekton.dev/sha=${COMMIT_SHA},pipelines.appstudio.openshift.io/type!=tenant" -o=jsonpath='{.items[*].metadata.name}'); do
+          echo "Waiting on pipelinerun: $pipelineRun"
+          oc wait pipelinerun/$pipelineRun --for=condition=Succeeded --timeout=1h
+        done
+
+    - name: validate-snapshot
+      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      workingDir: /workspace/output/source
+      env:
+        - name: SNAPSHOT_SPEC
+          value: '$(params.snapshotSpec)'
+        - name: HOME
+          value: /workspace
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        APP_NAME=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_spec.application')
+        SNAPSHOT_NAME=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_name')
+
+        echo "APP_NAME: ${APP_NAME}"
+        echo "SNAPSHOT_NAME: ${SNAPSHOT_NAME}"
+
+        LATEST_SNAPSHOT_NAME=$(oc get snapshots \
+          -l appstudio.openshift.io/application=${APP_NAME},pac.test.appstudio.openshift.io/event-type=push \
+          --sort-by=.metadata.creationTimestamp --no-headers \
+          | tail -n 1 | awk '{print $1}')
+
+        echo "LATEST_SNAPSHOT_NAME: ${LATEST_SNAPSHOT_NAME}"
+        if [ "${SNAPSHOT_NAME}" = "${LATEST_SNAPSHOT_NAME}" ]; then
+          echo -n "true" > "$(results.isLatest.path)"
+        else
+          echo -n "false" > "$(results.isLatest.path)"
+        fi
