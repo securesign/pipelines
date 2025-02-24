@@ -1,0 +1,70 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: parse-snapshot
+spec:
+  description: >-
+    Tekton task to collect release metadata
+  workspaces:
+    - name: output
+  params:
+    - name: snapshot
+      type: string
+      description: The namespaced name of the Snapshot
+  results:
+    - name: snapshotSpecFile
+      description: Path to the stored Snapshot spec JSON file
+    - name: snapshotStatusFile
+      description: Path to the stored Snapshot status JSON file
+  steps:
+    - name: collect-snapshot-spec
+      image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+      workingDir: /workspace/output/source
+      env:
+        - name: SNAPSHOT
+          value: '$(params.snapshot)'
+        - name: HOME
+          value: /workspace
+      script: |
+        #!/usr/bin/env sh
+        set -eo pipefail
+
+        echo -e "\nFetching Snapshot Details..."
+        SNAPSHOT_JSON=$(get-resource "snapshot" "${SNAPSHOT}")
+
+        SNAPSHOT_SPEC=$(echo "$SNAPSHOT_JSON" | jq '.spec')
+        SNAPSHOT_NAME=$(echo "$SNAPSHOT_JSON" | jq -r '.metadata.name')
+        SNAPSHOT_CREATION_TIMESTAMP=$(echo "$SNAPSHOT_JSON" | jq -r '.metadata.creationTimestamp')
+        SNAPSHOT_SHA=$(echo "$SNAPSHOT_JSON" | jq -r '.metadata.annotations["build.appstudio.redhat.com/commit_sha"]')
+
+        SNAPSHOT_SPEC_JSON=$(jq -n \
+          --arg name "$SNAPSHOT_NAME" \
+          --arg creation "$SNAPSHOT_CREATION_TIMESTAMP" \
+          --arg sha "$SNAPSHOT_SHA" \
+          --argjson spec "$SNAPSHOT_SPEC" \
+          '{
+            snapshot_name: $name,
+            snapshot_creation_timestamp: $creation,
+            snapshot_sha: $sha,
+            snapshot_spec: $spec
+          }'
+        )
+
+        SNAPSHOT_SPEC_FILE="/workspace/output/snapshot_spec.json"
+        SNAPSHOT_STATUS_FILE="/workspace/output/snapshot_status.json"
+
+        echo -e "\nFetched Snapshot:"
+        echo -e "$SNAPSHOT_SPEC_JSON"
+        echo "$SNAPSHOT_SPEC_JSON" > "$SNAPSHOT_SPEC_FILE"
+        echo -n "$SNAPSHOT_SPEC_FILE" > "$(results.snapshotSpecFile.path)"
+
+        echo -e "\nFetching Snapshot Status..."
+        SNAPSHOT_STATUS=$(echo "$SNAPSHOT_JSON" | jq '.status')
+
+        SNAPSHOT_STATUS_JSON=$(jq -n --argjson status "$SNAPSHOT_STATUS" \
+          '{ snapshot_status: $status }'
+        )
+
+        echo -e "$SNAPSHOT_STATUS_JSON"
+        echo "$SNAPSHOT_STATUS_JSON" > "$SNAPSHOT_STATUS_FILE"
+        echo -n "$SNAPSHOT_STATUS_FILE" > "$(results.snapshotStatusFile.path)"
