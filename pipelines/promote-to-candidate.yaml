@@ -57,8 +57,8 @@ spec:
           - name: pathInRepo
             value: tasks/validate-latest-snapshot.yaml
       params:
-        - name: snapshotSpec
-          value: "$(tasks.parse-snapshot.results.snapshotSpec)"
+        - name: snapshotSpecFile
+          value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
       workspaces:
         - name: output
           workspace: release-workspace
@@ -80,8 +80,8 @@ spec:
           - name: pathInRepo
             value: tasks/verify-its.yaml
       params:
-        - name: snapshotStatus
-          value: "$(tasks.parse-snapshot.results.snapshotStatus)"
+        - name: snapshotStatusFile
+          value: "$(tasks.parse-snapshot.results.snapshotStatusFile)"
       workspaces:
         - name: output
           workspace: release-workspace
@@ -113,8 +113,8 @@ spec:
           value: $(params.revision)
         - name: type
           value: $(params.type)
-        - name: snapshotSpec
-          value: "$(tasks.parse-snapshot.results.snapshotSpec)"
+        - name: snapshotSpecFile
+          value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
       workspaces:
         - name: output
           workspace: release-workspace

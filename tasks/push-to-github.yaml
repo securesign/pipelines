@@ -12,8 +12,8 @@ spec:
       description: Source Repository URL
     - name: revision
       description: Revision
-    - name: snapshotSpec
-      description: A JSON object containing Snapshot info
+    - name: snapshotSpecFile
+      description: Path to the stored Snapshot spec JSON file
     - name: type
       description: The type of image being pushed, should be one of component, operator, or fbc
   stepTemplate:
@@ -74,11 +74,12 @@ spec:
 
     - name: push-snapshot
       env:
-        - name: SNAPSHOT_SPEC
-          value: '$(params.snapshotSpec)'
+        - name: SNAPSHOT_SPEC_FILE_PATH
+          value: '$(params.snapshotSpecFile)'
       script: |
         #!/usr/bin/env sh
         set -e
+        SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
 
         if [ -f "$HOME/.env" ]; then
           source "$HOME/.env"

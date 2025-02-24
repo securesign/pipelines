@@ -8,8 +8,8 @@ spec:
   workspaces:
     - name: output
   params:
-    - name: snapshotSpec
-      description: A JSON object containing Snapshot info
+    - name: snapshotSpecFile
+      description: Path to the stored Snapshot spec JSON file
   results:
     - name: isLatest
       description: "A true/false value indicating whether the snapshot is the latest one."
@@ -18,13 +18,14 @@ spec:
       image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
       workingDir: /workspace/output/source
       env:
-        - name: SNAPSHOT_SPEC
-          value: '$(params.snapshotSpec)'
+        - name: SNAPSHOT_SPEC_FILE_PATH
+          value: '$(params.snapshotSpecFile)'
         - name: HOME
           value: /workspace
       script: |
         #!/usr/bin/env sh
         set -e
+        SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
 
         COMMIT_SHA=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_sha')
         echo "Waiting for PipelineRuns with commit SHA ${COMMIT_SHA} to reach Succeeded condition..."
@@ -38,14 +39,15 @@ spec:
       image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
       workingDir: /workspace/output/source
       env:
-        - name: SNAPSHOT_SPEC
-          value: '$(params.snapshotSpec)'
+        - name: SNAPSHOT_SPEC_FILE_PATH
+          value: '$(params.snapshotSpecFile)'
         - name: HOME
           value: /workspace
       script: |
         #!/usr/bin/env sh
         set -e
 
+        SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
         APP_NAME=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_spec.application')
         SNAPSHOT_NAME=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_name')
 
