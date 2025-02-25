@@ -55,7 +55,7 @@ spec:
         echo "SNAPSHOT_NAME: ${SNAPSHOT_NAME}"
 
         LATEST_SNAPSHOT_NAME=$(oc get snapshots \
-          -l appstudio.openshift.io/application=${APP_NAME},pac.test.appstudio.openshift.io/event-type=push \
+          -l appstudio.openshift.io/application=${APP_NAME},pac.test.appstudio.openshift.io/event-type!=pull_request \
           --sort-by=.metadata.creationTimestamp --no-headers \
           | tail -n 1 | awk '{print $1}')
 
