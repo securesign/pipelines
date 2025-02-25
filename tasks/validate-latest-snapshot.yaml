@@ -25,15 +25,34 @@ spec:
       script: |
         #!/usr/bin/env sh
         set -e
+
         SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
-
         COMMIT_SHA=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_sha')
-        echo "Waiting for PipelineRuns with commit SHA ${COMMIT_SHA} to reach Succeeded condition..."
+        echo "Waiting for PipelineRuns with commit SHA ${COMMIT_SHA} to complete..."
 
-        for pipelineRun in $(oc get pipelineruns -l "pipelinesascode.tekton.dev/sha=${COMMIT_SHA},pipelines.appstudio.openshift.io/type!=tenant" -o=jsonpath='{.items[*].metadata.name}'); do
-          echo "Waiting on pipelinerun: $pipelineRun"
-          oc wait pipelinerun/$pipelineRun --for=condition=Succeeded --timeout=1h
+        for pipelineRun in $(oc get pipelineruns \
+          -l "pipelinesascode.tekton.dev/sha=${COMMIT_SHA},pipelines.appstudio.openshift.io/type!=tenant" \
+          -o=jsonpath='{.items[*].metadata.name}'); do
+
+          echo "Monitoring PipelineRun: $pipelineRun"
+          while true; do
+            status=$(oc get pipelinerun/$pipelineRun \
+              -o jsonpath='{.status.conditions[?(@.type=="Succeeded")].status}')
+            
+            if [ "$status" = "True" ]; then
+              echo "PipelineRun $pipelineRun has succeeded."
+              break
+            elif [ "$status" = "False" ]; then
+              echo "ERROR: PipelineRun $pipelineRun has failed."
+              exit 1
+            else
+              echo "PipelineRun $pipelineRun is still running..."
+              sleep 10
+            fi
+          done
         done
+
+        echo "All matching PipelineRuns have succeeded."
 
     - name: validate-snapshot
       image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
