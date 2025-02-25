@@ -1,0 +1,131 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: promote-to-candidate
+spec:
+  description: |
+    A Release pipeline designed to gather release candidate images.
+  params:
+    - name: snapshot
+      type: string
+      description: The namespaced name (namespace/name) of the Snapshot
+    - name: git-url
+      type: string
+      description: Source Repository URL
+    - name: revision
+      type: string
+      default: RHTAS-build-bot_candidate-images
+      description: Revision of the Source Repository
+    - name: code-freeze
+      type: string
+      default: "false"
+      description: Whether or not to enable code freeze, should be true/false
+    - name: type
+      type: string
+      default: component
+      description: The type of image being pushed, should be one of component, operator, or fbc
+  tasks:
+    - name: parse-snapshot
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-snapshot.yaml
+      params:
+        - name: snapshot
+          value: $(params.snapshot)
+      workspaces:
+        - name: output
+          workspace: release-workspace
+      when:
+        - input: "$(params.code-freeze)"
+          operator: in
+          values:
+            - "false"
+    - name: validate-latest-snapshot
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/validate-latest-snapshot.yaml
+      params:
+        - name: snapshotSpecFile
+          value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
+      workspaces:
+        - name: output
+          workspace: release-workspace
+      when:
+        - input: "$(params.code-freeze)"
+          operator: in
+          values:
+            - "false"
+    - name: verify-its
+      runAfter:
+        - parse-snapshot
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/verify-its.yaml
+      params:
+        - name: snapshotStatusFile
+          value: "$(tasks.parse-snapshot.results.snapshotStatusFile)"
+      workspaces:
+        - name: output
+          workspace: release-workspace
+      when:
+        - input: "$(tasks.validate-latest-snapshot.results.isLatest)"
+          operator: in
+          values:
+            - "true"
+        - input: "$(params.code-freeze)"
+          operator: in
+          values:
+            - "false"
+    - name: push-to-github
+      runAfter:
+        - verify-its
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/push-to-github.yaml
+      params:
+        - name: git-url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.revision)
+        - name: type
+          value: $(params.type)
+        - name: snapshotSpecFile
+          value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
+      workspaces:
+        - name: output
+          workspace: release-workspace
+      when:
+        - input: "$(tasks.validate-latest-snapshot.results.isLatest)"
+          operator: in
+          values:
+            - "true"
+        - input: "$(params.code-freeze)"
+          operator: in
+          values:
+            - "false"
+  workspaces:
+    - name: release-workspace

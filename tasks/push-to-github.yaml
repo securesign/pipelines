@@ -1,0 +1,146 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: push-to-github
+spec:
+  description: >
+    Tekton Task to clone and push rc images to GitHub
+  workspaces:
+    - name: output
+  params:
+    - name: git-url
+      description: Source Repository URL
+    - name: revision
+      description: Revision
+    - name: snapshotSpecFile
+      description: Path to the stored Snapshot spec JSON file
+    - name: type
+      description: The type of image being pushed, should be one of component, operator, or fbc
+  stepTemplate:
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+    env:
+      - name: HOME
+        value: /workspace
+      - name: GH_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: git-auth
+            key: token
+  steps:
+    - name: configure-and-clone
+      script: |
+        #!/usr/bin/env sh
+        set +x  # so we don't echo our token
+        set -e
+
+        if [ -z "$GH_TOKEN" ]; then
+          echo "GH_TOKEN is not set!"
+          exit 1
+        fi
+
+        # Configure Git
+        git config --global user.email "RHTAS-build-bot@users.noreply.github.com"
+        git config --global user.name "RHTAS-build-bot"
+
+        git config --global credential.helper "store --file=/workspace/credentials" 
+        echo "https://${GH_TOKEN}:x-oauth-basic@github.com" > /workspace/credentials
+        
+        git clone "$(params.git-url)" repo
+
+    - name: set-file-type
+      env:
+        - name: IMAGE_TYPE
+          value: '$(params.type)'
+        - name: FILE_NAME
+          value: '$(params.type).json'
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        if [ "$IMAGE_TYPE" = "fbc" ]; then
+          FILE_NAME="fbc.json"
+        elif [ "$IMAGE_TYPE" = "operator" ]; then
+          FILE_NAME="operator.json"
+        elif [ "$IMAGE_TYPE" = "component" ]; then
+          FILE_NAME="components.json"
+        else
+          echo "Unknown IMAGE_TYPE: $IMAGE_TYPE"
+          exit 1
+        fi
+
+        echo -n "$FILE_NAME"  
+        echo "FILE_NAME=$FILE_NAME" >> "$HOME/.env"
+
+    - name: push-snapshot
+      env:
+        - name: SNAPSHOT_SPEC_FILE_PATH
+          value: '$(params.snapshotSpecFile)'
+      script: |
+        #!/usr/bin/env sh
+        set -e
+        SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
+
+        if [ -f "$HOME/.env" ]; then
+          source "$HOME/.env"
+        else
+          echo "Error: .env file not found!"
+          exit 1
+        fi
+
+        echo "==== SNAPSHOT SPEC ===="
+        echo "${SNAPSHOT_SPEC}" | jq .
+
+        cd repo
+        git fetch origin
+        if git ls-remote --heads origin | grep -q "refs/heads/$(params.revision)"; then
+            echo "Branch $(params.revision) exists on remote. Checking out..."
+            git checkout -B "$(params.revision)" origin/"$(params.revision)"
+            git pull --rebase origin "$(params.revision)"
+        else
+            echo "Branch $(params.revision) does not exist. Creating and pushing it..."
+            git checkout -b "$(params.revision)"
+            git push origin "$(params.revision)"
+        fi
+
+        if [ ! -f "$FILE_NAME" ]; then
+          echo "[]" > "$FILE_NAME"
+        fi
+
+        jq --argjson newSnap "${SNAPSHOT_SPEC}" '
+          if any(.[]; .snapshot_spec.application == $newSnap.snapshot_spec.application) then
+            map(
+              if .snapshot_spec.application == $newSnap.snapshot_spec.application then
+                $newSnap
+              else
+                .
+              end
+            )
+          else
+            . + [ $newSnap ]
+          end
+        ' "$FILE_NAME" > tmp.json && mv tmp.json "$FILE_NAME"
+
+        git add "$FILE_NAME"
+        APP_NAME=$(echo "${SNAPSHOT_SPEC}" | jq -r '.snapshot_spec.application')
+        git commit -m ":robot:[RHTAS-build-bot] Promote "${APP_NAME}" to candidate"
+
+        MAX_RETRIES=5
+        attempt=0
+        while [ $attempt -lt $MAX_RETRIES ]; do
+            git fetch origin
+            git rebase origin/"$(params.revision)" || { echo "Rebase failed, retrying..."; git rebase --abort; }
+            if git push origin "$(params.revision)"; then
+                echo "Push successful"
+                break
+            else
+                attempt=$(( attempt + 1 ))
+                sleep_time=$(( 2 ** attempt ))
+                sleep $sleep_time
+            fi
+        done
+
+        if [ $attempt -eq $MAX_RETRIES ]; then
+            echo "Push failed after $MAX_RETRIES attempts. Exiting."
+            exit 1
+        fi
