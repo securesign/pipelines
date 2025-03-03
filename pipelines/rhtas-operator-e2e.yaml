@@ -283,13 +283,13 @@ spec:
               if [[ "$(tasks.parse-metadata.results.component)" == "rhtas-operator" || "$(tasks.parse-metadata.results.component)" == "rhtas-operator-bundle" ]]; then
                 echo "Cloning from $(tasks.parse-metadata.results.git-url)"
                 git clone "$(tasks.parse-metadata.results.git-url)" source
+                cd source
                 git checkout $(tasks.parse-metadata.results.git-revision)
               else
                 echo "Cloning from default url"
                 git clone "https://github.com/securesign/secure-sign-operator.git" source
+                cd source
               fi
-              cd source
-
           - name: install-keycloak
             ref:
               resolver: git
