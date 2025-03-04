@@ -359,12 +359,13 @@ spec:
                 mountPath: /dump
             script: |
               #!/bin/sh
-              set +e
+              set +e -o pipefail
               cd /repository/source
               export PATH="$PATH:/binaries"
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
+              go mod vendor
               make test-e2e | tee /dump/testOutput.log
               
               if [ $? -eq 0 ]; then
