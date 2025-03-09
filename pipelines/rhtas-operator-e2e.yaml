@@ -309,3 +309,13 @@ spec:
                 value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
+          - name: git-clone-tas-e2e
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            volumeMounts:
+              - name: repository
+                mountPath: /repository
+            script: |
+              cd /repository
+              echo "Cloning TAS e2e tests"
+              git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
+              cd sigstore-e2e
