@@ -353,4 +353,5 @@ spec:
                 mountPath: /dump
             script: |
               cd /repository/sigstore-e2e
+              go mod vendor
               make all
