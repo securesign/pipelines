@@ -345,9 +345,11 @@ spec:
             volumeMounts:
               - name: repository
                 mountPath: /repository
+              - name: credentials
+                mountPath: /credentials
             env:
-            - name: KUBECONFIG
-              value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             script: |
               oc status
               cd /repository/sigstore-e2e
