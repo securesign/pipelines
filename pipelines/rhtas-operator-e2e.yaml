@@ -355,6 +355,7 @@ spec:
             script: |
               export PATH="$PATH:/binaries"
               echo "Path: $PATH"
+              source ./tas-env-variables.sh
               cd /repository/sigstore-e2e
               go mod vendor
               make all
