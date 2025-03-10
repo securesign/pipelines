@@ -342,9 +342,27 @@ spec:
           - name: prepare-tas-e2e
             image: registry.redhat.io/openshift4/ose-cli
             onError: continue
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
             volumeMounts:
               - name: repository
                 mountPath: /repository
+            env:
+              - name: KUBECONFIG
+                value: "/credentials/$(params.KUBECONFIG)"
+              - name: WORKDIR
+                value: "$(params.workdir)"
+              - name: CLUSTERNAME
+                value: "$(params.clusterName)"
             script: |
               oc status
               cd /repository/sigstore-e2e
