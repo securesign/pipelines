@@ -339,4 +339,18 @@ spec:
               cd /repository
               echo "Cloning TAS e2e tests"
               git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
-              cd sigstore-e2e
+          - name: execute-tas-e2e
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            onError: continue
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+              - name: repository
+                mountPath: /repository
+              - name: binaries
+                mountPath: /binaries
+              - name: dump
+                mountPath: /dump
+            script: |
+              cd /repository/sigstore-e2e
+              make all
