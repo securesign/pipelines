@@ -352,6 +352,7 @@ spec:
               - name: dump
                 mountPath: /dump
             script: |
+              export PATH="$PATH:/binaries"
               cd /repository/sigstore-e2e
               go mod vendor
               make all
