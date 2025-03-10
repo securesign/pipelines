@@ -1,0 +1,46 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: install-tas-from-repository
+spec:
+  description: >-
+    This StepAction install trusted artifact signer.
+  image: registry.redhat.io/openshift4/ose-cli
+  params:
+    - name: credentials
+      type: string
+      description: Name of the volume with credentials.
+    - name: repository
+      type: string
+      description: Volume with resources to be applied.
+    - name: workdir
+      type: string
+      description: Repository home directory.
+      default: ""
+    - name: KUBECONFIG
+      type: string
+      description: KUBECONFIG path.
+    - name: clusterName
+      type: string
+      description: The name of a ClusterTemplateInstance.
+  volumeMounts:
+    - name: "$(params.credentials)"
+      mountPath: /credentials
+    - name: "$(params.repository)"
+      mountPath: /repository
+  env:
+    - name: KUBECONFIG
+      value: "/credentials/$(params.KUBECONFIG)"
+    - name: WORKDIR
+      value: "$(params.workdir)"
+    - name: CLUSTERNAME
+      value: "$(params.clusterName)"
+  script: |
+    echo "Cluster: $CLUSTERNAME"
+    cd /repository/$WORKDIR
+    sed -i 's#https://your-oidc-issuer-url#http://${CLUSTERNAME}/auth/realms/trusted-artifact-signer#' config/samples/rhtas_v1alpha1_securesign.yaml
+    sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1alpha1_securesign.yaml
+    oc create ns tas-e2e
+    oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n tas-e2e
+    sleep 1
+    oc wait --for=condition=Ready securesign/securesign-sample --timeout=5m -n tas-e2e
