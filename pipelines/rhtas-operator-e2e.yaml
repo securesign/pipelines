@@ -356,13 +356,6 @@ spec:
             volumeMounts:
               - name: repository
                 mountPath: /repository
-            env:
-              - name: KUBECONFIG
-                value: "/credentials/$(params.KUBECONFIG)"
-              - name: WORKDIR
-                value: "$(params.workdir)"
-              - name: CLUSTERNAME
-                value: "$(params.clusterName)"
             script: |
               oc status
               cd /repository/sigstore-e2e
