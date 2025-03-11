@@ -36,7 +36,6 @@ spec:
     - name: CLUSTERNAME
       value: "$(params.clusterName)"
   script: |
-    echo "Cluster: $CLUSTERNAME"
     cd /repository/$WORKDIR
     sed -i 's#https://your-oidc-issuer-url#http://${CLUSTERNAME}/auth/realms/trusted-artifact-signer#' config/samples/rhtas_v1alpha1_securesign.yaml
     sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1alpha1_securesign.yaml
