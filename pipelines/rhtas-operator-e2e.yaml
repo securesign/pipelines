@@ -342,10 +342,10 @@ spec:
           - name: prepare-tas-e2e
             image: registry.redhat.io/openshift4/ose-cli
             volumeMounts:
-              - name: repository
-                mountPath: /repository
               - name: credentials
                 mountPath: /credentials
+              - name: repository
+                mountPath: /repository
             env:
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
@@ -364,10 +364,6 @@ spec:
                 mountPath: /credentials
               - name: repository
                 mountPath: /repository
-              - name: binaries
-                mountPath: /binaries
-              - name: dump
-                mountPath: /dump
             env:
               - name: OIDC_HOST
                 value: "$(steps.install-keycloak.results.oidc-hostname)"
@@ -382,7 +378,5 @@ spec:
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
-              podman --version
-              docker --version
               go mod vendor
               make build test
