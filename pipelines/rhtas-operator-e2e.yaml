@@ -369,6 +369,8 @@ spec:
               - name: dump
                 mountPath: /dump
             env:
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: CLI_STRATEGY
                 value: "openshift"
             script: |
