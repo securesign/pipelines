@@ -365,6 +365,9 @@ spec:
                 mountPath: /binaries
               - name: dump
                 mountPath: /dump
+            env:
+              - name: CLI_STRATEGY
+                value: "openshift"
             script: |
               export PATH="$PATH:/binaries"
               echo "Path: $PATH"
