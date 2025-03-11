@@ -350,8 +350,11 @@ spec:
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             script: |
+              oc version
+              oc get clusterversion
               oc status
               oc project tas-e2e
+              oc get consoleclidownloads
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e
