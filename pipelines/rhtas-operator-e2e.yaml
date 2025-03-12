@@ -232,8 +232,7 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
-    - name: run-e2e
-      runAfter:
+    - name: prepare-tests
         # run after either one
         - install-operator-from-image
         - install-operator-from-bundle
@@ -242,6 +241,11 @@ spec:
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
+        results:
+          - name: kubeconfig
+            value: "$(steps.get-kubeconfig.results.kubeconfig)"
+          - name: oidc-hostname
+            value: "$(steps.install-keycloak.results.oidc-hostname)"
         volumes:
           - name: credentials
             emptyDir: { }
@@ -306,81 +310,130 @@ spec:
               - name: repository
                 value: repository
               - name: KUBECONFIG
-                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+                value: "$(tasks.prepare-tests.results.kubeconfig)"
               - name: workdir
                 value: source
-          - name: install-tas
-            onError: continue
+    - name: run-e2e
+      runAfter:
+        # run after either one
+        - prepare-tests
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
+        steps:
+          - name: get-tuftool
             ref:
               resolver: git
               params:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: ppinkas/konflux-e2e
+                  value: main
                 - name: pathInRepo
-                  value: stepactions/install-tas.yaml
+                  value: stepactions/extract-tuftool.yaml
             params:
-              - name: credentials
-                value: credentials
-              - name: repository
-                value: repository
-              - name: KUBECONFIG
-                value: "$(steps.get-kubeconfig.results.kubeconfig)"
-              - name: workdir
-                value: source
-              - name: clusterName
-                value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: git-clone-tas-e2e
+              - name: volume
+                value: binaries
+          - name: get-cosign
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/extract-cosign.yaml
+            params:
+              - name: volume
+                value: binaries
+          - name: execute-e2e
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
             onError: continue
-            volumeMounts:
-              - name: repository
-                mountPath: /repository
-            script: |
-              cd /repository
-              echo "Cloning TAS e2e tests"
-              git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
-          - name: prepare-tas-e2e
-            image: registry.redhat.io/openshift4/ose-cli
-            volumeMounts:
-              - name: credentials
-                mountPath: /credentials
-              - name: repository
-                mountPath: /repository
-            env:
-              - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-            script: |
-              oc version
-              oc get clusterversion
-              oc status
-              oc project tas-e2e
-              oc get consoleclidownloads
-              oc get pods
-              cd /repository/sigstore-e2e
-              ./tas-env-variables.sh > .env
-          - name: execute-tas-e2e
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
-            volumeMounts:
-              - name: credentials
-                mountPath: /credentials
-              - name: repository
-                mountPath: /repository
+            results:
+              - name: status
+                type: string
             env:
               - name: OIDC_HOST
-                value: "$(steps.install-keycloak.results.oidc-hostname)"
+                value: "$(tasks.prepare-tests.results.oidc-hostname)"
               - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-              - name: CLI_STRATEGY
-                value: "openshift"
+                value: "/credentials/$(tasks.prepare-tests.results.kubeconfig)"
+              - name: CI
+                value: "true"
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+              - name: repository
+                mountPath: /repository
+              - name: binaries
+                mountPath: /binaries
+              - name: dump
+                mountPath: /dump
             script: |
+              #!/bin/sh
+              set +e -o pipefail
+              cd /repository/source
               export PATH="$PATH:/binaries"
-              echo "Path: $PATH"
-              cd /repository/sigstore-e2e
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
               go mod vendor
-              make build
-              go test -v ./test/tuftool
+              #make test-e2e | tee /dump/testOutput.log
+              
+              if [ $? -eq 0 ]; then
+                echo -n "success" > "$(step.results.status.path)"
+              else
+                cp test/**/k8s-dump-*.tar.gz /dump
+                echo "Dumping files:"
+                ls /dump
+                echo -n "fail" >  "$(step.results.status.path)"
+                exit 1
+              fi
+          - name: secure-push-oci
+            when:
+              - input: "$(steps.execute-e2e.results.status)"
+                operator: notin
+                values: [ "success" ]
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/secure-push-oci.yaml
+            params:
+              - name: oci-ref
+                value: "quay.io/securesign/test-dump-oci:$(tasks.parse-metadata.results.git-revision)"
+              - name: credentials-volume-name
+                value: push-creds
+              - name: artifacts-volume-name
+                value: dump
+              - name: oci-tag-expiration
+                value: 1d
+            # workaround - extract dump-push step to separate action once KONFLUX-5535 is resolved
+          - name: report-status
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            env:
+              - name: STATUS
+                value: "$(steps.execute-e2e.results.status)"
+            script: |
+              #!/bin/bash
+              if [ "$STATUS" != "success" ]; then
+              echo "Test failure"
+              exit 1 
+              fi
