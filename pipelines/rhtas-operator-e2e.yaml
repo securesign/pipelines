@@ -242,6 +242,9 @@ spec:
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
+        results:
+          - name: kubeconfig
+            value: "$(steps.get-kubeconfig.results.kubeconfig)"
         volumes:
           - name: credentials
             emptyDir: { }
