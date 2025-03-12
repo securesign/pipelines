@@ -271,7 +271,7 @@ spec:
                   value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
             params:
               - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
+                value: "$(tasks.provision-eaas-space.results.secretRef)"
               - name: clusterName
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
