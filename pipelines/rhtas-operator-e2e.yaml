@@ -232,7 +232,8 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
-    - name: prepare-tests
+    - name: run-e2e
+      runAfter:
         # run after either one
         - install-operator-from-image
         - install-operator-from-bundle
@@ -241,11 +242,6 @@ spec:
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
-        results:
-          - name: kubeconfig
-            value: "$(steps.get-kubeconfig.results.kubeconfig)"
-          - name: oidc-hostname
-            value: "$(steps.install-keycloak.results.oidc-hostname)"
         volumes:
           - name: credentials
             emptyDir: { }
@@ -271,7 +267,7 @@ spec:
                   value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
             params:
               - name: eaasSpaceSecretRef
-                value: "$(tasks.provision-eaas-space.results.secretRef)"
+                value: $(tasks.provision-eaas-space.results.secretRef)
               - name: clusterName
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
@@ -313,27 +309,6 @@ spec:
                 value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
-    - name: run-e2e
-      runAfter:
-        # run after either one
-        - prepare-tests
-      params:
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-      taskSpec:
-        volumes:
-          - name: credentials
-            emptyDir: { }
-          - name: repository
-            emptyDir: { }
-          - name: binaries
-            emptyDir: { }
-          - name: dump
-            emptyDir: { }
-          - name: push-creds
-            secret:
-              secretName: securesign-test-dump-oci
-        steps:
           - name: get-tuftool
             ref:
               resolver: git
@@ -368,9 +343,9 @@ spec:
                 type: string
             env:
               - name: OIDC_HOST
-                value: "$(tasks.prepare-tests.results.oidc-hostname)"
+                value: "$(steps.install-keycloak.results.oidc-hostname)"
               - name: KUBECONFIG
-                value: "/credentials/$(tasks.prepare-tests.results.kubeconfig)"
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: CI
                 value: "true"
             volumeMounts:
