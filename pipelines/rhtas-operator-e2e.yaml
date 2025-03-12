@@ -310,7 +310,7 @@ spec:
               - name: repository
                 value: repository
               - name: KUBECONFIG
-                value: "$(tasks.prepare-tests.results.kubeconfig)"
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
     - name: run-e2e
