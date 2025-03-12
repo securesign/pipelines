@@ -310,6 +310,7 @@ spec:
               - name: workdir
                 value: source
           - name: install-tas
+            onError: continue
             ref:
               resolver: git
               params:
@@ -319,7 +320,6 @@ spec:
                   value: ppinkas/konflux-e2e
                 - name: pathInRepo
                   value: stepactions/install-tas.yaml
-              onError: continue
             params:
               - name: credentials
                 value: credentials
