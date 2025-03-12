@@ -245,6 +245,8 @@ spec:
         results:
           - name: kubeconfig
             value: "$(steps.get-kubeconfig.results.kubeconfig)"
+          - name: oidc-hostname
+            value: "$(steps.install-keycloak.results.oidc-hostname)"
         volumes:
           - name: credentials
             emptyDir: { }
@@ -275,27 +277,6 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
-    - name: run-e2e
-      runAfter:
-        - prepare-tests
-      params:
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-      taskSpec:
-        volumes:
-          - name: credentials
-            emptyDir: { }
-          - name: repository
-            emptyDir: { }
-          - name: binaries
-            emptyDir: { }
-          - name: dump
-            emptyDir: { }
-          - name: push-creds
-            secret:
-              secretName: securesign-test-dump-oci
-        steps:
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
@@ -330,9 +311,29 @@ spec:
               - name: repository
                 value: repository
               - name: KUBECONFIG
-                value: "$(tasks.prepare-tests.results.kubeconfig)"
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
+    - name: run-e2e
+      runAfter:
+        - prepare-tests
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
+        steps:
           - name: get-tuftool
             ref:
               resolver: git
@@ -367,7 +368,7 @@ spec:
                 type: string
             env:
               - name: OIDC_HOST
-                value: "$(steps.install-keycloak.results.oidc-hostname)"
+                value: "$(tasks.prepare-tests.results.oidc-hostname)"
               - name: KUBECONFIG
                 value: "/credentials/$(tasks.prepare-tests.results.kubeconfig)"
               - name: CI
