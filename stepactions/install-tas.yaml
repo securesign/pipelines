@@ -43,4 +43,3 @@ spec:
     oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n tas-e2e
     sleep 1
     oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n tas-e2e
-    oc get pods
