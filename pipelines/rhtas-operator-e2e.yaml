@@ -172,10 +172,11 @@ spec:
           value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
+      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: [ "rhtas-operator-bundle" ]
+          values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-2" ]
     - name: install-operator-from-image
       runAfter:
         - provision-cluster
@@ -200,10 +201,11 @@ spec:
           value: "$(params.NAMESPACE)"
         - name: resources_url
           value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
+      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: [ "rhtas-operator" ]
+          values: [ "rhtas-operator", "rhtas-operator-v1-2" ]
     - name: install-operator-from-fbc
       timeout: "0h5m0s"
       runAfter:
