@@ -2,3 +2,4 @@ resources:
   - operator
   - operator-v1-0
   - operator-v1-1
+  - operator-v1-2
