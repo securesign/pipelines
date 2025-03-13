@@ -19,6 +19,25 @@ spec:
       default: default
       type: string
   tasks:
+    - name: git-clone
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: ppinkas/konflux-e2e
+          - name: pathInRepo
+            value: stepactions/git-clone-operator.yaml
+      params:
+        - name: operator-component
+          value: "$(tasks.parse-metadata.results.component)"
+        - name: git-url
+          value: "$(tasks.parse-metadata.results.git-url)"
+        - name: git-revision
+          value: "$(tasks.parse-metadata.results.git-revision)"
+        - name: repository
+          value: repository
     - name: parse-metadata
       taskRef:
         resolver: git
@@ -293,6 +312,8 @@ spec:
                 value: "$(tasks.parse-metadata.results.git-url)"
               - name: git-revision
                 value: "$(tasks.parse-metadata.results.git-revision)"
+              - name: repository
+                value: repository
           - name: install-keycloak
             ref:
               resolver: git
