@@ -594,8 +594,6 @@ spec:
               - name: CLI_STRATEGY
                 value: "openshift"
             script: |
-              export PATH="$PATH:/binaries"
-              echo "Path: $PATH"
               cd /repository/sigstore-e2e
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
@@ -603,3 +601,4 @@ spec:
               go mod vendor
               make build
               go test -v ./test/tuftool
+              
