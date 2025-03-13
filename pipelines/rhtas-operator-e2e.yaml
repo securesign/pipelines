@@ -54,6 +54,9 @@ spec:
         results:
           - name: clusterName
             value: "$(steps.create-cluster.results.clusterName)"
+        volumes:
+          - name: repository
+            emptyDir: { }
         steps:
           - name: pick-version
             ref:
