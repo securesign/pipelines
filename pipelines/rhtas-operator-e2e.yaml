@@ -276,7 +276,7 @@ spec:
               - name: credentials
                 value: credentials
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
-          - name: git-clone
+          - name: git-clone-operator
             ref:
               resolver: git
               params:
@@ -378,7 +378,7 @@ spec:
               - name: credentials
                 value: credentials
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
-          - name: git-clone
+          - name: git-clone-operator
             ref:
               resolver: git
               params:
@@ -511,7 +511,7 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: git-clone
+          - name: git-clone-operator
             ref:
               resolver: git
               params:
