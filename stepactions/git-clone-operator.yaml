@@ -22,13 +22,20 @@ spec:
   volumeMounts:
     - name: "$(params.repository)"
       mountPath: /repository
+  env:
+    - name: OPERATOR_COMPONENT
+      value: "$(params.operator-component)"
+    - name: GIT_URL
+      value: "$(params.git-url)"
+    - name: GIT_REVISION
+      value: "$(params.git-revision)"
   script: |
     cd /repository
-    if [[ "$(params.operator-component)" == "rhtas-operator" || "$(params.operator-component)" == "rhtas-operator-bundle" ]]; then
-      echo "Cloning from $(params.git-url)"
-      git clone "$(params.git-url)" source
+    if [[ "$OPERATOR_COMPONENT" == "rhtas-operator" || "$OPERATOR_COMPONENT" == "rhtas-operator-bundle" ]]; then
+      echo "Cloning from $GIT_URL"
+      git clone $GIT_URL source
       cd source
-      git checkout $(params.git-revision)
+      git checkout $GIT_REVISION
     else
       echo "Cloning from default url"
       git clone "https://github.com/securesign/secure-sign-operator.git" source
