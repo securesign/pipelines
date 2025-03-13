@@ -573,6 +573,7 @@ spec:
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             script: |
+              oc get clusterversion
               oc version
               oc project tas-e2e
               oc get consoleclidownloads
