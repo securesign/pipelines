@@ -74,6 +74,19 @@ spec:
           - name: clusterName
             value: "$(steps.create-cluster.results.clusterName)"
         steps:
+          - name: pick-version
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+            params:
+              - name: prefix
+                value: "$(params.OCP_VERSION)"
           - name: git-clone
             ref:
               resolver: git
@@ -93,19 +106,6 @@ spec:
                 value: "$(tasks.parse-metadata.results.git-revision)"
               - name: repository
                 value: repository
-          - name: pick-version
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
-            params:
-              - name: prefix
-                value: "$(params.OCP_VERSION)"
           - name: create-cluster
             ref:
               resolver: git
@@ -315,24 +315,22 @@ spec:
                 value: credentials
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: ppinkas/konflux-e2e
-                - name: pathInRepo
-                  value: stepactions/git-clone-operator.yaml
-            params:
-              - name: operator-component
-                value: "$(tasks.parse-metadata.results.component)"
-              - name: git-url
-                value: "$(tasks.parse-metadata.results.git-url)"
-              - name: git-revision
-                value: "$(tasks.parse-metadata.results.git-revision)"
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            volumeMounts:
               - name: repository
-                value: repository
+                mountPath: /repository
+            script: |
+              cd /repository
+              if [[ "$(tasks.parse-metadata.results.component)" == "rhtas-operator" || "$(tasks.parse-metadata.results.component)" == "rhtas-operator-bundle" ]]; then
+                echo "Cloning from $(tasks.parse-metadata.results.git-url)"
+                git clone "$(tasks.parse-metadata.results.git-url)" source
+                cd source
+                git checkout $(tasks.parse-metadata.results.git-revision)
+              else
+                echo "Cloning from default url"
+                git clone "https://github.com/securesign/secure-sign-operator.git" source
+                cd source
+              fi
           - name: install-keycloak
             ref:
               resolver: git
