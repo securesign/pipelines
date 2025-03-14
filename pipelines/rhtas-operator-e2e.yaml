@@ -172,11 +172,10 @@ spec:
           value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
-      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-2" ]
+          values: [ "rhtas-operator-bundle" ]
     - name: install-operator-from-image
       runAfter:
         - provision-cluster
@@ -201,11 +200,10 @@ spec:
           value: "$(params.NAMESPACE)"
         - name: resources_url
           value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
-      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: [ "rhtas-operator", "rhtas-operator-v1-2" ]
+          values: [ "rhtas-operator" ]
     - name: install-operator-from-fbc
       timeout: "0h5m0s"
       runAfter:
@@ -234,7 +232,7 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
-    - name: run-e2e
+    - name: prepare-tests
       runAfter:
         # run after either one
         - install-operator-from-image
@@ -244,6 +242,9 @@ spec:
         - name: namespace
           value: "$(params.NAMESPACE)"
       taskSpec:
+        results:
+          - name: oidc-hostname
+            value: "$(steps.install-keycloak.results.oidc-hostname)"
         volumes:
           - name: credentials
             emptyDir: { }
@@ -275,23 +276,25 @@ spec:
               - name: credentials
                 value: credentials
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
-          - name: git-clone
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
-            volumeMounts:
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: ppinkas/konflux-e2e
+                - name: pathInRepo
+                  value: stepactions/git-clone-operator.yaml
+            params:
+              - name: operator-component
+                value: "$(tasks.parse-metadata.results.component)"
+              - name: git-url
+                value: "$(tasks.parse-metadata.results.git-url)"
+              - name: git-revision
+                value: "$(tasks.parse-metadata.results.git-revision)"
               - name: repository
-                mountPath: /repository
-            script: |
-              cd /repository
-              if [[ "$(tasks.parse-metadata.results.component)" == "rhtas-operator" || "$(tasks.parse-metadata.results.component)" == "rhtas-operator-bundle" ]]; then
-                echo "Cloning from $(tasks.parse-metadata.results.git-url)"
-                git clone "$(tasks.parse-metadata.results.git-url)" source
-                cd source
-                git checkout $(tasks.parse-metadata.results.git-revision)
-              else
-                echo "Cloning from default url"
-                git clone "https://github.com/securesign/secure-sign-operator.git" source
-                cd source
-              fi
+                value: repository
           - name: install-keycloak
             ref:
               resolver: git
@@ -311,6 +314,26 @@ spec:
                 value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
+    - name: run-operator-e2e
+      runAfter:
+        - prepare-tests
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
+        steps:
           - name: get-tuftool
             ref:
               resolver: git
@@ -337,7 +360,44 @@ spec:
             params:
               - name: volume
                 value: binaries
-          - name: execute-e2e
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: ppinkas/konflux-e2e
+                - name: pathInRepo
+                  value: stepactions/git-clone-operator.yaml
+            params:
+              - name: operator-component
+                value: "$(tasks.parse-metadata.results.component)"
+              - name: git-url
+                value: "$(tasks.parse-metadata.results.git-url)"
+              - name: git-revision
+                value: "$(tasks.parse-metadata.results.git-revision)"
+              - name: repository
+                value: repository
+          - name: execute-operator-e2e
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
             onError: continue
             results:
@@ -345,7 +405,7 @@ spec:
                 type: string
             env:
               - name: OIDC_HOST
-                value: "$(steps.install-keycloak.results.oidc-hostname)"
+                value: "$(tasks.prepare-tests.results.oidc-hostname)"
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: CI
@@ -381,7 +441,7 @@ spec:
               fi
           - name: secure-push-oci
             when:
-              - input: "$(steps.execute-e2e.results.status)"
+              - input: "$(steps.execute-operator-e2e.results.status)"
                 operator: notin
                 values: [ "success" ]
             ref:
@@ -407,10 +467,138 @@ spec:
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
             env:
               - name: STATUS
-                value: "$(steps.execute-e2e.results.status)"
+                value: "$(steps.execute-operator-e2e.results.status)"
             script: |
               #!/bin/bash
               if [ "$STATUS" != "success" ]; then
               echo "Test failure"
               exit 1 
               fi
+    - name: run-tas-e2e
+      runAfter:
+        - prepare-tests
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
+        steps:
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: ppinkas/konflux-e2e
+                - name: pathInRepo
+                  value: stepactions/git-clone-operator.yaml
+            params:
+              - name: operator-component
+                value: "$(tasks.parse-metadata.results.component)"
+              - name: git-url
+                value: "$(tasks.parse-metadata.results.git-url)"
+              - name: git-revision
+                value: "$(tasks.parse-metadata.results.git-revision)"
+              - name: repository
+                value: repository
+          - name: install-tas
+            onError: continue
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: ppinkas/konflux-e2e
+                - name: pathInRepo
+                  value: stepactions/install-tas.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: git-clone-tas-e2e
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            onError: continue
+            volumeMounts:
+              - name: repository
+                mountPath: /repository
+            script: |
+              cd /repository
+              echo "Cloning TAS e2e tests"
+              git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
+          - name: prepare-tas-e2e
+            image: registry.redhat.io/openshift4/ose-cli
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+              - name: repository
+                mountPath: /repository
+            env:
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+            script: |
+              oc get clusterversion
+              oc version
+              oc project tas-e2e
+              oc get consoleclidownloads
+              oc get pods
+              cd /repository/sigstore-e2e
+              ./tas-env-variables.sh > .env
+          - name: execute-tas-e2e
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+              - name: repository
+                mountPath: /repository
+            env:
+              - name: OIDC_HOST
+                value: "$(tasks.prepare-tests.results.oidc-hostname)"
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: CLI_STRATEGY
+                value: "openshift"
+            script: |
+              cd /repository/sigstore-e2e
+              export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
+              openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
+              export SSL_CERT_FILE=/tmp/ssl.cert
+              go mod vendor
+              make build
+              go test -v ./test/tuftool
