@@ -276,7 +276,7 @@ spec:
                 value: credentials
           # workaround - IntegrationTest pipelines does not support workspaces ATM - it is not possible to use git-clone task
           - name: git-clone
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:44fd8f88f3b6463cda15571260f9ca3a0b78d3c8c8827a338e04ab3a23581a88
             volumeMounts:
               - name: repository
                 mountPath: /repository
@@ -338,7 +338,7 @@ spec:
               - name: volume
                 value: binaries
           - name: execute-e2e
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:44fd8f88f3b6463cda15571260f9ca3a0b78d3c8c8827a338e04ab3a23581a88
             onError: continue
             results:
               - name: status
@@ -404,7 +404,7 @@ spec:
                 value: 1d
             # workaround - extract dump-push step to separate action once KONFLUX-5535 is resolved
           - name: report-status
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:6a4a05d24acecde63d9c7c8c986ad9e5e20da2c2ce30312b328ed771736e7a1f
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:44fd8f88f3b6463cda15571260f9ca3a0b78d3c8c8827a338e04ab3a23581a88
             env:
               - name: STATUS
                 value: "$(steps.execute-e2e.results.status)"
