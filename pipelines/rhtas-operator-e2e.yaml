@@ -570,6 +570,8 @@ spec:
               buildah pull alpine:latest
               buildah tag alpine:latest ttl.sh/sigstore-konflux-test:10m 
               buildah push ttl.sh/sigstore-konflux-test:10m
+            securityContext:
+              privileged: true
           - name: prepare-tas-e2e
             image: registry.redhat.io/openshift4/ose-cli
             volumeMounts:
