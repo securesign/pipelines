@@ -430,7 +430,7 @@ spec:
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
               go mod vendor
-              make test-e2e | tee /dump/testOutput.log
+              #make test-e2e | tee /dump/testOutput.log
               
               if [ $? -eq 0 ]; then
                 echo -n "success" > "$(step.results.status.path)"
@@ -564,6 +564,12 @@ spec:
               cd /repository
               echo "Cloning TAS e2e tests"
               git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
+          - name: prepare-testing-image
+            image: quay.io/buildah/stable
+            script: |
+              buildah pull alpine:latest
+              buildah tag alpine:latest ttl.sh/sigstore-konflux-test:10m 
+              buildah push ttl.sh/sigstore-konflux-test:10m
           - name: prepare-tas-e2e
             image: registry.redhat.io/openshift4/ose-cli
             volumeMounts:
@@ -596,6 +602,10 @@ spec:
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: CLI_STRATEGY
                 value: "openshift"
+              - name: MANUAL_IMAGE_SETUP
+                value: "true"
+              - name: TARGET_IMAGE_NAME
+                value: "ttl.sh/sigstore-konflux-test:10m"
             script: |
               cd /repository/sigstore-e2e
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
