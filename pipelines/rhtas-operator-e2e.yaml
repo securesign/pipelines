@@ -621,5 +621,4 @@ spec:
               openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
               go mod vendor
-              make build
-              go test -v ./test/...
+              make build test
