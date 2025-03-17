@@ -141,7 +141,7 @@ spec:
                   - source: registry.redhat.io/rhtas/timestamp-authority-rhel9
                     mirrors:
                     - quay.io/securesign/timestamp-authority
-                  - source: registry.redhat.io/rhtas/trillian-createtree-rhel9
+                  - source: registry.redhat.io/rhtas/createtree-rhel9
                     mirrors:
                     - quay.io/securesign/trillian-createtree
                   - source: registry.redhat.io/rhtas/client-server-rhel9
