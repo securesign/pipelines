@@ -560,8 +560,11 @@ spec:
               cd /repository
               echo "Cloning TAS e2e tests"
               git clone "https://github.com/securesign/sigstore-e2e" sigstore-e2e
-          - image: quay.io/konflux-ci/buildah-task:latest@sha256:ab0ba3b70f99faa74d2dd737422a965197af4922dec0109113bc535a94db0dfd
-            name: push-test-image
+          - name: push-test-image
+            image: quay.io/konflux-ci/buildah-task:latest@sha256:ab0ba3b70f99faa74d2dd737422a965197af4922dec0109113bc535a94db0dfd
+            results:
+              - name: image
+                type: string
             securityContext:
               capabilities:
                 add:
@@ -587,13 +590,10 @@ spec:
               - name: repository
                 mountPath: /repository
             env:
-              - name: TARGET_IMAGE_NAME
-                value: "$(steps.push-test-image.results.image)"
-              - name: MANUAL_IMAGE_SETUP
-                value: "true"
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             script: |
+              oc project tas-e2e
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e
@@ -610,6 +610,10 @@ spec:
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: CLI_STRATEGY
                 value: "openshift"
+              - name: TARGET_IMAGE_NAME
+                value: "$(steps.push-test-image.results.image)"
+              - name: MANUAL_IMAGE_SETUP
+                value: "true"
             script: |
               cd /repository/sigstore-e2e
               export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
