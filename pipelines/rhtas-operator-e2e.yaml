@@ -19,6 +19,32 @@ spec:
       default: default
       type: string
   tasks:
+    - name: buildah
+      taskSpec:
+        results:
+          - name: test-image
+            value: "$(steps.push-test-image.results.image)"
+        steps:
+          - image: quay.io/konflux-ci/buildah-task:latest@sha256:ab0ba3b70f99faa74d2dd737422a965197af4922dec0109113bc535a94db0dfd
+            name: push-test-image
+            securityContext:
+              capabilities:
+                add:
+                  - SETFCAP
+            computeResources:
+              limits:
+                memory: 8Gi
+              requests:
+                memory: 2Gi
+                cpu: '1'
+            script: |
+              #!/bin/sh
+              IMAGE=ttl.sh/sigstore-test-$((RANDOM % 4294967295 + 1000)):20m
+              echo $IMAGE > "$(step.results.image.path)"
+              buildah pull alpine:latest
+              buildah tag alpine:latest $IMAGE
+              buildah push $IMAGE
+
     - name: parse-metadata
       taskRef:
         resolver: git
