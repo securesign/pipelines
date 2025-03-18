@@ -94,11 +94,13 @@ spec:
                       - quay.io/securesign/rhtas-operator-bundle
                       - quay.io/securesign/rhtas-operator-bundle-v1-0
                       - quay.io/securesign/rhtas-operator-bundle-v1-1
+                      - quay.io/securesign/rhtas-operator-bundle-v1-2
                   - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
                     mirrors:
                       - quay.io/securesign/rhtas-operator
                       - quay.io/securesign/rhtas-operator-v1-0
                       - quay.io/securesign/rhtas-operator-v1-1
+                      - quay.io/securesign/rhtas-operator-v1-2
                   - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
                     mirrors:
                     - quay.io/securesign/trillian-logsigner
@@ -141,7 +143,7 @@ spec:
                   - source: registry.redhat.io/rhtas/timestamp-authority-rhel9
                     mirrors:
                     - quay.io/securesign/timestamp-authority
-                  - source: registry.redhat.io/rhtas/trillian-createtree-rhel9
+                  - source: registry.redhat.io/rhtas/createtree-rhel9
                     mirrors:
                     - quay.io/securesign/trillian-createtree
                   - source: registry.redhat.io/rhtas/client-server-rhel9
