@@ -14,8 +14,6 @@ spec:
   results:
     - name: snapshotSpecFile
       description: Path to the stored Snapshot spec JSON file
-    - name: snapshotStatusFile
-      description: Path to the stored Snapshot status JSON file
   steps:
     - name: collect-snapshot-spec
       image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
@@ -51,20 +49,7 @@ spec:
         )
 
         SNAPSHOT_SPEC_FILE="/workspace/output/snapshot_spec.json"
-        SNAPSHOT_STATUS_FILE="/workspace/output/snapshot_status.json"
-
         echo -e "\nFetched Snapshot:"
         echo -e "$SNAPSHOT_SPEC_JSON"
         echo "$SNAPSHOT_SPEC_JSON" > "$SNAPSHOT_SPEC_FILE"
         echo -n "$SNAPSHOT_SPEC_FILE" > "$(results.snapshotSpecFile.path)"
-
-        echo -e "\nFetching Snapshot Status..."
-        SNAPSHOT_STATUS=$(echo "$SNAPSHOT_JSON" | jq '.status')
-
-        SNAPSHOT_STATUS_JSON=$(jq -n --argjson status "$SNAPSHOT_STATUS" \
-          '{ snapshot_status: $status }'
-        )
-
-        echo -e "$SNAPSHOT_STATUS_JSON"
-        echo "$SNAPSHOT_STATUS_JSON" > "$SNAPSHOT_STATUS_FILE"
-        echo -n "$SNAPSHOT_STATUS_FILE" > "$(results.snapshotStatusFile.path)"

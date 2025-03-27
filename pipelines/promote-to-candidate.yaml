@@ -67,33 +67,6 @@ spec:
           operator: in
           values:
             - "false"
-    - name: verify-its
-      runAfter:
-        - parse-snapshot
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: "https://github.com/securesign/pipelines.git"
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: tasks/verify-its.yaml
-      params:
-        - name: snapshotStatusFile
-          value: "$(tasks.parse-snapshot.results.snapshotStatusFile)"
-      workspaces:
-        - name: output
-          workspace: release-workspace
-      when:
-        - input: "$(tasks.validate-latest-snapshot.results.isLatest)"
-          operator: in
-          values:
-            - "true"
-        - input: "$(params.code-freeze)"
-          operator: in
-          values:
-            - "false"
     - name: push-to-github
       runAfter:
         - verify-its
