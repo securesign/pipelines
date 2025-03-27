@@ -235,7 +235,7 @@ spec:
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
-          values: [ "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
+          values: ["fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-13" ]
     - name: run-e2e
       runAfter:
         # run after either one
