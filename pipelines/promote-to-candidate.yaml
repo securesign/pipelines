@@ -47,6 +47,8 @@ spec:
           values:
             - "false"
     - name: validate-latest-snapshot
+      runAfter:
+        - parse-snapshot
       taskRef:
         resolver: git
         params:
@@ -69,7 +71,7 @@ spec:
             - "false"
     - name: push-to-github
       runAfter:
-        - verify-its
+        - validate-latest-snapshot
       taskRef:
         resolver: git
         params:
