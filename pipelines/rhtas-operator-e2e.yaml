@@ -86,7 +86,7 @@ spec:
               - name: instanceType
                 value: m5.large
               - name: timeout
-                value: 40m
+                value: 60m
               - name: imageContentSources
                 value: |
                   - source: registry.redhat.io/rhtas/rhtas-operator-bundle
