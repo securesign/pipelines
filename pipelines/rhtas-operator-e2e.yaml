@@ -39,7 +39,7 @@ spec:
           - name: name
             value: eaas-provision-space
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-0351e1e3df028e27e43877d9ca7e646be4ff2d65
+            value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-4e4fa7355a6a51083954408e7e3b647e3bddb8d8
           - name: kind
             value: task
       params:
