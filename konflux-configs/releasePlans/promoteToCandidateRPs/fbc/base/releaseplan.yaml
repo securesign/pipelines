@@ -13,7 +13,7 @@ spec:
     - name: git-url
       value: https://github.com/securesign/releases
     - name: code-freeze
-      value: "false"
+      value: "true"
     - name: type
       value: "fbc"
     serviceAccountName: rhtas-build-bot
