@@ -16,6 +16,8 @@ spec:
       description: Path to the stored Snapshot spec JSON file
     - name: type
       description: The type of image being pushed, should be one of component, operator, or fbc
+    - name: file-name
+      description: Name of file to push to in $(params.git-url)
   stepTemplate:
     image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
     workingDir: /workspace/output/source
@@ -52,24 +54,28 @@ spec:
       env:
         - name: IMAGE_TYPE
           value: '$(params.type)'
-        - name: FILE_NAME
-          value: '$(params.type).json'
+        - name: INPUT_FILE_NAME
+          value: '$(params.file-name)'
       script: |
         #!/usr/bin/env sh
         set -e
 
-        if [ "$IMAGE_TYPE" = "fbc" ]; then
-          FILE_NAME="fbc.json"
-        elif [ "$IMAGE_TYPE" = "operator" ]; then
-          FILE_NAME="operator.json"
-        elif [ "$IMAGE_TYPE" = "component" ]; then
-          FILE_NAME="components.json"
+        if [ -n "$INPUT_FILE_NAME" ]; then
+          FILE_NAME="$INPUT_FILE_NAME"
         else
-          echo "Unknown IMAGE_TYPE: $IMAGE_TYPE"
-          exit 1
+          if [ "$IMAGE_TYPE" = "fbc" ]; then
+            FILE_NAME="fbc.json"
+          elif [ "$IMAGE_TYPE" = "operator" ]; then
+            FILE_NAME="operator.json"
+          elif [ "$IMAGE_TYPE" = "component" ]; then
+            FILE_NAME="components.json"
+          else
+            echo "Unknown IMAGE_TYPE: $IMAGE_TYPE"
+            exit 1
+          fi
         fi
 
-        echo -n "$FILE_NAME"  
+        echo -n "$FILE_NAME"
         echo "FILE_NAME=$FILE_NAME" >> "$HOME/.env"
 
     - name: push-snapshot
