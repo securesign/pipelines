@@ -27,7 +27,9 @@ spec:
     - name: file-name
       type: string
       default: ""
-      description: Name of file to push to in $(params.git-url)
+      description: >
+        Name of the file to push to in $(params.git-url). It should follow the pattern:
+        operator-*.json, component-*.json, or fbc-*.json.
   tasks:
     - name: parse-snapshot
       taskRef:
