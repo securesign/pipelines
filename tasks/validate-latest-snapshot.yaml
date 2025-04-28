@@ -10,11 +10,17 @@ spec:
   params:
     - name: snapshotSpecFile
       description: Path to the stored Snapshot spec JSON file
+    - name: type
+      description: The type of image being pushed, should be one of component, operator, or fbc
   results:
     - name: isLatest
       description: "A true/false value indicating whether the snapshot is the latest one."
   steps:
     - name: wait-for-pipelineruns
+      when:
+        - input: "$(params.type)"
+          operator: NotIn
+          values: ["fbc"]
       image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
       workingDir: /workspace/output/source
       env:
