@@ -10,3 +10,4 @@ resources:
   - cli
   - certificate-transparency-go
   - rekor-monitor
+  - policy-controller
