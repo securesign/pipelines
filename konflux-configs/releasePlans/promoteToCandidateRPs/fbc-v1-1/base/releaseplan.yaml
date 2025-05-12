@@ -16,6 +16,8 @@ spec:
       value: "true"
     - name: type
       value: "fbc"
+    - name: file-name
+      value: "fbc-v1-1.json"
     serviceAccountName: rhtas-build-bot
     pipelineRef:
       resolver: git

@@ -9,3 +9,5 @@ resources:
   - fulcio
   - cli
   - certificate-transparency-go
+  - rekor-monitor
+  - policy-controller

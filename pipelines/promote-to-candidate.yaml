@@ -24,6 +24,12 @@ spec:
       type: string
       default: component
       description: The type of image being pushed, should be one of component, operator, or fbc
+    - name: file-name
+      type: string
+      default: ""
+      description: >
+        Name of the file to push to in $(params.git-url). It should follow the pattern:
+        operator-*.json, component-*.json, or fbc-*.json.
   tasks:
     - name: parse-snapshot
       taskRef:
@@ -47,6 +53,8 @@ spec:
           values:
             - "false"
     - name: validate-latest-snapshot
+      runAfter:
+        - parse-snapshot
       taskRef:
         resolver: git
         params:
@@ -59,44 +67,19 @@ spec:
       params:
         - name: snapshotSpecFile
           value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
+        - name: type
+          value: $(params.type)
       workspaces:
         - name: output
           workspace: release-workspace
       when:
-        - input: "$(params.code-freeze)"
-          operator: in
-          values:
-            - "false"
-    - name: verify-its
-      runAfter:
-        - parse-snapshot
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: "https://github.com/securesign/pipelines.git"
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: tasks/verify-its.yaml
-      params:
-        - name: snapshotStatusFile
-          value: "$(tasks.parse-snapshot.results.snapshotStatusFile)"
-      workspaces:
-        - name: output
-          workspace: release-workspace
-      when:
-        - input: "$(tasks.validate-latest-snapshot.results.isLatest)"
-          operator: in
-          values:
-            - "true"
         - input: "$(params.code-freeze)"
           operator: in
           values:
             - "false"
     - name: push-to-github
       runAfter:
-        - verify-its
+        - validate-latest-snapshot
       taskRef:
         resolver: git
         params:
@@ -115,6 +98,8 @@ spec:
           value: $(params.type)
         - name: snapshotSpecFile
           value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
+        - name: file-name
+          value: $(params.file-name)
       workspaces:
         - name: output
           workspace: release-workspace
