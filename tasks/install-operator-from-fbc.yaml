@@ -82,9 +82,9 @@ spec:
          oc get catalogsource tas-test -n openshift-marketplace -o yaml
         
         
-        until oc get deployment rhtas-operator-controller-manager -n openshift-operators &>/dev/null; do
+        until oc get deployment rhtas-controller-manager -n openshift-operators &>/dev/null; do
           echo "Waiting for the deployment to be created..."
           sleep 5
         done
-        oc wait --for=condition=available deployment/rhtas-operator-controller-manager --timeout=2m -n openshift-operators
+        oc wait --for=condition=available deployment/rhtas-controller-manager --timeout=2m -n openshift-operators
 
