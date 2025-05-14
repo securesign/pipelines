@@ -64,4 +64,4 @@ spec:
           mountPath: /storage
       script: |
         oc create -k /storage/resources/config/env/openshift
-        oc wait --for=condition=available deployment/rhtas-operator-controller-manager --timeout=120s -n openshift-rhtas-operator
+        oc wait --for=condition=available deployment/rhtas-controller-manager --timeout=120s -n openshift-rhtas-operator
