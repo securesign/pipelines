@@ -1,0 +1,404 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: operator-dast
+spec:
+  description: |
+    DAST testing of TAS deployment created by operator
+  params:
+    - description: Snapshot of the application
+      name: SNAPSHOT
+      type: string
+    - description: Namespace where the the Operator bundle will be deployed.
+      name: NAMESPACE
+      default: default
+      type: string
+  tasks:
+    - name: parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-metadata.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+    - name: provision-eaas-space
+      taskRef:
+        resolver: bundles
+        params:
+          - name: name
+            value: eaas-provision-space
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-4e4fa7355a6a51083954408e7e3b647e3bddb8d8
+          - name: kind
+            value: task
+      params:
+        - name: ownerName
+          value: $(context.pipelineRun.name)
+        - name: ownerUid
+          value: $(context.pipelineRun.uid)
+    - name: provision-cluster
+      runAfter:
+        - provision-eaas-space
+      taskSpec:
+        results:
+          - name: clusterName
+            value: "$(steps.create-cluster.results.clusterName)"
+        steps:
+          - name: get-supported-versions
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-supported-ephemeral-cluster-versions/0.1/eaas-get-supported-ephemeral-cluster-versions.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: pick-version
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+            params:
+              - name: prefix
+                value: "$(steps.get-supported-versions.results.versions[0])."
+          - name: create-cluster
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: version
+                value: "$(steps.pick-version.results.version)"
+              - name: instanceType
+                value: m5.large
+              - name: timeout
+                value: 60m
+              - name: imageContentSources
+                value: |
+                  - source: registry.redhat.io/rhtas/rhtas-operator-bundle
+                    mirrors:
+                      - quay.io/securesign/rhtas-operator-bundle
+                      - quay.io/securesign/rhtas-operator-bundle-v1-0
+                      - quay.io/securesign/rhtas-operator-bundle-v1-1
+                      - quay.io/securesign/rhtas-operator-bundle-v1-2
+                  - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
+                    mirrors:
+                      - quay.io/securesign/rhtas-operator
+                      - quay.io/securesign/rhtas-operator-v1-0
+                      - quay.io/securesign/rhtas-operator-v1-1
+                      - quay.io/securesign/rhtas-operator-v1-2
+                  - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-logsigner
+                  - source: registry.redhat.io/rhtas/trillian-logserver-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-logserver
+                  - source: registry.redhat.io/rhtas/trillian-database-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-database
+                  - source: registry.redhat.io/rhtas/fulcio-rhel9
+                    mirrors:
+                    - quay.io/securesign/fulcio-server
+                  - source: registry.redhat.io/rhtas/trillian-redis-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-redis
+                  - source: registry.redhat.io/rhtas/rekor-server-rhel9
+                    mirrors:
+                    - quay.io/securesign/rekor-server
+                  - source: registry.redhat.io/rhtas/rekor-search-ui-rhel9
+                    mirrors:
+                    - quay.io/securesign/rekor-search-ui
+                  - source: registry.redhat.io/rhtas/rekor-backfill-redis-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-redis
+                  - source: registry.redhat.io/rhtas/tuf-server-rhel9
+                    mirrors:
+                    - quay.io/securesign/scaffold-tuf-server
+                  - source: registry.redhat.io/rhtas/certificate-transparency-rhel9
+                    mirrors:
+                    - quay.io/securesign/certificate-transparency-go
+                  - source: registry.redhat.io/rhtas/client-server-cg-rhel9
+                    mirrors:
+                    - quay.io/securesign/cli-client-server-cg
+                  - source: registry.redhat.io/rhtas/client-server-re-rhel9
+                    mirrors:
+                    - quay.io/securesign/client-server-re
+                  - source: registry.redhat.io/rhtas/segment-reporting-rhel9
+                    mirrors:
+                    - quay.io/securesign/segment-backup-job
+                  - source: registry.redhat.io/rhtas/timestamp-authority-rhel9
+                    mirrors:
+                    - quay.io/securesign/timestamp-authority
+                  - source: registry.redhat.io/rhtas/createtree-rhel9
+                    mirrors:
+                    - quay.io/securesign/trillian-createtree
+                  - source: registry.redhat.io/rhtas/client-server-rhel9
+                    mirrors:
+                    - quay.io/securesign/client-server
+                  - source: registry.redhat.io/rhtas/tuffer-rhel9
+                    mirrors:
+                    - quay.io/securesign/tuffer
+    - name: install-operator-from-bundle
+      runAfter:
+        - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-bundle.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: bundleImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-1", "rhtas-operator-bundle-v1-2" ]
+    - name: install-operator-from-image
+      runAfter:
+        - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-image.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: operatorImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+        - name: resources_url
+          value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
+      # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: [ "rhtas-operator", "rhtas-operator-v1-1", "rhtas-operator-v1-2" ]
+    - name: install-operator-from-fbc
+      timeout: "0h5m0s"
+      runAfter:
+        - provision-cluster
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-fbc.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: fbcImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: ["fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1", "fbc-v4-14-v1-1" ]
+    - name: dast-test
+      runAfter:
+        # run after either one
+        - install-operator-from-image
+        - install-operator-from-bundle
+        - install-operator-from-fbc
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+#          - name: dump
+#            emptyDir: { }
+#          - name: push-creds
+#            secret:
+#              secretName: securesign-test-dump-oci
+        steps:
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: SECURESIGN-79
+                - name: pathInRepo
+                  value: stepactions/git-clone-operator.yaml
+            params:
+              - name: operator-component
+                value: "$(tasks.parse-metadata.results.component)"
+              - name: git-url
+                value: "$(tasks.parse-metadata.results.git-url)"
+              - name: git-revision
+                value: "$(tasks.parse-metadata.results.git-revision)"
+              - name: repository
+                value: repository
+          - name: install-keycloak
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/install-keycloak.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+          - name: install-tas
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: SECURESIGN-79
+                - name: pathInRepo
+                  value: stepactions/install-tas.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+          - name: resolve-component-urls
+            image: registry.redhat.io/openshift4/ose-cli:latest
+            results:
+              - name: fulcio_url
+                type: string
+            env:
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+            volumeMounts:
+              - name: "credentials"
+                mountPath: /credentials
+            script: |
+              FULCIO_URL=$(oc get fulcio securesign-sample -o jsonpath='{.status.url}' -n tas-e2e)
+              echo $FULCIO_URL
+              echo -n $FULCIO_URL >  "$(step.results.fulcio_url.path)"
+          - name: rapidast-fulcio
+            image: quay.io/redhatproductsecurity/rapidast:latest
+            env:
+              - name: FULCIO_URL
+                value: "$(steps.resolve-component-urls.results.fulcio_url)"
+            script: |
+              CONFIG_PATH="/workspace/config.yaml"
+              RESULTS_DIR="/tmp/results"
+              
+              if [ -z "$FULCIO_URL" ]; then
+                echo "Error: FULCIO_URL is not defined."
+                exit 1
+              fi
+              
+              # Create the RapiDAST configuration file
+              cat <<EOF > ${CONFIG_PATH}
+              config:
+                configVersion: 5
+
+              application:
+                shortName: "fulcio"
+                url: "${FULCIO_URL}"
+
+              scanners:
+                zap:
+                  apiScan:
+                    target: "${FULCIO_URL}"
+                    apis:
+                      apiUrl: "https://raw.githubusercontent.com/sigstore/fulcio/main/fulcio.swagger.json"
+                    resultsDir: "${RESULTS_DIR}" 
+                  activeScan:
+                    policy: "API-scan-minimal"  # predefined minimal policy for active scanning
+                  report:
+                    format: [ "json", "html" ]  # Generate JSON and HTML reports
+              EOF
+              
+              # run scan
+              ./rapidast.py --config ${CONFIG_PATH}
+              
+              echo "RapiDAST scan completed. Checking results..."
+              FINAL_RESULTS_DIR=$(find ./results -type d -name "DAST-*" -print -quit)
+              if [ -z "$FINAL_RESULTS_DIR" ]; then
+              echo "[ERROR] No results directory found. Check the scan configuration."
+              exit 1
+              fi
+
+              echo "[INFO] Results found in: ${FINAL_RESULTS_DIR}"
+              ls -l ${FINAL_RESULTS_DIR}
