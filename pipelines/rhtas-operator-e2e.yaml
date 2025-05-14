@@ -580,7 +580,7 @@ spec:
             script: |
               #!/bin/sh
               IMAGE=ttl.sh/test:latest
-              echo "$IMAGE" > "$(step.results.image.path)"
+              printf "%s" "$IMAGE" > "$(step.results.image.path)"
               buildah pull alpine:latest
               buildah tag alpine:latest $IMAGE
               buildah push $IMAGE
