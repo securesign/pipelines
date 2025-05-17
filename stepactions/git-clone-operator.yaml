@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: git-clone-operator
+spec:
+  description: >-
+    This StepAction clones operator repository.
+  image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:44fd8f88f3b6463cda15571260f9ca3a0b78d3c8c8827a338e04ab3a23581a88
+  params:
+    - name: repository
+      type: string
+      description: Volume with resources to be applied.
+    - name: operator-component
+      type: string
+      description: Operator component used (operator, operator-bundle, ...).
+    - name: git-url
+      type: string
+      description: Operator repository url.
+    - name: git-revision
+      type: string
+      description: Operator repository revision.
+  volumeMounts:
+    - name: "$(params.repository)"
+      mountPath: /repository
+  env:
+    - name: OPERATOR_COMPONENT
+      value: "$(params.operator-component)"
+    - name: GIT_URL
+      value: "$(params.git-url)"
+    - name: GIT_REVISION
+      value: "$(params.git-revision)"
+  script: |
+    cd /repository
+    if [[ "$OPERATOR_COMPONENT" == "rhtas-operator" || "$OPERATOR_COMPONENT" == "rhtas-operator-bundle" ]]; then
+      echo "Cloning from $GIT_URL"
+      git clone $GIT_URL source
+      cd source
+      git checkout $GIT_REVISION
+    else
+      echo "Cloning from default url"
+      git clone "https://github.com/securesign/secure-sign-operator.git" source
+      cd source
+     fi
