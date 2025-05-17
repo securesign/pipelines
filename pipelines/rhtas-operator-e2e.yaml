@@ -599,7 +599,6 @@ spec:
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e
-            onError: continue
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:44fd8f88f3b6463cda15571260f9ca3a0b78d3c8c8827a338e04ab3a23581a88
             volumeMounts:
               - name: credentials
@@ -630,16 +629,3 @@ spec:
               go mod vendor
               # exclude UI tests 
               go test -v $(go list ./test/... | grep -v rekorsearchui)
-          - name: dump
-            image: registry.redhat.io/openshift4/ose-cli
-            volumeMounts:
-              - name: credentials
-                mountPath: /credentials
-            env:
-              - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-            script: |
-              oc project tas-e2e
-              oc get pods
-              oc get fulcio -o yaml
-              oc logs -l app.kubernetes.io/name=fulcio-server
