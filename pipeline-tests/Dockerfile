@@ -1,8 +1,8 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:e7da3c032ae52bd26e597cc616eed644710e32e5d3bc9212c7edde8ab7799b0e as prod
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290 as prod
 COPY LICENSE /licenses/LICENSE
 USER 1001
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:e7da3c032ae52bd26e597cc616eed644710e32e5d3bc9212c7edde8ab7799b0e as test
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290 as test
 USER 1001
 COPY --from=prod /licenses/LICENSE /licenses/LICENSE
 
