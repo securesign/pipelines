@@ -1,0 +1,84 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: wait-for-pipelinerun
+spec:
+  description: >
+    Waits for a Tekton PipelineRun matching the specified selector to complete, then extracts the produced image URL and digest from its results.
+  params:
+    - name: selector
+      description: Label selector used to find the target PipelineRuns (e.g., "mylabel=myvalue").
+  results:
+    - description: The canonical URL of the found image, typically excluding the tag or digest (e.g., quay.io/namespace/repository).
+      name: IMAGE_URL
+    - description: The SHA256 digest of the image's manifest.
+      name: IMAGE_DIGEST
+  steps:
+    - name: wait-for-pipelinerun
+      image: quay.io/konflux-ci/konflux-test:latest@sha256:d596724343a31c201a5c2e79f233f9ef78ac65726ae4ed5ffa41d76b3dac630f
+      env:
+      - name: SELECTOR
+        value: $(params.selector)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        
+        get_pr_status() {
+          local name="$1"
+        
+          if oc wait "pipelinerun/$name" --for=jsonpath='{.status.completionTime}' --timeout=20m >&2; then
+            status_json=$(oc get pipelinerun "$name" -o jsonpath='{.status}' 2>/dev/null || echo "")
+            if [[ -z "$status_json" ]]; then
+              echo "pr_status: status not found" >&2
+              exit 1
+            fi
+          
+            echo "$status_json"
+            exit 0
+          else
+            echo "Timed out waiting for PipelineRun $name to have a completionTime, or an error occurred." >&2
+            exit 1
+          fi
+        }
+          
+        image_url=""
+        image_digest=""
+        
+        echo "Search PipelineRuns with selector '$SELECTOR'"
+        pipeline_names_output=$(oc get pipelineruns -l "$SELECTOR" --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[*].metadata.name}' --ignore-not-found)
+        read -r -a pipeline_names <<< "$pipeline_names_output"
+        
+        # Check if the array is empty
+        if [ ${#pipeline_names[@]} -eq 0 ]; then
+          echo "Error: No PipelineRuns found with selector '$SELECTOR'." >&2
+          exit 1
+        fi
+          
+        # newest pipeline
+        pr_name=${pipeline_names[-1]}
+          
+        echo "Check status of $pr_name"
+        pr_status_json=$(get_pr_status $pr_name)
+        succeeded_condition_json=$(echo "$pr_status_json" | jq -r '.conditions[]? | select(.type=="Succeeded") | .status')
+        
+        if [ "$succeeded_condition_json" == "True" ]; then
+          image_url=$(echo "$pr_status_json" | jq -r '.results[]? | select(.name=="IMAGE_URL") | .value')
+          image_digest=$(echo "$pr_status_json" | jq -r '.results[]? | select(.name=="IMAGE_DIGEST") | .value')
+          echo "Image found in $pr_name, IMAGE_URL: $image_url, IMAGE_DIGEST: $image_digest"
+        else
+          echo "PipelineRun $pr_name 'Succeeded' condition is 'False'" >&2
+          exit 1
+        fi
+          
+        if [[ -z "$image_digest" ]]; then
+          echo "image_digest: not found" >&2
+          exit 1
+        fi
+          
+        if [[ -z "$image_url" ]]; then
+          echo "image_url: not found" >&2
+          exit 1
+        fi
+        
+        printf "%s" "$image_digest" | tee $(results.IMAGE_DIGEST.path)
+        printf "%s" "$image_url" | tee $(results.IMAGE_URL.path)
