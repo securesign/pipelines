@@ -41,6 +41,9 @@ spec:
       script: |
         #!/bin/sh
 
+        # Install from the bundle if not set
+        COMPONENT_NAME="${COMPONENT_NAME:-rhtas-operator-bundle}"
+        
         # Derive additional environment variables from SNAPSHOT
         IMAGE=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .containerImage' <<< "${SNAPSHOT}")
         GIT_URL=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.url' <<< "${SNAPSHOT}")
