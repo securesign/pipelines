@@ -1,0 +1,50 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/osmman/pipelines?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+      == "main" && ( "konflux-configs/***".pathChanged() || ".tekton/deploy-konflux-config-push.yaml".pathChanged()
+      || "pipelines/deploy-konflux-config.yaml".pathChanged() || "tasks/apply-manifest.yaml".pathChanged()
+      )
+    pipelinesascode.tekton.dev/pipeline: pipelines/deploy-konflux-config.yaml
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: pipelines
+    appstudio.openshift.io/component: deploy-konflux-config
+    pipelines.appstudio.openshift.io/type: build
+  name: deploy-konflux-config-on-push
+  namespace: rhtas-tenant
+spec:
+  params:
+  - name: git-url
+    value: '{{source_url}}'
+  - name: revision
+    value: '{{revision}}'
+  - name: kustomize-path
+    value: konflux-configs/overlay/prod
+  - name: apply-changes
+    value: "true"
+  pipelineRef:
+    name: deploy-konflux-config
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-deploy-konflux-config
+  workspaces:
+  - name: workspace
+    volumeClaimTemplate:
+      metadata:
+        creationTimestamp: null
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+      status: {}
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+status: {}
