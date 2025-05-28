@@ -1,0 +1,17 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: configuration-as-code
+spec:
+  application: konflux
+  componentName: configuration-as-code
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: main
+      context: konflux-configs
+      dockerfileUrl: Dockerfile
