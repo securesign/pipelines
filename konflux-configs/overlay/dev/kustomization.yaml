@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tturek-tenant
+
+resources:
+  #- ../../base/project
+  #- ../../base/stream
+  #- ../../base/service-account
+  - ../../base/release-plan
+  - ../../base/application
+
+configMapGenerator:
+  - name: registry-config
+    literals:
+      - registry-namespace=tturek-tenant
+      - github-org=osmman
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: registry-config
+      fieldPath: data.registry-namespace
+    targets:
+      - select:
+          kind: ImageRepository
+        fieldPaths:
+          - spec.image.name
+        options:
+          delimiter: '/'
+          index: 0
+  - source:
+      kind: ConfigMap
+      name: registry-config
+      fieldPath: data.github-org
+    targets:
+      - select:
+          kind: Component
+        fieldPaths:
+          - spec.source.git.url
+        options:
+          delimiter: '/'
+          index: 3
