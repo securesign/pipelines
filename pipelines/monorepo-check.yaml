@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: monorepo-check
+spec:
+  description: |
+    Pipeline checks if a snapshot contains all the changes from the monorepo.
+    If not, it fails the test and prevents the snapshot from being auto-released.
+  params:
+    - description: Snapshot of the application
+      name: SNAPSHOT
+      type: string
+  tasks:
+    - name: test-snapshot-component
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/test-snapshot-component.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
