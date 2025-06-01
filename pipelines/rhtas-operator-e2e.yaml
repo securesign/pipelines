@@ -623,7 +623,11 @@ spec:
               set -o allexport && source /repository/sigstore-e2e/.env && set +o allexport
               echo "Adding certificate to /tmp/ssl.cert"
               #openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
-              openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" -CAfile /dev/null -verify_return_error no
+              openssl s_client -connect "$OIDC_HOST:443" \
+                -showcerts \
+                -servername "$OIDC_HOST" \
+                -CAfile /dev/null \
+                -verify_return_error no
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
               cat /tmp/ssl.cert
