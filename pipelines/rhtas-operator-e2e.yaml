@@ -625,11 +625,14 @@ spec:
               openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
+              cat /tmp/ssl.cert
               echo "Adding to trustroot"
               find /etc/pki/ca-trust/source
               cp /tmp/ssl.cert /etc/pki/ca-trust/source/anchors/my-custom-root.crt
               which update-ca-trust
+              ls -la /etc/pki/ca-trust/source/anchors
               update-ca-trust
+              trust list
               find /etc/pki/ca-trust/source
               echo "Running tests"
               go mod vendor
