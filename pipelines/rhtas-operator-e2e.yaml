@@ -628,4 +628,4 @@ spec:
               
               go mod vendor
               # exclude UI tests 
-              go test -v --ginkgo.v $(go list ./test/... | grep -v rekorsearchui)
+              go test -v $(go list ./test/... | grep -v rekorsearchui) --ginkgo.v
