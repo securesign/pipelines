@@ -626,9 +626,10 @@ spec:
               #openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" -CAfile /etc/ssl/certs/ca-bundle.crt -verify_return_error
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
               cat /tmp/ssl.cert
-              export SSL_CERT_FILE=/tmp/ssl.cert
               echo "Adding to trustroot"
               cp /tmp/ssl.cert /etc/pki/ca-trust/source/anchors/my-custom-root.crt
+              export SSL_CERT_FILE=/etc/pki/ca-trust/source/anchors/my-custom-root.crt
+              export GIT_SSL_CAINFO=$SSL_CERT_FILE
               update-ca-trust
               export SSL_CERT_DIR=/etc/pki/ca-trust
               find /etc/pki/ca-trust
