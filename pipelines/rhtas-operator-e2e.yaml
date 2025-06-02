@@ -630,5 +630,5 @@ spec:
               cat /etc/pki/tls/certs/ca-bundle.crt
               echo "Running tests"
               go mod vendor
-              # exclude UI tests 
-              go test -v $(go list ./test/... | grep -v rekorsearchui) --ginkgo.v
+              # exclude UI and benchmark tests 
+              go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
