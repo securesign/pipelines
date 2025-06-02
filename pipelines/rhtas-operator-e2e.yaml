@@ -625,7 +625,9 @@ spec:
               openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
               find /etc/pki/tls/certs
+              cat /tmp/ssl.cert
               cat /tmp/ssl.cert >> /etc/pki/tls/certs/ca-bundle.crt
+              cat /etc/pki/tls/certs/ca-bundle.crt
               echo "Running tests"
               go mod vendor
               # exclude UI tests 
