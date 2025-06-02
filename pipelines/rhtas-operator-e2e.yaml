@@ -627,10 +627,10 @@ spec:
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
               cat /tmp/ssl.cert
               export SSL_CERT_FILE=/tmp/ssl.cert
-              #export SSL_CERT_DIR=/tmp
               echo "Adding to trustroot"
               cp /tmp/ssl.cert /etc/pki/ca-trust/source/anchors/my-custom-root.crt
               update-ca-trust
+              export SSL_CERT_DIR=/etc/pki/ca-trust
               find /etc/pki/ca-trust
               echo "Running tests"
               go mod vendor
