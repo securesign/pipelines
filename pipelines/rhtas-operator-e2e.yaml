@@ -622,20 +622,15 @@ spec:
                # TODO:ppinkas,jbouska - move file loading to viper
               set -o allexport && source /repository/sigstore-e2e/.env && set +o allexport
               echo "Adding certificate to /tmp/ssl.cert"
-              ls -la /etc/ssl/certs
-              #openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
-              openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" -CAfile /etc/ssl/certs/ca-bundle.crt -verify_return_error
+              openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
+              #openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" -CAfile /etc/ssl/certs/ca-bundle.crt -verify_return_error
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
-              export SSL_CERT_FILE=/tmp/ssl.cert
               cat /tmp/ssl.cert
-              trust list
+              export SSL_CERT_FILE=/tmp/ssl.cert
+              export SSL_CERT_DIR=/tmp
               echo "Adding to trustroot"
-              find /etc/pki/ca-trust/source
               cp /tmp/ssl.cert /etc/pki/ca-trust/source/anchors/my-custom-root.crt
-              which update-ca-trust
-              ls -la /etc/pki/ca-trust/source/anchors
               update-ca-trust
-              trust list
               find /etc/pki/ca-trust/source
               echo "Running tests"
               go mod vendor
