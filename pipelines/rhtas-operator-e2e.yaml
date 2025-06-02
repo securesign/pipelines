@@ -622,17 +622,16 @@ spec:
                # TODO:ppinkas,jbouska - move file loading to viper
               set -o allexport && source /repository/sigstore-e2e/.env && set +o allexport
               echo "Adding certificate to /tmp/ssl.cert"
-              openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
+              #openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
               #openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" -CAfile /etc/ssl/certs/ca-bundle.crt -verify_return_error
-              sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
-              cat /tmp/ssl.cert
+              openssl s_client -connect "$OIDC_HOST:443" -showcerts -servername "$OIDC_HOST" </dev/null | awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/{print $0; if (/END CERTIFICATE/) print ""}' > /tmp/ssl-chain.pem
+              #sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
+              cat /tmp/ssl-chain.pem
               echo "Adding to trustroot"
-              cp /tmp/ssl.cert /etc/pki/ca-trust/source/anchors/my-custom-root.crt
-              export SSL_CERT_FILE=/etc/pki/ca-trust/source/anchors/my-custom-root.crt
+              cp /tmp/ssl-chain.pem /etc/pki/ca-trust/source/anchors/my-custom-chain.pem
+              export SSL_CERT_FILE=/etc/pki/ca-trust/source/anchors/my-custom-chain.pem
               export GIT_SSL_CAINFO=$SSL_CERT_FILE
               update-ca-trust
-              export SSL_CERT_DIR=/etc/pki/ca-trust
-              find /etc/pki/ca-trust
               echo "Running tests"
               go mod vendor
               # exclude UI tests 
