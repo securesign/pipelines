@@ -618,17 +618,14 @@ spec:
                 value: "true"
             script: |
               set -x
-              cd /repository/sigstore-e2e
-               # TODO:ppinkas,jbouska - move file loading to viper
-              set -o allexport && source /repository/sigstore-e2e/.env && set +o allexport
-              echo "Adding certificate to /tmp/ssl.cert"
+              echo "Add certificate to ca-bundle.crt"
               openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
               sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
-              find /etc/pki/tls/certs
-              cat /tmp/ssl.cert
               cat /tmp/ssl.cert >> /etc/pki/tls/certs/ca-bundle.crt
-              cat /etc/pki/tls/certs/ca-bundle.crt
-              echo "Running tests"
+              echo "Run tests"
+              cd /repository/sigstore-e2e
+              # TODO:ppinkas,jbouska - move file loading to viper
+              set -o allexport && source /repository/sigstore-e2e/.env && set +o allexport
               go mod vendor
               # exclude UI and benchmark tests 
               go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
