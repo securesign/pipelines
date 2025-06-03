@@ -291,7 +291,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: ppinkas/SECURESIGN-1859
                 - name: pathInRepo
                   value: stepactions/git-clone-operator.yaml
             params:
@@ -393,7 +393,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: ppinkas/SECURESIGN-1859
                 - name: pathInRepo
                   value: stepactions/git-clone-operator.yaml
             params:
@@ -526,7 +526,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: ppinkas/SECURESIGN-1859
                 - name: pathInRepo
                   value: stepactions/git-clone-operator.yaml
             params:
@@ -545,7 +545,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: ppinkas/SECURESIGN-1859
                 - name: pathInRepo
                   value: stepactions/install-tas.yaml
             params:
