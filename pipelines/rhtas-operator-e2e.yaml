@@ -18,6 +18,10 @@ spec:
       name: NAMESPACE
       default: default
       type: string
+    - description: Namespace where TAS for e2e tests will be installed
+      name: TAS_E2E_NAMESPACE
+      default: tas-e2e
+      type: string
   tasks:
     - name: parse-metadata
       taskRef:
@@ -553,6 +557,8 @@ spec:
                 value: "$(steps.get-kubeconfig.results.kubeconfig)"
               - name: workdir
                 value: source
+              - name: tas-namespace
+                value: "$(params.TAS_E2E_NAMESPACE)"
           - name: git-clone-tas-e2e
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:4805e1cb2d1bd9d3c5de5d6986056bbda94ca7b01642f721d83d26579d333c60
             volumeMounts:
@@ -579,7 +585,7 @@ spec:
                 cpu: '1'
             script: |
               #!/bin/sh
-              IMAGE=ttl.sh/test:latest
+              IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
               printf "%s" "$IMAGE" > "$(step.results.image.path)"
               buildah pull alpine:latest
               buildah tag alpine:latest $IMAGE
@@ -594,8 +600,10 @@ spec:
             env:
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: TASNAMESPACE
+                value: "$(params.TAS_E2E_NAMESPACE)"
             script: |
-              oc project tas-e2e
+              oc project $TASNAMESPACE
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e

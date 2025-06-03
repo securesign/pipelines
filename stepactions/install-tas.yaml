@@ -20,6 +20,9 @@ spec:
     - name: KUBECONFIG
       type: string
       description: KUBECONFIG path.
+    - name: tas-namespace
+      description: Namespace in which the TAS is created.
+      type: string
   volumeMounts:
     - name: "$(params.credentials)"
       mountPath: /credentials
@@ -30,11 +33,13 @@ spec:
       value: "/credentials/$(params.KUBECONFIG)"
     - name: WORKDIR
       value: "$(params.workdir)"
+    - name: TASNAMESPACE
+      value: "$(params.tas-namespace)"
   script: |
     cd /repository/$WORKDIR
     sed -i "s#https://your-oidc-issuer-url#https://$(oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}')/auth/realms/trusted-artifact-signer#" config/samples/rhtas_v1alpha1_securesign.yaml
     sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1alpha1_securesign.yaml
-    oc create ns tas-e2e
-    oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n tas-e2e
+    oc create ns $TASNAMESPACE
+    oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n $TASNAMESPACE
     sleep 1
-    oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n tas-e2e
+    oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n $TASNAMESPACE
