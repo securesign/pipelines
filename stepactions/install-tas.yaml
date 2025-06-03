@@ -23,6 +23,9 @@ spec:
     - name: tas-namespace
       description: Namespace in which the TAS is created.
       type: string
+    - name: OIDC_HOST
+      description: OIDC hostname (keycloak)
+      type: string
   volumeMounts:
     - name: "$(params.credentials)"
       mountPath: /credentials
@@ -35,9 +38,11 @@ spec:
       value: "$(params.workdir)"
     - name: TASNAMESPACE
       value: "$(params.tas-namespace)"
+    - name: OIDC_HOST
+      value: "$(params.OIDC_HOST)"
   script: |
     cd /repository/$WORKDIR
-    sed -i "s#https://your-oidc-issuer-url#https://$(oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}')/auth/realms/trusted-artifact-signer#" config/samples/rhtas_v1alpha1_securesign.yaml
+    sed -i "s#https://your-oidc-issuer-url#https://$OIDC_HOST/auth/realms/trusted-artifact-signer#" config/samples/rhtas_v1alpha1_securesign.yaml
     sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1alpha1_securesign.yaml
     oc create ns $TASNAMESPACE
     oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n $TASNAMESPACE
