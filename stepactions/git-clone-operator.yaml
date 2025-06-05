@@ -31,7 +31,7 @@ spec:
       value: "$(params.git-revision)"
   script: |
     cd /repository
-    if [[ "$OPERATOR_COMPONENT" == "rhtas-operator" || "$OPERATOR_COMPONENT" == "rhtas-operator-bundle" ]]; then
+    if [[ "$OPERATOR_COMPONENT" != "rhtas-operator" && "$OPERATOR_COMPONENT" != "rhtas-operator-bundle" ]]; then
       echo "Cloning from $GIT_URL"
       git clone $GIT_URL source
       cd source
