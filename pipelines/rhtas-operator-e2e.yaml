@@ -37,6 +37,8 @@ spec:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
     - name: provision-eaas-space
+      runAfter:
+        - parse-metadata
       taskRef:
         resolver: bundles
         params:
