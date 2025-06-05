@@ -14,8 +14,15 @@ spec:
       description: Operator image to be installed
     - name: namespace
       description: Namespace to be used for installation
+      default: openshift-rhtas-operator
     - name: resources_url
       description: Resource directory to be kustomized and applied
+    - name: resources_path
+      description: Resource directory to be kustomized and applied
+      default: config/env/openshift
+    - name: deployName
+      description: Name of the operators deployment
+      default: rhtas-operator-controller-manager
   volumes:
     - name: credentials
       emptyDir: { }
@@ -50,7 +57,7 @@ spec:
         kustomize localize --no-verify "$(params.resources_url)" /storage/resources
         cd /storage/resources/config/manager && kustomize edit set image controller=$(params.operatorImage)
         echo "I am going to install following resources"
-        kustomize build /storage/resources/config/env/openshift
+        kustomize build /storage/resources/$(params.resources_path)
 
     - name: run-operator
       image: registry.redhat.io/openshift4/ose-cli
@@ -63,5 +70,5 @@ spec:
         - name: resources
           mountPath: /storage
       script: |
-        oc create -k /storage/resources/config/env/openshift
-        oc wait --for=condition=available deployment/rhtas-operator-controller-manager --timeout=120s -n openshift-rhtas-operator
+        oc create -k /storage/resources/$(params.resources_path)
+        oc wait --for=condition=available deployment/$(params.deployName) --timeout=120s -n $(params.namespace)
