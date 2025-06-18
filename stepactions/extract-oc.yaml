@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: extract-oc
+spec:
+  description: >-
+    This StepAction extract oc binary from image to specified volume.
+  image: registry.redhat.io/openshift4/ose-cli:latest
+  params:
+    - name: volume
+      type: string
+      description: Name of the volume to be used for extraction.
+    - name: volumePath
+      type: string
+      description: The directory path to use.
+      default: ""
+  volumeMounts:
+    - name: "$(params.volume)"
+      mountPath: /binaries
+  env:
+    - name: VOLUME_PATH
+      value: "$(params.volumePath)"
+  script: |
+    mkdir -p /binaries$VOLUME_PATH
+    cp /usr/bin/oc /binaries$VOLUME_PATH
