@@ -128,7 +128,7 @@ spec:
                     - quay.io/securesign/rekor-search-ui
                   - source: registry.redhat.io/rhtas/rekor-backfill-redis-rhel9
                     mirrors:
-                    - quay.io/securesign/trillian-redis
+                    - quay.io/securesign/rekor-backfill-redis
                   - source: registry.redhat.io/rhtas/tuf-server-rhel9
                     mirrors:
                     - quay.io/securesign/scaffold-tuf-server
