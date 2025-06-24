@@ -31,7 +31,7 @@ spec:
       value: "$(params.git-revision)"
   script: |
     cd /repository
-    if [[ "$OPERATOR_COMPONENT" != "rhtas-operator" && "$OPERATOR_COMPONENT" != "rhtas-operator-bundle" && "$OPERATOR_COMPONENT" != fbc* ]]; then
+    if [[ "$OPERATOR_COMPONENT" == "rhtas-operator" || "$OPERATOR_COMPONENT" == "rhtas-operator-bundle" ]]; then
       echo "Cloning from $GIT_URL"
       git clone $GIT_URL source
       cd source
@@ -40,4 +40,4 @@ spec:
       echo "Cloning from default url"
       git clone "https://github.com/securesign/secure-sign-operator.git" source
       cd source
-     fi
+    fi
