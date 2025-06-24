@@ -22,6 +22,10 @@ spec:
       name: TAS_E2E_NAMESPACE
       default: tas-e2e
       type: string
+    - description: Operator Repo Url
+      name: OPERATOR_URL
+      default: https://github.com/securesign/secure-sign-operator.git
+      type: string
   tasks:
     - name: parse-metadata
       taskRef:
@@ -298,7 +302,7 @@ spec:
               - name: operator-component
                 value: "$(tasks.parse-metadata.results.component)"
               - name: git-url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(params.OPERATOR_URL)"
               - name: git-revision
                 value: "$(tasks.parse-metadata.results.git-revision)"
               - name: repository
@@ -400,7 +404,7 @@ spec:
               - name: operator-component
                 value: "$(tasks.parse-metadata.results.component)"
               - name: git-url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(params.OPERATOR_URL)"
               - name: git-revision
                 value: "$(tasks.parse-metadata.results.git-revision)"
               - name: repository
@@ -533,7 +537,7 @@ spec:
               - name: operator-component
                 value: "$(tasks.parse-metadata.results.component)"
               - name: git-url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(params.OPERATOR_URL)"
               - name: git-revision
                 value: "$(tasks.parse-metadata.results.git-revision)"
               - name: repository
