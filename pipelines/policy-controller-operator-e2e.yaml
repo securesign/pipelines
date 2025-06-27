@@ -409,25 +409,24 @@ spec:
               buildah pull alpine:latest
               buildah tag alpine:latest $IMAGE
               buildah push $IMAGE
-          - name: git-clone-operator
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/git-clone-operator.yaml
-            params:
-              - name: operator-component
-                value: "$(tasks.parse-metadata.results.component)"
-              - name: git-url
+          - name: git-clone-policy-controller
+            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
+            env:
+              - name: GIT_URL
                 value: "$(tasks.parse-metadata.results.git-url)"
-              - name: git-revision
+              - name: GIT_REVISION
                 value: "$(tasks.parse-metadata.results.git-revision)"
+            volumeMounts:
               - name: repository
-                value: repository
+                mountPath: /repository
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+              cd /repository
+              echo "Cloning Policy Controller Operator"
+              git clone $GIT_URL source
+              cd source
+              git checkout $GIT_REVISION
           - name: execute-operator-e2e
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
             env:
