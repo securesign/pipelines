@@ -388,7 +388,7 @@ spec:
               - name: credentials
                 value: credentials
           - name: push-test-image
-            image: quay.io/konflux-ci/buildah-task:latest@sha256:b82d465a06c926882d02b721cf8a8476048711332749f39926a01089cf85a3f9
+            image: quay.io/konflux-ci/buildah-task:latest@sha256:c8d667a4efa2f05e73e2ac36b55928633d78857589165bd919d2628812d7ffcb
             results:
               - name: image
                 type: string
