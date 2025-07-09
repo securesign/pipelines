@@ -37,3 +37,38 @@ spec:
     cd /repository/$WORKDIR
     ci/openshift/tas-keycloak-install.sh
     oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}' > "$(step.results.oidc-hostname.path)"
+
+    sleep 120
+    KEYCLOAK_PODS=$(oc get pods -n keycloak-system -o wide --no-headers -o custom-columns=":metadata.name")
+    for pod in $KEYCLOAK_PODS; do
+    echo "===== Logs for ${pod} ====="
+      oc logs -n keycloak-system "${pod}" --all-containers --timestamps
+      echo
+    done
+
+    echo "---Events---"
+    oc get events -n keycloak-system
+    echo
+    echo "---deployments---"
+    oc get deployments -n keycloak-system -o yaml
+    echo
+    echo "---svc---"
+    oc get svc -n keycloak-system -o yaml
+    echo
+    echo "---routes---"
+    oc get routes -n keycloak-system -o yaml
+    echo
+    echo "---statefulset---"
+    oc logs statefulset/keycloak -n keycloak-system
+    oc logs statefulset/keycloak -p -n keycloak-system
+    oc -n keycloak-system logs statefulset/keycloak -c keycloak --previous
+    echo "---Serving cert---"
+    oc -n keycloak-system get secret sso-x509-https-secret -o yaml
+
+    echo "===== CURRENT log (keycloak-0) ====="
+    oc logs keycloak-0 -c keycloak -n keycloak-system --since=2m --tail=-1
+
+    echo
+    echo "===== PREVIOUS log (keycloak-0) ====="
+    oc logs keycloak-0 -c keycloak -n keycloak-system --previous --tail=-1
+    echo
