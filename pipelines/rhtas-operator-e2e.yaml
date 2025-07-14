@@ -406,7 +406,7 @@ spec:
               - name: repository
                 value: repository
           - name: execute-operator-e2e
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
+            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
             onError: continue
             results:
               - name: status
@@ -447,6 +447,8 @@ spec:
                 echo -n "fail" >  "$(step.results.status.path)"
                 exit 1
               fi
+            securityContext:
+              runAsUser: 0
           - name: secure-push-oci
             when:
               - input: "$(steps.execute-operator-e2e.results.status)"
@@ -472,7 +474,7 @@ spec:
                 value: 1d
             # workaround - extract dump-push step to separate action once KONFLUX-5535 is resolved
           - name: report-status
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
+            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
             env:
               - name: STATUS
                 value: "$(steps.execute-operator-e2e.results.status)"
@@ -562,7 +564,7 @@ spec:
               - name: OIDC_HOST
                 value: "$(tasks.prepare-tests.results.oidc-hostname)"
           - name: git-clone-tas-e2e
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
+            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
             volumeMounts:
               - name: repository
                 mountPath: /repository
@@ -609,7 +611,7 @@ spec:
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e
-            image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
+            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
@@ -639,3 +641,5 @@ spec:
               go mod vendor
               # exclude UI and benchmark tests 
               go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
+            securityContext:
+              runAsUser: 0
