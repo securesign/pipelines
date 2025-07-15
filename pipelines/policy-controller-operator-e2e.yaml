@@ -387,28 +387,6 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: push-test-image
-            image: quay.io/konflux-ci/buildah-task:latest@sha256:c8d667a4efa2f05e73e2ac36b55928633d78857589165bd919d2628812d7ffcb
-            results:
-              - name: image
-                type: string
-            securityContext:
-              capabilities:
-                add:
-                  - SETFCAP
-            computeResources:
-              limits:
-                memory: 8Gi
-              requests:
-                memory: 2Gi
-                cpu: '1'
-            script: |
-              #!/bin/sh
-              IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
-              printf "%s" "$IMAGE" > "$(step.results.image.path)"
-              buildah pull alpine:latest
-              buildah tag alpine:latest $IMAGE
-              buildah push $IMAGE
           - name: git-clone-policy-controller
             image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:96cfceb50f5323efa1aa8569d4420cdbf1bb391225d5171ef72a0d0ecf028467
             env:
@@ -436,8 +414,6 @@ spec:
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: RHTAS_INSTALL_NAMESPACE
                 value: "$(params.TAS_E2E_NAMESPACE)"
-              - name: TEST_IMAGE
-                value: "$(steps.push-test-image.results.image)"
               - name: POLICY_CONTROLLER_OPERATOR_NS
                 value: "$(params.POLICY_CONTROLLER_OPERATOR_NS)"
             volumeMounts:
