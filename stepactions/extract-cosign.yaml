@@ -5,7 +5,6 @@ metadata:
 spec:
   description: >-
     This StepAction extract cosign binary from image to specified volume.
-  image: registry.redhat.io/rhtas/cosign-rhel9:1.1.0-1730377925
   params:
     - name: volume
       type: string
@@ -14,6 +13,11 @@ spec:
       type: string
       description: The directory path to use.
       default: ""
+    - name: cosign-image
+      type: string
+      description: Cosign image url
+      default: registry.redhat.io/rhtas/cosign-rhel9:1.1.0-1730377925
+  image: "$(params.cosign-image)"
   volumeMounts:
     - name: "$(params.volume)"
       mountPath: /binaries

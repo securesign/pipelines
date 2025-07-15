@@ -357,6 +357,8 @@ spec:
             params:
               - name: volume
                 value: binaries
+              - name: cosign-image
+                value: registry.redhat.io/rhtas/cosign-rhel9:1.2.0
           - name: get-oc
             ref:
               resolver: git
