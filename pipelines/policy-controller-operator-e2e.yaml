@@ -190,13 +190,11 @@ spec:
                 - name: revision
                   value: main
                 - name: pathInRepo
-                  value: stepactions/git-clone-operator.yaml
+                  value: stepactions/git-clone.yaml
             params:
-              - name: operator-component
-                value: "$(tasks.parse-metadata.results.component)"
-              - name: git-url
+              - name: url
                 value: "$(params.RHTAS_GIT_URL)"
-              - name: git-revision
+              - name: revision
                 value: "$(params.RHTAS_GIT_REVISION)"
               - name: repository
                 value: repository
