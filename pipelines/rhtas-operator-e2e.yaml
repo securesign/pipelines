@@ -203,8 +203,6 @@ spec:
           value: "$(tasks.provision-cluster.results.clusterName)"
         - name: operatorImage
           value: "$(tasks.parse-metadata.results.image)"
-        - name: namespace
-          value: "$(params.NAMESPACE)"
         - name: resources_url
           value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
       # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
