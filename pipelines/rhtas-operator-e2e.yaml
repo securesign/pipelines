@@ -298,9 +298,9 @@ spec:
                   value: stepactions/git-clone.yaml
             params:
               - name: url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(tasks.parse-metadata.results.operator-url)"
               - name: revision
-                value: "$(tasks.parse-metadata.results.git-revision)"
+                value: "$(tasks.parse-metadata.results.operator-revision)"
               - name: repository
                 value: repository
           - name: install-keycloak
@@ -350,14 +350,14 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: fix-e2e-for-1.2
+                  value: main
                 - name: pathInRepo
                   value: stepactions/git-clone.yaml
             params:
               - name: url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(tasks.parse-metadata.results.operator-url)"
               - name: revision
-                value: "$(tasks.parse-metadata.results.git-revision)"
+                value: "$(tasks.parse-metadata.results.operator-revision)"
               - name: repository
                 value: repository
           - name: get-tuftool
@@ -532,9 +532,9 @@ spec:
                   value: stepactions/git-clone.yaml
             params:
               - name: url
-                value: "$(tasks.parse-metadata.results.git-url)"
+                value: "$(tasks.parse-metadata.results.operator-url)"
               - name: revision
-                value: "$(tasks.parse-metadata.results.git-revision)"
+                value: "$(tasks.parse-metadata.results.operator-revision)"
               - name: repository
                 value: repository
           - name: git-clone-sigstore-e2e

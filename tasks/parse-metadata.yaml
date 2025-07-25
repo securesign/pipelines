@@ -16,6 +16,10 @@ spec:
       description: "Stores information about the component's source url."
     - name: git-revision
       description: "Stores information about the component's source revision."
+    - name: operator-url
+      description: "Stores information about the rhtas-operator source url."
+    - name: operator-revision
+      description: "Stores information about the rhtas-operator's source revision."
   params:
     - name: SNAPSHOT
       description: The JSON string of the Snapshot under test
@@ -49,6 +53,16 @@ spec:
         GIT_URL=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.url' <<< "${SNAPSHOT}")
         GIT_REVISION=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.revision' <<< "${SNAPSHOT}")
 
+  
+        if [[ "$COMPONENT_NAME" =~ ^rhtas-operator.* ]]; then
+          OPERATOR_URL=$GIT_URL
+          OPERATOR_REVISION=$GIT_REVISION
+        else
+          #use default values
+          OPERATOR_URL="https://github.com/securesign/secure-sign-operator.git"
+          OPERATOR_REVISION="main"
+        fi
+
         # Log declared environment variables
         echo "Snapshot metadata:"
         echo "  SNAPSHOT: ${SNAPSHOT}"
@@ -58,6 +72,8 @@ spec:
         echo "  IMAGE: ${IMAGE}"
         echo "  GIT_URL: ${GIT_URL}"
         echo "  GIT_REVISION: ${GIT_REVISION}"
+        echo "  OPERATOR_URL: ${OPERATOR_URL}"
+        echo "  OPERATOR_REVISION: ${OPERATOR_REVISION}"
 
         # Write each environment variable to its respective results:
         echo -n "${EVENT_TYPE}" > $(results.test-event-type.path)
@@ -66,3 +82,5 @@ spec:
         echo -n "${IMAGE}" > $(results.image.path)
         echo -n "${GIT_URL}" > $(results.git-url.path)
         echo -n "${GIT_REVISION}" > $(results.git-revision.path)
+        echo -n "${OPERATOR_URL}" > $(results.operator-url.path)
+        echo -n "${OPERATOR_REVISION}" > $(results.operator-revision.path)
