@@ -296,38 +296,37 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "policy-controller-operator"]
-    ## TODO:
-    # - name: install-operator-from-fbc
-    #   timeout: "0h5m0s"
-    #   runAfter:
-    #     - install-securesign
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #       - name: url
-    #         value: https://github.com/securesign/pipelines.git
-    #       - name: revision
-    #         value: main
-    #       - name: pathInRepo
-    #         value: tasks/install-operator-from-fbc.yaml
-    #   params:
-    #     - name: eaasSpaceSecretRef
-    #       value: $(tasks.provision-eaas-space.results.secretRef)
-    #     - name: clusterName
-    #       value: "$(tasks.provision-cluster.results.clusterName)"
-    #     - name: fbcImage
-    #       value: "$(tasks.parse-metadata.results.image)"
-    #     - name: namespace
-    #       value: "$(params.NAMESPACE)"
-    #   when:
-    #     - input: "$(tasks.parse-metadata.results.component)"
-    #       operator: in
-    #       values: ["fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15", "fbc-v4-14", "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1", "fbc-v4-14-v1-1" ]
+    - name: install-operator-from-fbc
+      timeout: "0h5m0s"
+      runAfter:
+        - install-securesign
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-fbc.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: fbcImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: ["pco-fbc-v4-14","pco-fbc-v4-15","pco-fbc-v4-16","pco-fbc-v4-17","pco-fbc-v4-18"]
     - name: policy-controller-e2e
       runAfter:
         - install-operator-from-image
         - install-operator-from-bundle
-        # - install-operator-from-fbc
+        - install-operator-from-fbc
       params:
         - name: namespace
           value: "$(params.NAMESPACE)"
