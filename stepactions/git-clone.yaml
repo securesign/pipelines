@@ -39,5 +39,5 @@ spec:
     cd /repository
     git clone --depth=1 "${URL}" "${DIR}"
     cd "${DIR}"
-    git fetch --depth=1 origin "${REVISION}"
+    git fetch --all
     git checkout "${REVISION}"
