@@ -463,7 +463,7 @@ spec:
                   value: stepactions/secure-push-oci.yaml
             params:
               - name: oci-ref
-                value: "quay.io/securesign/test-dump-oci:$(tasks.parse-metadata.results.git-revision)"
+                value: "quay.io/securesign/test-dump-oci:$(context.pipelineRun.name)"
               - name: credentials-volume-name
                 value: push-creds
               - name: artifacts-volume-name
