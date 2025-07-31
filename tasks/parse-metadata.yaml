@@ -60,7 +60,7 @@ spec:
         else
           #use default values
           OPERATOR_URL="https://github.com/securesign/secure-sign-operator.git"
-          OPERATOR_REVISION="release-1.2"
+          OPERATOR_REVISION="main"
         fi
 
         # Log declared environment variables
