@@ -37,7 +37,7 @@ spec:
     echo "Cloning from ${URL}#${DIR}"
     
     cd /repository
-    git clone --depth=1 "${URL}" "${DIR}"
+    git clone --depth=1 "${URL}" "${DIR}" --no-single-branch
     cd "${DIR}"
     git fetch --depth=1 origin "${REVISION}"
     git checkout "${REVISION}"
