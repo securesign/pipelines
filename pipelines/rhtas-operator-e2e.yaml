@@ -30,7 +30,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: "release-1.2"
           - name: pathInRepo
             value: tasks/parse-metadata.yaml
       params:
@@ -293,7 +293,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: "release-1.2"
                 - name: pathInRepo
                   value: stepactions/git-clone.yaml
             params:
@@ -350,7 +350,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: "release-1.2"
                 - name: pathInRepo
                   value: stepactions/git-clone.yaml
             params:
@@ -527,7 +527,7 @@ spec:
                 - name: url
                   value: https://github.com/securesign/pipelines.git
                 - name: revision
-                  value: main
+                  value: "release-1.2"
                 - name: pathInRepo
                   value: stepactions/git-clone.yaml
             params:
