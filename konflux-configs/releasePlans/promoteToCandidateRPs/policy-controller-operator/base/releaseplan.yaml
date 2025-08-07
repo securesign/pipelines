@@ -7,7 +7,7 @@ metadata:
   name: promote-to-candidate-
   namespace: rhtas-tenant
 spec:
-  application: policy-controller
+  application: application
   tenantPipeline:
     params:
     - name: git-url
@@ -15,6 +15,16 @@ spec:
     - name: code-freeze
       value: "false"
     - name: type
-      value: "component"
+      value: "operator"
     - name: file-name
-      value: "policy-controller.json"
+      value: "policy-controller-operator.json"
+    serviceAccountName: rhtas-build-bot
+    pipelineRef:
+      resolver: git
+      params:
+        - name: url
+          value: "https://github.com/securesign/pipelines"
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: "pipelines/promote-to-candidate.yaml"

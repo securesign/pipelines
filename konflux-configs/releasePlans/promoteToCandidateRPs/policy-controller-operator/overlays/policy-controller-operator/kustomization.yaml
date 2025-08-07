@@ -1,0 +1,9 @@
+resources:
+- ../../../policy-controller-operator/base
+
+nameSuffix: policy-controller-operator
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+patches:
+- path: patch.yaml
