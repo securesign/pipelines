@@ -395,7 +395,7 @@ spec:
               - name: credentials
                 value: credentials
           - name: git-clone-policy-controller
-            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:a90b4605b47c396c74de55f574d0f9e03b24ca177dec54782f86cdf702c97dbc
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:3f552f246b4bd5bdfb4da0812085d381d00d3625769baecaed58c2667d344e5c
             env:
               - name: GIT_URL
                 value: "$(params.POLICY_CONTROLLER_OPERATOR_GIT_URL)"
@@ -415,7 +415,7 @@ spec:
                 git checkout "$GIT_REVISION"
               fi
           - name: execute-operator-e2e
-            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:a90b4605b47c396c74de55f574d0f9e03b24ca177dec54782f86cdf702c97dbc
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:3f552f246b4bd5bdfb4da0812085d381d00d3625769baecaed58c2667d344e5c
             env:
               - name: OIDC_HOST
                 value: "$(tasks.install-securesign.results.oidc-hostname)"
