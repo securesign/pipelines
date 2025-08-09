@@ -580,7 +580,7 @@ spec:
               - name: OIDC_HOST
                 value: "$(tasks.prepare-tests.results.oidc-hostname)"
           - name: push-test-image
-            image: quay.io/konflux-ci/buildah-task:latest@sha256:c8d667a4efa2f05e73e2ac36b55928633d78857589165bd919d2628812d7ffcb
+            image: quay.io/konflux-ci/buildah-task:latest@sha256:121ccc64ade7c25fa85e9476d6a318d0020afb159cfc0217c082c04261b3bfdf
             results:
               - name: image
                 type: string
