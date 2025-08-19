@@ -326,6 +326,8 @@ spec:
           value: "policy-controller-operator"
         - name: operator-deployment-name
           value: "policy-op-controller-manager"
+        - name: installChannel
+          value: "tech-preview"
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in

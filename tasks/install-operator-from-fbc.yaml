@@ -22,6 +22,10 @@ spec:
       type: string
       default: "rhtas-operator-controller-manager"
       description: Namespace to be used for installation
+    - name: installChannel
+      type: string
+      default: stable
+      description: Operator installation channel (e.g., stable, fast, candidate)
   volumes:
     - name: credentials
       emptyDir: { }
@@ -78,7 +82,7 @@ spec:
           name: $(params.operator-name)
           namespace: openshift-operators
         spec:
-          channel: stable
+          channel: $(params.installChannel)
           installPlanApproval: Automatic
           name: $(params.operator-name)
           source: tas-test
