@@ -197,6 +197,15 @@ spec:
       - "release=$SOURCE_DATE_EPOCH"
     - name: source-date-epoch
       value: '$(tasks.clone-repository.results.commit-timestamp)'
+    - name: version
+      value:
+      - "version=1.3.0"
+    - name: vendor
+      value:
+      - "vendor=Red Hat, Inc"
+    - name: maintainer
+      value:
+      - "maintainer=Red Hat, Inc"
     runAfter:
     - clone-repository
     taskRef:
