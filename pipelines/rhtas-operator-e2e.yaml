@@ -129,6 +129,9 @@ spec:
                   - source: registry.redhat.io/rhtas/rekor-backfill-redis-rhel9
                     mirrors:
                     - quay.io/securesign/rekor-backfill-redis
+                  - source: registry.redhat.io/rhtas/rekor-monitor-rhel9
+                    mirrors:
+                    - quay.io/securesign/rekor-monitor
                   - source: registry.redhat.io/rhtas/tuf-server-rhel9
                     mirrors:
                     - quay.io/securesign/scaffold-tuf-server
