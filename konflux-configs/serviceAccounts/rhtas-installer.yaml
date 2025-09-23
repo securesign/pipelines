@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhtas-installer
+  namespace: rhtas-tenant
+secrets:
+  - name: registry-redhat-io-pull-secret
+imagePullSecrets:
+  - name: registry-redhat-io-pull-secret

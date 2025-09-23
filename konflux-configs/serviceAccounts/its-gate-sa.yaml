@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhtas-its-gate
+  namespace: rhtas-tenant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhtas-its-gate-role
+  namespace: rhtas-tenant
+rules:
+  - apiGroups: ["appstudio.redhat.com"]
+    resources: ["snapshots"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhtas-its-gate-rolebinding
+  namespace: rhtas-tenant
+subjects:
+  - kind: ServiceAccount
+    name: rhtas-its-gate
+    namespace: rhtas-tenant
+roleRef:
+  kind: Role
+  name: rhtas-its-gate-role
+  apiGroup: rbac.authorization.k8s.io

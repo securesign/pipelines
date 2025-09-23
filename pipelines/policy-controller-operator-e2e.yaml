@@ -136,6 +136,7 @@ spec:
             value: main
           - name: pathInRepo
             value: tasks/install-operator-from-bundle.yaml
+      serviceAccountName: rhtas-installer
       params:
         - name: eaasSpaceSecretRef
           value: $(tasks.provision-eaas-space.results.secretRef)
