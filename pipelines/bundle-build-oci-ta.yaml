@@ -183,6 +183,9 @@ spec:
     - name: maintainer
       value:
       - "maintainer=Red Hat, Inc"
+    - name:
+      value:
+      - cpe="cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
     runAfter:
     - clone-repository
     taskRef:
