@@ -427,6 +427,13 @@ spec:
                 value: "$(params.TAS_E2E_NAMESPACE)"
               - name: POLICY_CONTROLLER_OPERATOR_NS
                 value: "$(params.POLICY_CONTROLLER_OPERATOR_NS)"
+            computeResources:
+              requests:
+                cpu: "1500m"
+                memory: "3Gi"
+              limits:
+                cpu: "3"
+                memory: "6Gi"
             volumeMounts:
               - name: repository
                 mountPath: /repository
