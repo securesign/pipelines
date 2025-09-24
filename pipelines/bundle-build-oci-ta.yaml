@@ -209,7 +209,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: main
+        value: 'db87a7e2042dbc04f455c200aa52d2e0fb69be4b'
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - name: build-container
