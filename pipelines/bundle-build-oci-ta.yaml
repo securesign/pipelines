@@ -207,9 +207,9 @@ spec:
       resolver: bundles
       params:
       - name: bundle
-        value: quay.io/securesign/get-manager-image@sha256:f52037175497d36ebaae419bd44054cf97a3cfcd16578cb2b3368f16e315b955
+        value: quay.io/japower/collect-operator-manager-image@sha256:90f8880266303ec3548f2ef7253d2b5960c27e0173487941d451271d06ab563f
       - name: name
-        value: wait-for-pipelinerun
+        value: collect-operator-manager-image
       - name: kind
         value: Task
   - name: build-container
