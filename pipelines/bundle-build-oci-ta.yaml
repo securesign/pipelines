@@ -204,14 +204,14 @@ spec:
     runAfter:
     - clone-repository
     taskRef:
-      resolver: git
+      resolver: bundles
       params:
-      - name: url
-        value: "https://github.com/securesign/pipelines.git"
-      - name: revision
-        value: 'db87a7e2042dbc04f455c200aa52d2e0fb69be4b'
-      - name: pathInRepo
-        value: tasks/wait-for-pipelinerun.yaml
+      - name: bundle
+        value: quay.io/securesign/get-manager-image@sha256:f52037175497d36ebaae419bd44054cf97a3cfcd16578cb2b3368f16e315b955
+      - name: name
+        value: wait-for-pipelinerun
+      - name: kind
+        value: Task
   - name: build-container
     params:
     - name: IMAGE
