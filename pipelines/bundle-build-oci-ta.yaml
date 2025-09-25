@@ -231,7 +231,7 @@ spec:
     - name: BUILD_ARGS
       value:
       - $(params.build-args[*])
-      - 'IMG=$(params.manager-registry-url)@$(tasks.get-manager-image.results.IMAGE_DIGEST)'
+      - 'IMG=$(params.manager-registry-url)@$(tasks.wait-for-pipelinerun-image.results.IMAGE_DIGEST)'
     - name: BUILD_ARGS_FILE
       value: $(params.build-args-file)
     - name: SOURCE_ARTIFACT
@@ -245,7 +245,7 @@ spec:
     runAfter:
     - prefetch-dependencies
     - generate-labels
-    - get-manager-image
+    - wait-for-pipelinerun-image
     taskRef:
       params:
       - name: name
