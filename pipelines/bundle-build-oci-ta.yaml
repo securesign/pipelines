@@ -207,7 +207,7 @@ spec:
       resolver: bundles
       params:
       - name: bundle
-        value: quay.io/japower/collect-operator-manager-image@sha256:f6f7908ac3dff1af91855f789c191fd8332ff17ee2e5d530a6bc62d7249a0362
+        value: quay.io/japower/collect-operator-manager-image@sha256:d996c15621d8ec7e696ed0ee4c09d157a1b5bde8854face20d33c8f4fa8046ba
       - name: name
         value: collect-operator-manager-image
       - name: kind
