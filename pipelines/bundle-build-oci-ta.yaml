@@ -197,7 +197,7 @@ spec:
       - name: kind
         value: task
       resolver: bundles
-  - name: get-manager-image
+  - name: wait-for-pipelinerun-image
     params:
     - name: selector
       value: $(params.manager-pipelinerun-selector)
@@ -207,9 +207,9 @@ spec:
       resolver: bundles
       params:
       - name: bundle
-        value: quay.io/japower/collect-operator-manager-image@sha256:d996c15621d8ec7e696ed0ee4c09d157a1b5bde8854face20d33c8f4fa8046ba
+        value: quay.io/japower/collect-operator-manager-image@sha256:755222c24dffbddb6ad5e275b254cf047d2b1d728fb369d0a4f6b1130ed1e4b6
       - name: name
-        value: collect-operator-manager-image
+        value: wait-for-pipelinerun-image
       - name: kind
         value: Task
   - name: build-container
