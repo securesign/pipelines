@@ -184,7 +184,7 @@ spec:
     - name: maintainer
       value:
       - "maintainer=Red Hat, Inc"
-    - name:
+    - name: cpe
       value:
       - "cpe=cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
     runAfter:
