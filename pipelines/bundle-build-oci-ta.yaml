@@ -209,7 +209,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: 'db87a7e2042dbc04f455c200aa52d2e0fb69be4b'
+        value: 'bcb1f70b96585ee7d591eeef62a75eeb5a1dea55'
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - name: build-container
@@ -231,7 +231,7 @@ spec:
     - name: BUILD_ARGS
       value:
       - $(params.build-args[*])
-      - 'IMG=$(params.manager-registry-url)@$(tasks.get-manager-image.results.IMAGE_DIGEST)'
+      - 'IMG=$(params.manager-registry-url)@$(tasks.get-manager-image.results.ARTIFACT_DIGEST)'
     - name: BUILD_ARGS_FILE
       value: $(params.build-args-file)
     - name: SOURCE_ARTIFACT
