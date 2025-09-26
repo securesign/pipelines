@@ -178,8 +178,13 @@ spec:
   - name: generate-labels
     params:
     - name: label-templates
-      value:
-      - "release=$SOURCE_DATE_EPOCH"
+      value: [
+        "release=$SOURCE_DATE_EPOCH",
+        "version=1.3.0",
+        "vendor=Red Hat, Inc.",
+        "maintainer=rhtas-support@redhat.com",
+        "cpe=cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
+        ]
     - name: source-date-epoch
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     - name: version
