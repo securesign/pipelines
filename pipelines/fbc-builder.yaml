@@ -168,7 +168,6 @@ spec:
       value: [
         "release=$SOURCE_DATE_EPOCH",
         "vendor=Red Hat, Inc.",
-        "release=1.3.0",
         "maintainer=rhtas-support@redhat.com",
         ]
     - name: source-date-epoch

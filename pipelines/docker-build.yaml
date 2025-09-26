@@ -197,7 +197,6 @@ spec:
         "release=$SOURCE_DATE_EPOCH",
         "version=1.3.0",
         "vendor=Red Hat, Inc.",
-        "release=1.3.0",
         "maintainer=rhtas-support@redhat.com",
         "cpe=cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
         ]
