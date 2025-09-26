@@ -176,7 +176,7 @@ spec:
         "vendor=Red Hat, Inc",
         "release=1.3.0",
         "maintainer=rhtas-support@redhat.com",
-        "cpe=cpe:/a:redhat:trusted_`artifact_signer:1.3.0::el9"
+        "cpe=cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"
         ]
     - name: source-date-epoch
       value: '$(tasks.clone-repository.results.commit-timestamp)'
