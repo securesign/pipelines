@@ -3,6 +3,11 @@ kind: Pipeline
 metadata:
   name: fbc-builder
 spec:
+  steps:
+    - name: build-fbc
+      computeResources:
+        limits:
+          memory: 3Gi
   finally:
   - name: show-sbom
     params:
