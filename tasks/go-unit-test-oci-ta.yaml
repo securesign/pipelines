@@ -49,7 +49,7 @@ spec:
         fi
         go mod vendor
         $(params.GO_TEST_COMMAND)
-      computeResources:
+      resources:
         limits:
           memory: 3Gi
   volumes:
