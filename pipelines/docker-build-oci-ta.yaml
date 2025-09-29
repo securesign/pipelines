@@ -3,11 +3,6 @@ kind: Pipeline
 metadata:
   name: docker-build-oci-ta
 spec:
-  steps:
-    - name: run-tests
-      computeResources:
-        limits:
-          memory: 3Gi
   finally:
   - name: show-sbom
     params:
