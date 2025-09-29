@@ -7,7 +7,6 @@ spec:
     - name: run-tests
       computeResources:
         limits:
-          cpu: "3"
           memory: 3Gi
   finally:
   - name: show-sbom
