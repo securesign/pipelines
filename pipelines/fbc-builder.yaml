@@ -3,11 +3,6 @@ kind: Pipeline
 metadata:
   name: fbc-builder
 spec:
-  steps:
-    - name: build-fbc
-      computeResources:
-        limits:
-          memory: 3Gi
   finally:
   - name: show-sbom
     params:
@@ -331,6 +326,11 @@ spec:
       values:
       - "false"
   - name: fbc-target-index-pruning-check
+    computeResources:
+      limits:
+        memory: 3Gi
+      requests:
+        memory: 3Gi
     params:
     - name: IMAGE_URL
       value: $(tasks.build-image-index.results.IMAGE_URL)
@@ -357,6 +357,11 @@ spec:
       values:
       - "false"
   - name: fbc-fips-check-oci-ta
+    computeResources:
+      limits:
+        memory: 3Gi
+      requests:
+        memory: 3Gi
     params:
     - name: image-digest
       value: $(tasks.build-image-index.results.IMAGE_DIGEST)
