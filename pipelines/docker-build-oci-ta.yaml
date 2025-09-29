@@ -9,9 +9,6 @@ spec:
         limits:
           cpu: "3"
           memory: 3Gi
-        requests:
-          cpu: "3"
-          memory: 3Gi
   finally:
   - name: show-sbom
     params:
