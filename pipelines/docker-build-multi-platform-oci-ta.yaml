@@ -28,6 +28,18 @@ spec:
   - description: Fully Qualified Output Image
     name: output-image
     type: string
+  # Add these parameters definitions
+  - description: Private output image reference used for Sealights artifacts
+    name: sealights-output-image
+    type: string
+  - description: If you have a dedicated Dockerfile for Sealights instrumented image,
+      use this parameter to point to that file
+    name: sealights-dockerfile
+    type: string
+  - name: sealights-image-expires-after
+    default: ""
+    description: Sealights image tag expiration time, time values could be something like
+      1h, 2d, 3w for hours, days, and weeks, respectively.
   - default: .
     description: Path to the source code of an application's component from where to build image.
     name: path-context
@@ -140,6 +152,41 @@ spec:
     workspaces:
     - name: basic-auth
       workspace: git-auth
+  - name: sealights-instrumentation
+    runAfter:
+      - clone-repository
+    taskRef:
+      params:
+      - name: name
+        value: sealights-go-oci-ta
+      - name: bundle
+        value: quay.io/konflux-ci/tekton-catalog/task-sealights-go-oci-ta:0.1@sha256:830e4fd25f250dd0c8b3619693c5691f260f54c8458424c4b5f9925e72b517aa
+      - name: kind
+        value: task
+      resolver: bundles
+    params:
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      - name: component
+        value: '{{ repo_name }}'
+      - name: branch
+        value: '{{ source_branch }}'
+      - name: revision
+        value: '{{ revision }}'
+      - name: repository-url
+        value: '{{ repo_url }}'
+      - name: test-event
+        value: '{{ event_type }}'
+      - name: pull-request-number
+        value: '{{ pull_request_number }}'
+      - name: target-branch
+        value: '{{ target_branch }}'
+      - name: packages-excluded
+        value:
+          - "github.com/your-org/your-repo/pkg/pkg1-to-ignore"
+          - "github.com/your-org/your-repo/pkg/pkg2-to-ignore"
+      - name: oci-storage
+        value: $(params.sealights-output-image).sealights.git
   - name: prefetch-dependencies
     params:
     - name: input
