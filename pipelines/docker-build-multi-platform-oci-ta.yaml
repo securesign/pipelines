@@ -28,6 +28,24 @@ spec:
   - description: Fully Qualified Output Image
     name: output-image
     type: string
+  - description: component
+    name: component
+    type: string 
+  - description: branch
+    name: branch
+    type: string 
+  - description: repository-url
+    name: repository-url
+    type: string 
+  - description: test-event
+    name: test-event
+    type: string 
+  - description: pull-request-number
+    name: pull-request-number
+    type: string 
+  - description: target-branch
+    name: target-branch
+    type: string 
   # Add these parameters definitions
   - description: Private output image reference used for Sealights artifacts
     name: sealights-output-image
@@ -168,19 +186,19 @@ spec:
       - name: SOURCE_ARTIFACT
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: component
-        value: '{{ repo_name }}'
+        value: $(params.component)
       - name: branch
-        value: '{{ source_branch }}'
+        value: $(params.branch)
       - name: revision
-        value: '{{ revision }}'
+        value: $(params.revision)
       - name: repository-url
-        value: '{{ repo_url }}'
+        value: $(params.repository-url)
       - name: test-event
-        value: '{{ event_type }}'
+        value: $(params.test-event)
       - name: pull-request-number
-        value: '{{ pull_request_number }}'
+        value: $(params.pull-request-number)
       - name: target-branch
-        value: '{{ target_branch }}'
+        value: $(params.target-branch)
       - name: packages-excluded
         value:
           - "github.com/your-org/your-repo/pkg/pkg1-to-ignore"
