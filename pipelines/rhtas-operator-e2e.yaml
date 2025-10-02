@@ -36,6 +36,21 @@ spec:
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
+    - name: sealights-get-refs
+      runAfter:
+        - parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/sealights/sealights-get-refs/0.1/sealights-get-refs.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
     - name: provision-eaas-space
       taskRef:
         resolver: bundles
@@ -658,3 +673,98 @@ spec:
               go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
             securityContext:
               runAsUser: 0
+    - name: deploy
+      runAfter:
+        - provision-cluster
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: {}
+        results:
+          - name: BASE_URL
+            description: The base URL of the deployed service
+        steps:
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: apply-deployment
+            image: registry.redhat.io/openshift4/ose-cli:v4.15
+            workingDir: /workspace
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+            env:
+              - name: COMPONENT_IMAGE
+                value: "$(tasks.sealights-get-refs.results.container-image)"
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: SEALIGHTS_IMAGE_PULL_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: imagerepository-for-operator-rhtas-operator-sealights-image-pull
+                    key: .dockerconfigjson
+            script: |
+              #!/bin/sh
+              set -eux
+
+              yum install git -y
+
+              BRANCH_NAME="$(tasks.test-metadata.results.target-repo-branch)"
+              if [[ "$(tasks.test-metadata.results.test-event-type)" == "pull_request" ]]; then
+                BRANCH_NAME="$(tasks.test-metadata.results.source-repo-branch)"
+              fi
+              git clone "$(tasks.test-metadata.results.git-url)" -b $BRANCH_NAME .
+              
+              NS="rhtas-operator-$(date +%s)"
+              oc new-project $NS
+
+              # Create the pull secret for pulling private instrumented container image
+              echo $SEALIGHTS_IMAGE_PULL_SECRET > pull-secret.json
+              oc create secret docker-registry sealights-pull-secret --from-file=.dockerconfigjson=pull-secret.json -n $NS
+              oc secrets link default sealights-pull-secret --for=pull -n $NS
+
+              # Apply & expose the deployment
+              sed -i "s|\${IMAGE}|$COMPONENT_IMAGE|g" $(params.deployment-file)
+              oc apply -f $(params.deployment-file) -n $NS
+              oc expose deployment rhtas-operator --type=ClusterIP --name=rhtas-operator-app-service -n $NS
+
+              # Create an OpenShift route
+              cat <<EOF | oc apply -n $NS -f -
+              apiVersion: route.openshift.io/v1
+              kind: Route
+              metadata:
+                name: rhtas-operator-app-route
+              spec:
+                to:
+                  kind: Service
+                  name: rhtas-operator-app-service
+                port:
+                  targetPort: 5000  # Match the port the service exposes
+              EOF
+
+              # Wait for the route hostname to be available
+              export ROUTE_HOST=""
+              while [ -z "$ROUTE_HOST" ]; do
+                ROUTE_HOST=$(oc get route rhtas-operator-app-route -o jsonpath='{.spec.host}')
+                sleep 10
+              done
+
+              oc wait --for=condition=ready pod -l app=rhtas-operator -n $NS --timeout=5m
+
+              export BASE_URL="http://${ROUTE_HOST}"
+              echo "Application exposed at ${BASE_URL}"
+              echo -n "${BASE_URL}" > /tekton/results/BASE_URL
