@@ -728,11 +728,8 @@ spec:
 
               yum install git -y
 
-              BRANCH_NAME="$(tasks.test-metadata.results.target-repo-branch)"
-              if [[ "$(tasks.test-metadata.results.test-event-type)" == "pull_request" ]]; then
-                BRANCH_NAME="$(tasks.test-metadata.results.source-repo-branch)"
-              fi
-              git clone "$(tasks.test-metadata.results.git-url)" -b $BRANCH_NAME .
+              BRANCH_NAME="$(tasks.parse-metadata.results.revision)"
+              git clone "$(tasks.parse-metadata.results.git-url)" -b $BRANCH_NAME .
               
               NS="rhtas-operator-$(date +%s)"
               oc new-project $NS
