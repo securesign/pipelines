@@ -126,7 +126,7 @@ spec:
   - name: init
     params:
     - name: image-url
-      value: $(params.output-image)
+      value: $(params.sealights-output-image)
     - name: rebuild
       value: $(params.rebuild)
     - name: skip-checks
@@ -147,9 +147,9 @@ spec:
     - name: revision
       value: $(params.revision)
     - name: ociStorage
-      value: $(params.output-image).git
+      value: $(params.sealights-output-image).git
     - name: ociArtifactExpiresAfter
-      value: $(params.image-expires-after)
+      value: $(params.sealights-image-expires-after)
     runAfter:
     - init
     taskRef:
@@ -211,9 +211,9 @@ spec:
     - name: SOURCE_ARTIFACT
       value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
     - name: ociStorage
-      value: $(params.output-image).prefetch
+      value: $(params.sealights-output-image).prefetch
     - name: ociArtifactExpiresAfter
-      value: $(params.image-expires-after)
+      value: $(params.sealights-image-expires-after)
     - name: dev-package-managers
       value: $(params.dev-package-managers)
     runAfter:
@@ -263,9 +263,9 @@ spec:
     name: build-images
     params:
     - name: IMAGE
-      value: $(params.output-image)
+      value: $(params.sealights-output-image)
     - name: DOCKERFILE
-      value: $(params.dockerfile)
+      value: $(params.sealights-dockerfile)
     - name: CONTEXT
       value: $(params.path-context)
     - name: HERMETIC
@@ -273,7 +273,7 @@ spec:
     - name: PREFETCH_INPUT
       value: $(params.prefetch-input)
     - name: IMAGE_EXPIRES_AFTER
-      value: $(params.image-expires-after)
+      value: $(params.sealights-image-expires-after)
     - name: COMMIT_SHA
       value: $(tasks.clone-repository.results.commit)
     - name: BUILD_ARGS
@@ -311,11 +311,11 @@ spec:
   - name: build-image-index
     params:
     - name: IMAGE
-      value: $(params.output-image)
+      value: $(params.sealights-output-image)
     - name: COMMIT_SHA
       value: $(tasks.clone-repository.results.commit)
     - name: IMAGE_EXPIRES_AFTER
-      value: $(params.image-expires-after)
+      value: $(params.sealights-image-expires-after)
     - name: ALWAYS_BUILD_INDEX
       value: $(params.build-image-index)
     - name: IMAGES
@@ -557,7 +557,7 @@ spec:
     - name: IMAGE_DIGEST
       value: $(tasks.build-image-index.results.IMAGE_DIGEST)
     - name: DOCKERFILE
-      value: $(params.dockerfile)
+      value: $(params.sealights-dockerfile)
     - name: CONTEXT
       value: $(params.path-context)
     - name: SOURCE_ARTIFACT
