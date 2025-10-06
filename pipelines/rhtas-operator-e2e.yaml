@@ -723,7 +723,6 @@ spec:
                     name: sealights-credentials
                     key: token
             script: |
-              #!/bin/sh
               set -eux
 
               yum install git -y
