@@ -209,7 +209,7 @@ spec:
     - name: input
       value: $(params.prefetch-input)
     - name: SOURCE_ARTIFACT
-      value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      value: $(tasks.sealights-instrumentation.results.SOURCE_ARTIFACT)
     - name: ociStorage
       value: $(params.sealights-output-image).prefetch
     - name: ociArtifactExpiresAfter
@@ -218,6 +218,7 @@ spec:
       value: $(params.dev-package-managers)
     runAfter:
     - clone-repository
+    - sealights-instrumentation
     taskRef:
       params:
       - name: name
