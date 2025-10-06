@@ -673,7 +673,7 @@ spec:
               go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
             securityContext:
               runAsUser: 0
-    - name: deploy and test
+    - name: deploy-test
       runAfter:
         - provision-cluster
       taskSpec:
