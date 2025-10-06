@@ -243,8 +243,7 @@ spec:
           values: [
             "fbc-v4-19", "fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15",
             "fbc-v4-19-v1-2", "fbc-v4-18-v1-2", "fbc-v4-17-v1-2", "fbc-v4-16-v1-2", "fbc-v4-15-v1-2",
-            "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1", "fbc-v4-14-v1-1"
-          ]
+            "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1"]
     - name: prepare-tests
       runAfter:
         # run after either one
