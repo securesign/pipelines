@@ -680,6 +680,7 @@ spec:
     - name: deploy-test
       runAfter:
         - provision-cluster
+        - sealights-get-refs
       taskSpec:
         volumes:
           - name: credentials
