@@ -40,9 +40,24 @@ spec:
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
+    - name: test-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/tekton-integration-catalog.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: common/tasks/test-metadata/0.1/test-metadata.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: test-name
+          value: $(context.pipelineRun.name)
     - name: sealights-get-refs
       runAfter:
-        - parse-metadata
+        - test-metadata
       taskRef:
         resolver: git
         params:
