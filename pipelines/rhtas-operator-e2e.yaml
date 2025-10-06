@@ -57,6 +57,7 @@ spec:
           value: $(context.pipelineRun.name)
     - name: sealights-get-refs
       runAfter:
+        - provision-cluster
         - test-metadata
       taskRef:
         resolver: git
