@@ -871,22 +871,7 @@ spec:
               
               dnf install -y git jq procps && dnf clean all
               
-              if [ -z "$BASE_URL" ] || [ -z "$REPO_URL" ] || [ -z "$EVENT_TYPE" ]; then
-                  echo "Error: Required environment variables (BASE_URL, REPO_URL, EVENT_TYPE) are empty."
-                  exit 1
-              fi
-
-              BRANCH_NAME="$GIT_REVISION"
-              if [[ "$EVENT_TYPE" == "pull_request" ]]; then
-                if [ -z "$SOURCE_REPO_BRANCH" ]; then
-                    echo "Error: EVENT_TYPE is 'pull_request' but SOURCE_BRANCH is empty."
-                    exit 1
-                fi
-                BRANCH_NAME="$SOURCE_REPO_BRANCH"
-              fi
-              
-              echo "Cloning $REPO_URL on branch $BRANCH_NAME"
-              git clone "$REPO_URL" -b "$BRANCH_NAME" .
+              git clone "$REPO_URL" -b "$SOURCE_REPO_BRANCH" .
 
               go install github.com/onsi/ginkgo/v2/ginkgo@latest
               export PATH=$PATH:$(go env GOPATH)/bin
