@@ -10,9 +10,6 @@ spec:
     - name: credentials
       type: string
       description: Name of the volume with credentials.
-    - name: repository
-      type: string
-      description: Volume with resources to be applied.
     - name: workdir
       type: string
       description: Repository home directory.
@@ -26,14 +23,12 @@ spec:
   volumeMounts:
     - name: "$(params.credentials)"
       mountPath: /credentials
-    - name: "$(params.repository)"
-      mountPath: /repository
   env:
     - name: KUBECONFIG
       value: "/credentials/$(params.KUBECONFIG)"
     - name: WORKDIR
       value: "$(params.workdir)"
   script: |
-    cd /repository/$WORKDIR
+    cd $WORKDIR
     ci/openshift/tas-keycloak-install.sh
     oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}' > "$(step.results.oidc-hostname.path)"
