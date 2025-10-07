@@ -58,6 +58,7 @@ spec:
     - name: sealights-get-refs
       runAfter:
         - test-metadata
+        - provision-cluster
       taskRef:
         resolver: git
         params:
@@ -745,14 +746,14 @@ spec:
             script: |
               set -eux
 
+              yum install git jq -y
+
               COMPONENT_IMAGE=$(jq -r '.[0]' <<< "$SEALIGHTS_IMAGES_ARRAY")
               if [[ "$COMPONENT_IMAGE" == "null" ]] || [[ -z "$COMPONENT_IMAGE" ]]; then
                 echo "ERROR: Could not extract the first instrumented image from the array: $SEALIGHTS_IMAGES_ARRAY"
                 exit 1
               fi
               echo "Deploying instrumented image: $COMPONENT_IMAGE"
-
-              yum install git -y
 
               BRANCH_NAME="main"
               git clone "$(tasks.parse-metadata.results.git-url)" -b $BRANCH_NAME .
