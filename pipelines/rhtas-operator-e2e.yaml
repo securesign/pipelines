@@ -850,8 +850,8 @@ spec:
             script: |
               #!/bin/bash
               set -euox
-              
-              apt-get update && apt-get install -y git curl jq man-db procps && rm -rf /var/lib/apt/lists/*
+             
+              dnf install -y git curl jq procps && dnf clean all
               
               if [ -z "$BASE_URL" ]; then
                   echo "Error: BASE_URL is not set!"
