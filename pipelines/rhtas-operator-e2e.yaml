@@ -64,9 +64,9 @@ spec:
           - name: url
             value: https://github.com/SequeI/tekton-integration-catalog.git
           - name: revision
-            value: sealightTest
+            value: sealight0.2
           - name: pathInRepo
-            value: tasks/sealights/sealights-get-refs/0.1/sealights-get-refs.yaml
+            value: tasks/sealights/sealights-get-refs/0.2/sealights-get-refs.yaml
       params:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
