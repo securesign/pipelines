@@ -729,7 +729,7 @@ spec:
                 mountPath: /credentials
             env:
               - name: SEALIGHTS_IMAGES_ARRAY
-                value: "$(tasks.sealights-get-refs.results.sealights_instrumented_images)"
+                value: "$(tasks.sealights-get-refs.results.sealights-instrumented-images)"
               - name: KUBECONFIG
                 value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: SEALIGHTS_IMAGE_PULL_SECRET
