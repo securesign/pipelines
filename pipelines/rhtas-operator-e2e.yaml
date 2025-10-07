@@ -830,97 +830,100 @@ spec:
     - name: run-ginkgo-tests
       runAfter:
         - deploy-test
-      image: golang:1.22-slim
-      workingDir: /workspace
-      env:
-        - name: BASE_URL
-          value: "$(tasks.deploy-test.results.BASE_URL)"
-        - name: SEALIGHTS_AGENT_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: sealights-credentials
-              key: token
-        - name: BUILD_SESSION_ID
-          value: $(tasks.sealights-get-refs.results.sealights-bsid)
-        - name: DOMAIN
-          value: "redhat.sealights.co"
-      script: |
-        #!/bin/bash
-        set -eux
+      taskSpec:
+        steps:
+          - name: run-ginkgo-tests
+            image: golang:1.22-slim
+            workingDir: /workspace
+            env:
+              - name: BASE_URL
+                value: "$(tasks.deploy-test.results.BASE_URL)" 
+              - name: SEALIGHTS_AGENT_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: sealights-credentials
+                    key: token
+              - name: BUILD_SESSION_ID
+                value: $(tasks.sealights-get-refs.results.sealights-bsid)
+              - name: DOMAIN
+                value: "redhat.sealights.co"
+            script: |
+              #!/bin/bash
+              set -eux
+              
+              apt-get update && apt-get install -y git curl jq man-db procps && rm -rf /var/lib/apt/lists/*
+              
+              if [ -z "$BASE_URL" ]; then
+                  echo "Error: BASE_URL is not set!"
+                  exit 1
+              fi
 
-        apt-get update && apt-get install -y git curl jq man-db procps && rm -rf /var/lib/apt/lists/*
-        
-        if [ -z "$BASE_URL" ]; then
-            echo "Error: BASE_URL is not set!"
-            exit 1
-        fi
+              BRANCH_NAME="$(tasks.test-metadata.results.target-repo-branch)"
+              if [[ "$(tasks.test-metadata.results.test-event-type)" == "pull_request" ]]; then
+                BRANCH_NAME="$(tasks.test-metadata.results.source-repo-branch)"
+              fi
+              git clone "$(tasks.test-metadata.results.git-url)" -b "$BRANCH_NAME" .
 
-        BRANCH_NAME="$(tasks.test-metadata.results.target-repo-branch)"
-        if [[ "$(tasks.test-metadata.results.test-event-type)" == "pull_request" ]]; then
-          BRANCH_NAME="$(tasks.test-metadata.results.source-repo-branch)"
-        fi
-        git clone "$(tasks.test-metadata.results.git-url)" -b $BRANCH_NAME .
+              go install github.com/onsi/ginkgo/v2/ginkgo@latest
+              export PATH=$PATH:$(go env GOPATH)/bin
+              
+              echo "INFO: Creating Sealights test session..."
+              TEST_SESSION_ID=$(curl -X POST "https://$DOMAIN/sl-api/v1/test-sessions" \
+                -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"labId":"","testStage":"go-calc-integration","bsid":"'${BUILD_SESSION_ID}'","sessionTimeout":10000}' | jq -r '.data.testSessionId')
 
-        go install github.com/onsi/ginkgo/v2/ginkgo@latest
-        export PATH=$PATH:$(go env GOPATH)/bin # Ensure ginkgo is in PATH
-        
-        echo "INFO: Creating Sealights test session..."
-        TEST_SESSION_ID=$(curl -X POST "https://$DOMAIN/sl-api/v1/test-sessions" \
-          -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d '{"labId":"","testStage":"go-calc-integration","bsid":"'${BUILD_SESSION_ID}'","sessionTimeout":10000}' | jq -r '.data.testSessionId')
+              if [ -n "$TEST_SESSION_ID" ]; then
+                echo "Test session ID: $TEST_SESSION_ID"
+                export TEST_SESSION_ID
+              else
+                echo "Failed to retrieve test session ID"
+                exit 1
+              fi
 
-        if [ -n "$TEST_SESSION_ID" ]; then
-          echo "Test session ID: $TEST_SESSION_ID"
-          export TEST_SESSION_ID
-        else
-          echo "Failed to retrieve test session ID"
-          exit 1
-        fi
+              RESPONSE=$(curl -X GET "https://$DOMAIN/sl-api/v2/test-sessions/$TEST_SESSION_ID/exclude-tests" \
+                -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
+                -H "Content-Type: application/json")
 
-        RESPONSE=$(curl -X GET "https://$DOMAIN/sl-api/v2/test-sessions/$TEST_SESSION_ID/exclude-tests" \
-          -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
-          -H "Content-Type: application/json")
+              echo "$RESPONSE" | jq .
 
-        echo "$RESPONSE" | jq .
+              mapfile -t EXCLUDED_TESTS < <(echo "$RESPONSE" | jq -r '.data.excludedTests[].testName')
 
-        mapfile -t EXCLUDED_TESTS < <(echo "$RESPONSE" | jq -r '.data.excludedTests[].testName')
+              GINKGO_CMD=("ginkgo" "--json-report=report.json")
+              for TEST in "${EXCLUDED_TESTS[@]}"; do
+                  GINKGO_CMD+=("--skip=$TEST")
+              done
 
-        GINKGO_CMD=("ginkgo" "--json-report=report.json")
-        for TEST in "${EXCLUDED_TESTS[@]}"; do
-            GINKGO_CMD+=("--skip=$TEST")
-        done
+              cd tests/e2e && "${GINKGO_CMD[@]}"
 
-        cd tests/e2e && "${GINKGO_CMD[@]}"
+              PROCESSED_JSON=$(
+                cat "report.json" | jq -c '.[] | .SpecReports[]' | while IFS= read -r line; do
+                  name=$(echo "$line" | jq -r '.LeafNodeText')
+                  start_raw=$(echo "$line" | jq -r '.StartTime')
+                  end_raw=$(echo "$line" | jq -r '.EndTime')
+                  status=$(echo "$line" | jq -r '.State')
 
-        PROCESSED_JSON=$(
-          cat "report.json" | jq -c '.[] | .SpecReports[]' | while IFS= read -r line; do
-            name=$(echo "$line" | jq -r '.LeafNodeText')
-            start_raw=$(echo "$line" | jq -r '.StartTime')
-            end_raw=$(echo "$line" | jq -r '.EndTime')
-            status=$(echo "$line" | jq -r '.State')
+                  start=$(date --date="$start_raw" +%s%3N)
 
-            start=$(date --date="$start_raw" +%s%3N)
+                  if [ -z "$end_raw" ] || [ "$end_raw" == "0001-01-01T00:00:00Z" ]; then
+                    end=$(date +%s%3N)
+                  else
+                    end=$(date --date="$end_raw" +%s%3N)
+                  fi
 
-            if [ -z "$end_raw" ] || [ "$end_raw" == "0001-01-01T00:00:00Z" ]; then
-              end=$(date +%s%3N)
-            else
-              end=$(date --date="$end_raw" +%s%3N)
-            fi
+                  echo "{\"name\": \"$name\", \"start\": $start, \"end\": $end, \"status\": \"$status\"}"
+                done | jq -s '.'
+              )
 
-            echo "{\"name\": \"$name\", \"start\": $start, \"end\": $end, \"status\": \"$status\"}"
-          done | jq -s '.'
-        )
+              echo "$PROCESSED_JSON" | jq .
 
-        echo "$PROCESSED_JSON" | jq .
+              curl -X POST "https://$DOMAIN/sl-api/v2/test-sessions/$TEST_SESSION_ID" \
+                -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "${PROCESSED_JSON}"
 
-        curl -X POST "https://$DOMAIN/sl-api/v2/test-sessions/$TEST_SESSION_ID" \
-          -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "${PROCESSED_JSON}"
+              curl -X DELETE "https://$DOMAIN/sl-api/v1/test-sessions/$TEST_SESSION_ID" \
+                -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
+                -H "Content-Type: application/json"
 
-        curl -X DELETE "https://$DOMAIN/sl-api/v1/test-sessions/$TEST_SESSION_ID" \
-          -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
-          -H "Content-Type: application/json"
-
-        echo "INFO: Script completed successfully."
+              echo "INFO: Script completed successfully."
