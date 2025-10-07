@@ -830,6 +830,8 @@ spec:
     - name: run-ginkgo-tests
       runAfter:
         - deploy-test
+        - test-metadata
+        - sealights-get-refs
       taskSpec:
         steps:
           - name: run-ginkgo-tests
@@ -861,8 +863,7 @@ spec:
               #!/bin/bash
               set -euox pipefail
               
-              # --- Setup: Install Tools ---
-              dnf install -y git curl jq procps && dnf clean all
+              dnf install -y git jq procps && dnf clean all
               
               if [ -z "$BASE_URL" ] || [ -z "$REPO_URL" ] || [ -z "$EVENT_TYPE" ]; then
                   echo "Error: Required environment variables (BASE_URL, REPO_URL, EVENT_TYPE) are empty."
