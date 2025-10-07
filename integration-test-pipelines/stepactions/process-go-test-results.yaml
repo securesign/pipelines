@@ -1,0 +1,68 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: process-go-test-results
+spec:
+  description: Create standardized TEST_OUTPUT variable from go test result
+  params:
+    - name: test_output_file
+      type: string
+      description: Test output json file to be processed
+  results:
+    - name: TEST_OUTPUT
+  image: quay.io/redhat-appstudio/konflux-test:stable
+  env:
+    - name: REPORT_FILE
+      value: $(params.test_output_file)
+  script: |
+    #!/bin/sh
+    set -e
+
+    # Check if file exists
+    if [ ! -f "$REPORT_FILE" ]; then
+      echo "Test report not found at $REPORT_FILE"
+      exit 1
+    fi
+    
+    #print out results
+    cat $REPORT_FILE | jq -r 'select(.Action == "output") | .Output'
+
+    # Extract test counts from JSON file
+    read FAILURES SUCCESSES WARNINGS <<EOF
+    $(jq -s -r '
+      [
+        (map(select(.Action == "fail" and .Test)) | length),
+        (map(select(.Action == "pass" and .Test)) | length),
+        (map(select(.Action == "skip" and .Test)) | length)
+      ] | @tsv
+    ' "$REPORT_FILE")
+    EOF
+
+    # Determine overall result
+    if [ "$FAILURES" -gt 0 ]; then
+      RESULT="FAILURE"
+    else
+      RESULT="SUCCESS"
+    fi
+
+    # Get timestamp
+    TIMESTAMP=$(date -u --iso-8601=seconds)
+
+    # Output JSON summary
+    jq -n --arg result "$RESULT" \
+          --arg timestamp "$TIMESTAMP" \
+          --argjson failures "$FAILURES" \
+          --argjson successes "$SUCCESSES" \
+          --argjson warnings "$WARNINGS" \
+    '{
+      result: $result,
+      timestamp: $timestamp,
+      failures: $failures,
+      successes: $successes,
+      warnings: $warnings
+    }' > "$(results.TEST_OUTPUT.path)"
+
+    if [ "$RESULT" != "SUCCESS" ]; then
+    echo "Tests failed — exiting with error"
+    exit 1
+    fi
