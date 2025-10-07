@@ -1,0 +1,383 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: operator-dast-
+spec:
+  workspaces:
+    - name: sources
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+  pipelineSpec:
+    params:
+      - name: SNAPSHOT
+      - name: OCP_VERSION
+        default: "4.17"
+      - name: TAS_DEPLOY_NAMESPACE
+        default: "tas-e2e"
+    workspaces:
+      - name: sources
+    tasks:
+      - name: parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/parse-metadata.yaml
+        params:
+          - name: SNAPSHOT
+            value: $(params.SNAPSHOT)
+      - name: clone-operator-source-code
+        runAfter:
+          - parse-metadata
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: $(tasks.parse-metadata.results.operator-url)
+          - name: revision
+            value: $(tasks.parse-metadata.results.operator-revision)
+          - name: subdirectory
+            value: "operator"
+        workspaces:
+          - name: output
+            workspace: sources
+      - name: provision-eaas-space
+        taskRef:
+          resolver: bundles
+          params:
+            - name: name
+              value: eaas-provision-space
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-4e4fa7355a6a51083954408e7e3b647e3bddb8d8
+            - name: kind
+              value: task
+        params:
+          - name: ownerName
+            value: $(context.pipelineRun.name)
+          - name: ownerUid
+            value: $(context.pipelineRun.uid)
+      - name: provision-cluster
+        runAfter:
+          - provision-eaas-space
+        taskSpec:
+          results:
+            - name: clusterName
+              type: string
+              value: "$(steps.create-cluster.results.clusterName)"
+          steps:
+            - name: pick-version
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+              params:
+                - name: prefix
+                  value: "$(params.OCP_VERSION)"
+            - name: create-cluster
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
+              params:
+                - name: eaasSpaceSecretRef
+                  value: $(tasks.provision-eaas-space.results.secretRef)
+                - name: version
+                  value: "$(steps.pick-version.results.version)"
+                - name: instanceType
+                  value: m5.large
+                - name: timeout
+                  value: 60m
+                - name: imageContentSources
+                  value: |
+                    - source: registry.redhat.io/rhtas/rhtas-operator-bundle
+                      mirrors:
+                        - quay.io/securesign/rhtas-operator-bundle
+                        - quay.io/securesign/rhtas-operator-bundle-v1-0
+                        - quay.io/securesign/rhtas-operator-bundle-v1-1
+                        - quay.io/securesign/rhtas-operator-bundle-v1-2
+                    - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
+                      mirrors:
+                        - quay.io/securesign/rhtas-operator
+                        - quay.io/securesign/rhtas-operator-v1-0
+                        - quay.io/securesign/rhtas-operator-v1-1
+                        - quay.io/securesign/rhtas-operator-v1-2
+                    - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-logsigner
+                    - source: registry.redhat.io/rhtas/trillian-logserver-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-logserver
+                    - source: registry.redhat.io/rhtas/trillian-database-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-database
+                    - source: registry.redhat.io/rhtas/fulcio-rhel9
+                      mirrors:
+                      - quay.io/securesign/fulcio-server
+                    - source: registry.redhat.io/rhtas/trillian-redis-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-redis
+                    - source: registry.redhat.io/rhtas/rekor-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-server
+                    - source: registry.redhat.io/rhtas/rekor-search-ui-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-search-ui
+                    - source: registry.redhat.io/rhtas/rekor-backfill-redis-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-backfill-redis
+                    - source: registry.redhat.io/rhtas/rekor-monitor-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-monitor
+                    - source: registry.redhat.io/rhtas/tuf-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/scaffold-tuf-server
+                    - source: registry.redhat.io/rhtas/certificate-transparency-rhel9
+                      mirrors:
+                      - quay.io/securesign/certificate-transparency-go
+                    - source: registry.redhat.io/rhtas/client-server-cg-rhel9
+                      mirrors:
+                      - quay.io/securesign/cli-client-server-cg
+                    - source: registry.redhat.io/rhtas/client-server-re-rhel9
+                      mirrors:
+                      - quay.io/securesign/client-server-re
+                    - source: registry.redhat.io/rhtas/segment-reporting-rhel9
+                      mirrors:
+                      - quay.io/securesign/segment-backup-job
+                    - source: registry.redhat.io/rhtas/timestamp-authority-rhel9
+                      mirrors:
+                      - quay.io/securesign/timestamp-authority
+                    - source: registry.redhat.io/rhtas/createtree-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-createtree
+                    - source: registry.redhat.io/rhtas/client-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/client-server
+                    - source: registry.redhat.io/rhtas/tuffer-rhel9
+                      mirrors:
+                      - quay.io/securesign/tuffer
+      - name: install-operator-from-fbc
+        timeout: "0h5m0s"
+        runAfter:
+          - provision-cluster
+          - parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/install-operator-from-fbc.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: fbcImage
+            value: "$(tasks.parse-metadata.results.image)"
+      - name: prepare-tests
+        runAfter:
+          - install-operator-from-fbc
+          - clone-operator-source-code
+        workspaces:
+          - name: source-code
+            workspace: sources
+        taskSpec:
+          results:
+            - name: oidc-hostname
+              type: string
+              value: "$(steps.install-keycloak.results.oidc-hostname)"
+            - name: fulcio-url
+              type: string
+              value: "$(steps.install-tas.results.fulcio-url)"
+            - name: tsa-url
+              type: string
+              value: "$(steps.install-tas.results.tsa-url)"
+            - name: tuf-url
+              type: string
+              value: "$(steps.install-tas.results.tuf-url)"
+            - name: rekor-url
+              type: string
+              value: "$(steps.install-tas.results.rekor-url)"
+          volumes:
+            - name: credentials
+              emptyDir: { }
+          workspaces:
+            - name: source-code
+          steps:
+            - name: get-kubeconfig
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+              params:
+                - name: eaasSpaceSecretRef
+                  value: $(tasks.provision-eaas-space.results.secretRef)
+                - name: clusterName
+                  value: "$(tasks.provision-cluster.results.clusterName)"
+                - name: credentials
+                  value: credentials
+            - name: install-keycloak
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/securesign/pipelines.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/integration-test/install-keycloak.yaml
+              params:
+                - name: credentials
+                  value: credentials
+                - name: KUBECONFIG
+                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
+                - name: workdir
+                  value: "$(workspaces.source-code.path)/operator"
+            - name: install-tas
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/securesign/pipelines.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/integration-test/install-tas.yaml
+              params:
+                - name: credentials
+                  value: credentials
+                - name: KUBECONFIG
+                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
+                - name: workdir
+                  value: $(workspaces.source-code.path)/operator
+                - name: tas-namespace
+                  value: "$(params.TAS_DEPLOY_NAMESPACE)"
+                - name: OIDC_HOST
+                  value: "$(steps.install-keycloak.results.oidc-hostname)"
+# FULCIO DAST testing
+      - name: fulcio-dast
+        runAfter:
+         - prepare-tests
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/rapidast.yaml
+        params:
+          - name: app_name
+            value: Fulcio
+          - name: api_url
+            value: "https://raw.githubusercontent.com/sigstore/fulcio/main/fulcio.swagger.json"
+          - name: app_url
+            value: $(tasks.prepare-tests.results.fulcio-url)
+# REKOR DAST testing
+      - name: clone-rekor-source-code
+        runAfter:
+          - prepare-tests
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: "https://github.com/sigstore/rekor.git"
+          - name: revision
+            value: main
+          - name: subdirectory
+            value: "rekor"
+        workspaces:
+          - name: output
+            workspace: sources
+      - name: bundle-rekor-openapi-spec
+        runAfter:
+          - clone-rekor-source-code
+        workspaces:
+          - name: source-repo
+            workspace: sources
+        taskSpec:
+          params:
+            - name: input-file-path
+              type: string
+              default: openapi.yaml
+            - name: output-file-path
+              type: string
+              default: bundled/openapi.json
+          steps:
+            - name: bundle-spec
+              image: "redocly/cli:2.5.0"
+              workingDir: $(workspaces.source-repo.path)/rekor
+
+              script: |
+                #!/bin/sh
+                set -ex
+                
+                redocly bundle $(params.input-file-path) --output "$(params.output-file-path)"
+                echo "OpenAPI spec successfully bundled to ${OUTPUT_PATH}"
+          workspaces:
+            - name: source-repo
+              description: The workspace containing the OpenAPI files.
+      - name: rekor-dast
+        runAfter:
+          - bundle-rekor-openapi-spec
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/rapidast.yaml
+        params:
+          - name: app_name
+            value: Rekor
+          - name: api_file
+            value: "/data/rekor/bundled/openapi.json"
+          - name: app_url
+            value: $(tasks.prepare-tests.results.rekor-url)
+        workspaces:
+          - name: shared-data
+            workspace: sources

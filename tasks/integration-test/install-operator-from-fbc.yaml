@@ -13,6 +13,7 @@ spec:
     - name: fbcImage
       description: Fbc image to be installed from
     - name: namespace
+      default: "openshift-operators"
       description: Namespace to be used for installation
     - name: operator-name
       type: string
@@ -28,8 +29,6 @@ spec:
       description: Operator installation channel (e.g., stable, fast, candidate)
   volumes:
     - name: credentials
-      emptyDir: { }
-    - name: resources
       emptyDir: { }
   steps:
     - name: get-kubeconfig
@@ -57,8 +56,6 @@ spec:
       volumeMounts:
         - name: credentials
           mountPath: /credentials
-        - name: resources
-          mountPath: /storage
       script: |
         oc create -f - <<EOF
         apiVersion: operators.coreos.com/v1alpha1
@@ -80,7 +77,7 @@ spec:
         kind: Subscription
         metadata:
           name: $(params.operator-name)
-          namespace: openshift-operators
+          namespace: $(params.namespace)
         spec:
           channel: $(params.installChannel)
           installPlanApproval: Automatic
@@ -89,13 +86,15 @@ spec:
           sourceNamespace: openshift-marketplace
         EOF
         
-        oc get csv -n openshift-operators -o yaml
         oc get pods -n openshift-marketplace -o yaml
-         oc get catalogsource tas-test -n openshift-marketplace -o yaml
+        oc get catalogsource tas-test -n openshift-marketplace -o yaml
         
         
-        until oc get deployment $(params.operator-deployment-name) -n openshift-operators &>/dev/null; do
+        oc get csv -n $(params.namespace) -o yaml
+        until oc get deployment $(params.operator-deployment-name) -n $(params.namespace) &>/dev/null; do
           echo "Waiting for the deployment to be created..."
+          oc get csv -n $(params.namespace)
+          oc get pods -n $(params.namespace)
           sleep 5
         done
-        oc wait --for=condition=available deployment/$(params.operator-deployment-name) --timeout=2m -n openshift-operators
+        oc wait --for=condition=available deployment/$(params.operator-deployment-name) --timeout=2m -n $(params.namespace)

@@ -1,0 +1,139 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: rapidast-check
+spec:
+  description: >-
+    This task uses RapiDAST to scan a running application, sourcing the make_result_json 
+    utility from a shared workspace.
+  results:
+    - name: TEST_OUTPUT
+      description: Tekton task test output.
+    - name: SCAN_OUTPUT
+      description: RapiDAST scan result.
+  params:
+    - name: app_name
+      description: Application name
+      type: string
+    - name: api_url
+      default: ""
+      description: Open api spec url
+      type: string
+    - name: api_file
+      default: ""
+      description: Open api spec file
+      type: string
+    - name: app_url
+      description: Application url
+      type: string
+  volumes:
+      - name: shared
+        emptyDir: { }
+      - name: gcs-storage
+        secret:
+          secretName: rapidast-gcs-key
+  workspaces:
+    - name: shared-data
+      optional: true
+      description: Optional workspace with shared files.
+      mountPath: /data
+  steps:
+    - name: run-rapidast-scan
+      image: quay.io/redhatproductsecurity/rapidast:latest
+      env:
+        - name: APP_NAME
+          value: "$(params.app_name)"
+        - name: APP_URL
+          value: "$(params.app_url)"
+        - name: API_URL
+          value: "$(params.api_url)"
+        - name: API_FILE
+          value: "$(params.api_file)"
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+        - name: gcs-storage
+          mountPath: /creds
+      script: |
+        #!/bin/bash
+        set -ex
+        
+        cat << EOF > rapidast-config.yaml
+        config:
+          configVersion: 6
+          base_results_dir: "/shared/results"
+          googleCloudStorage:
+            keyFile: "/creds/secaut-bucket.json"
+            bucketName: "secaut-bucket"
+            directory: "rhtas/$APP_NAME"
+        application:
+          shortName: "$APP_NAME"
+          url: "$APP_URL"
+        scanners:
+          zap:
+            apiScan:
+              target: "$APP_URL"
+              apis:
+                apiUrl: "$API_URL"
+                apiFile: "$API_FILE"
+            activeScan:
+              policy:  "API-scan-minimal"
+            report:
+              format: ["json", "html"]
+        EOF
+
+        cat rapidast-config.yaml
+
+        rapidast.py --config rapidast-config.yaml
+        
+    - name: resolve-results
+      image: quay.io/konflux-ci/konflux-test:latest
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+      env:
+        - name: APP_NAME
+          value: "$(params.app_name)"
+      workingDir: /shared
+      script: |
+        source /utils.sh
+        
+        sarif_file=$(find results/$APP_NAME -name rapidast-scan-results.sarif)
+
+        scan_result='{"vulnerabilities":{"critical":0, "high":0, "medium":0, "low":0, "unknown":0}}'
+
+        if [ ! -s "$sarif_file" ]; then
+          echo "No RapiDAST SARIF file found or it's empty."
+          note="TaskRun $(context.taskRun.name) failed: No RapiDAST SARIF file found or it's empty. For details, check Tekton task log."
+          # Now you can call the function directly
+          TEST_OUTPUT=$(make_result_json -r "ERROR" -t "$note")
+          echo "${TEST_OUTPUT}" | tee "$(results.TEST_OUTPUT.path)"
+          exit 0
+        fi
+
+        # SARIF level mapping: 'error' -> critical, 'warning' -> high, 'note' -> medium.
+        result=$(jq -rce \
+            '{
+                vulnerabilities:{
+                  critical: ([.runs[0].results[]? | select(.level == "error")] | length // 0),
+                  high: ([.runs[0].results[]? | select(.level == "warning")] | length // 0),
+                  medium: ([.runs[0].results[]? | select(.level == "note")] | length // 0),
+                  low: ([.runs[0].results[]? | select(.level == "none")] | length // 0),
+                  unknown: ([.runs[0].results[]? | select(.level == "unknown")] | length // 0)
+                }
+            }' "$sarif_file")
+
+        scan_result=$(jq -s -rce \
+              '.[0].vulnerabilities.critical += .[1].vulnerabilities.critical |
+              .[0].vulnerabilities.high += .[1].vulnerabilities.high |
+              .[0].vulnerabilities.medium += .[1].vulnerabilities.medium |
+              .[0].vulnerabilities.low += .[1].vulnerabilities.low |
+              .[0].vulnerabilities.unknown += .[1].vulnerabilities.unknown |
+              .[0]' <<<"$scan_result $result")
+
+        echo "$scan_result" | tee "$(results.SCAN_OUTPUT.path)"
+
+        note="TaskRun $(context.taskRun.name) completed: Refer to Tekton task result SCAN_OUTPUT for vulnerabilities scanned by RapiDAST."
+        # Call the function directly again
+        TEST_OUTPUT=$(make_result_json -r "SUCCESS" -t "$note")
+        echo "${TEST_OUTPUT}" | tee "$(results.TEST_OUTPUT.path)"
