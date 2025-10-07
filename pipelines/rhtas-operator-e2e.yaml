@@ -830,7 +830,7 @@ spec:
     - name: run-ginkgo-tests
       runAfter:
         - deploy-test
-        - test-metadata
+        - parse-metadata
         - sealights-get-refs
       taskSpec:
         steps:
@@ -851,14 +851,20 @@ spec:
                 value: $(tasks.sealights-get-refs.results.sealights-bsid)
               - name: DOMAIN
                 value: "redhat.sealights.co"
-              - name: TARGET_BRANCH
-                value: "$(tasks.test-metadata.results.target-repo-branch)"
-              - name: SOURCE_BRANCH
-                value: "$(tasks.test-metadata.results.source-repo-branch)"
+              - name: GIT_REVISION
+                value: "$(tasks.parse-metadata.results.git-revision)"
               - name: REPO_URL
-                value: "$(tasks.test-metadata.results.git-url)"
+                value: "$(tasks.parse-metadata.results.git-url)"
               - name: EVENT_TYPE
-                value: "$(tasks.test-metadata.results.test-event-type)"
+                value: "$(tasks.parse-metadata.results.test-event-type)"
+              - name: SOURCE_REPO_BRANCH
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['pac.test.appstudio.openshift.io/source-branch']
+              - name: TARGET_REPO_BRANCH
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['pac.test.appstudio.openshift.io/branch']
             script: |
               #!/bin/bash
               set -euox pipefail
@@ -870,13 +876,13 @@ spec:
                   exit 1
               fi
 
-              BRANCH_NAME="$TARGET_BRANCH"
+              BRANCH_NAME="$GIT_REVISION"
               if [[ "$EVENT_TYPE" == "pull_request" ]]; then
-                if [ -z "$SOURCE_BRANCH" ]; then
+                if [ -z "$SOURCE_REPO_BRANCH" ]; then
                     echo "Error: EVENT_TYPE is 'pull_request' but SOURCE_BRANCH is empty."
                     exit 1
                 fi
-                BRANCH_NAME="$SOURCE_BRANCH"
+                BRANCH_NAME="$SOURCE_REPO_BRANCH"
               fi
               
               echo "Cloning $REPO_URL on branch $BRANCH_NAME"
