@@ -873,10 +873,6 @@ spec:
               
               git clone "$REPO_URL" -b "tdalton/sealights" .
 
-              echo "--- Directory contents after clone ---"
-              ls -R
-              echo "--------------------------------------"
-
               go install github.com/onsi/ginkgo/v2/ginkgo@latest
               export PATH=$PATH:$(go env GOPATH)/bin
               
@@ -902,12 +898,12 @@ spec:
 
               mapfile -t EXCLUDED_TESTS < <(echo "$RESPONSE" | jq -r '.data.excludedTests[].testName')
 
-              GINKGO_CMD=("ginkgo" "--json-report=report.json")
+              GINKGO_CMD=("ginkgo" "-r" "--json-report=report.json")
               for TEST in "${EXCLUDED_TESTS[@]}"; do
                   GINKGO_CMD+=("--skip=$TEST")
               done
 
-              cd tests/e2e && "${GINKGO_CMD[@]}"
+              cd test/e2e && "${GINKGO_CMD[@]}"
 
               PROCESSED_JSON=$(
                 cat "report.json" | jq -c '.[] | .SpecReports[]' | while IFS= read -r line; do
