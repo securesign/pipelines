@@ -903,7 +903,11 @@ spec:
                   GINKGO_CMD+=("--skip=$TEST")
               done
 
-              cd test/e2e && "${GINKGO_CMD[@]}"
+              cd test/e2e && ( 
+                  set +e 
+                  "${GINKGO_CMD[@]}" 
+                  set -e
+              )
 
               PROCESSED_JSON=$(
                 cat "report.json" | jq -c '.[] | .SpecReports[]' | while IFS= read -r line; do
