@@ -830,6 +830,8 @@ spec:
     - name: run-ginkgo-tests
       runAfter:
         - deploy-test
+      securityContext:
+        runAsUser: 0
       taskSpec:
         steps:
           - name: run-ginkgo-tests
@@ -847,22 +849,37 @@ spec:
                 value: $(tasks.sealights-get-refs.results.sealights-bsid)
               - name: DOMAIN
                 value: "redhat.sealights.co"
+              - name: TARGET_BRANCH
+                value: "$(tasks.test-metadata.results.target-repo-branch)"
+              - name: SOURCE_BRANCH
+                value: "$(tasks.test-metadata.results.source-repo-branch)"
+              - name: REPO_URL
+                value: "$(tasks.test-metadata.results.git-url)"
+              - name: EVENT_TYPE
+                value: "$(tasks.test-metadata.results.test-event-type)"
             script: |
               #!/bin/bash
-              set -euox
-             
+              set -euox pipefail
+              
+              # --- Setup: Install Tools ---
               dnf install -y git curl jq procps && dnf clean all
               
-              if [ -z "$BASE_URL" ]; then
-                  echo "Error: BASE_URL is not set!"
+              if [ -z "$BASE_URL" ] || [ -z "$REPO_URL" ] || [ -z "$EVENT_TYPE" ]; then
+                  echo "Error: Required environment variables (BASE_URL, REPO_URL, EVENT_TYPE) are empty."
                   exit 1
               fi
 
-              BRANCH_NAME="$(tasks.test-metadata.results.target-repo-branch)"
-              if [[ "$(tasks.test-metadata.results.test-event-type)" == "pull_request" ]]; then
-                BRANCH_NAME="$(tasks.test-metadata.results.source-repo-branch)"
+              BRANCH_NAME="$TARGET_BRANCH"
+              if [[ "$EVENT_TYPE" == "pull_request" ]]; then
+                if [ -z "$SOURCE_BRANCH" ]; then
+                    echo "Error: EVENT_TYPE is 'pull_request' but SOURCE_BRANCH is empty."
+                    exit 1
+                fi
+                BRANCH_NAME="$SOURCE_BRANCH"
               fi
-              git clone "$(tasks.test-metadata.results.git-url)" -b "$BRANCH_NAME" .
+              
+              echo "Cloning $REPO_URL on branch $BRANCH_NAME"
+              git clone "$REPO_URL" -b "$BRANCH_NAME" .
 
               go install github.com/onsi/ginkgo/v2/ginkgo@latest
               export PATH=$PATH:$(go env GOPATH)/bin
@@ -872,7 +889,7 @@ spec:
                 -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
                 -H "Content-Type: application/json" \
                 -d '{"labId":"","testStage":"go-calc-integration","bsid":"'${BUILD_SESSION_ID}'","sessionTimeout":10000}' | jq -r '.data.testSessionId')
-
+              
               if [ -n "$TEST_SESSION_ID" ]; then
                 echo "Test session ID: $TEST_SESSION_ID"
                 export TEST_SESSION_ID
