@@ -871,7 +871,7 @@ spec:
               
               dnf install -y git jq procps && dnf clean all
               
-              git clone "$REPO_URL" -b "$SOURCE_REPO_BRANCH" .
+              git clone "$REPO_URL" -b "tdalton/sealights" .
 
               go install github.com/onsi/ginkgo/v2/ginkgo@latest
               export PATH=$PATH:$(go env GOPATH)/bin
