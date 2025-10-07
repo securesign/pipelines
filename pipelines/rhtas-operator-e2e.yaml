@@ -873,6 +873,10 @@ spec:
               
               git clone "$REPO_URL" -b "tdalton/sealights" .
 
+              echo "--- Directory contents after clone ---"
+              ls -R
+              echo "--------------------------------------"
+
               go install github.com/onsi/ginkgo/v2/ginkgo@latest
               export PATH=$PATH:$(go env GOPATH)/bin
               
@@ -880,7 +884,7 @@ spec:
               TEST_SESSION_ID=$(curl -X POST "https://$DOMAIN/sl-api/v1/test-sessions" \
                 -H "Authorization: Bearer $SEALIGHTS_AGENT_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d '{"labId":"","testStage":"go-calc-integration","bsid":"'${BUILD_SESSION_ID}'","sessionTimeout":10000}' | jq -r '.data.testSessionId')
+                -d '{"labId":"","testStage":"rhtas-operator","bsid":"'${BUILD_SESSION_ID}'","sessionTimeout":10000}' | jq -r '.data.testSessionId')
               
               if [ -n "$TEST_SESSION_ID" ]; then
                 echo "Test session ID: $TEST_SESSION_ID"
