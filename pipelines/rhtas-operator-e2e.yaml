@@ -767,8 +767,38 @@ spec:
               oc secrets link default sealights-pull-secret --for=pull -n $NS
 
               # Apply & expose the deployment
-              sed -i "s|\${IMAGE}|$COMPONENT_IMAGE|g" $(params.deployment-file)
-              oc apply -f $(params.deployment-file) -n $NS
+              cat <<EOF > deployment.yaml
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: rhtas-operator # Changed name to match exposure below
+                labels:
+                  app: rhtas-operator
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    app: rhtas-operator
+                template:
+                  metadata:
+                    labels:
+                      app: rhtas-operator
+                  spec:
+                    containers:
+                      - name: app-container
+                        image: "$COMPONENT_IMAGE"
+                        ports:
+                          - containerPort: 5000
+                            protocol: TCP
+                        resources:
+                          requests:
+                            memory: "128Mi"
+                            cpu: "500m"
+                          limits:
+                            memory: "256Mi"
+                            cpu: "1"
+              EOF
+              oc apply -f deployment.yaml -n $NS
               oc expose deployment rhtas-operator --type=ClusterIP --name=rhtas-operator-app-service -n $NS
 
               # Create an OpenShift route
@@ -798,6 +828,3 @@ spec:
               echo "Application exposed at ${BASE_URL}"
               echo -n "${BASE_URL}" > /tekton/results/BASE_URL
               sleep 20m
-
-              
-                            
