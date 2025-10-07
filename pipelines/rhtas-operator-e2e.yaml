@@ -832,7 +832,7 @@ spec:
             workingDir: /workspace
             env:
               - name: BASE_URL
-                value: "$(tasks.deploy-test.results.BASE_URL)"
+                value: "$(tasks.apply-deployment.results.BASE_URL)"
               - name: SEALIGHTS_AGENT_TOKEN
                 valueFrom:
                   secretKeyRef:
