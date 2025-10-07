@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: install-operator-from-bundle
+  name: install-operator-from-image
 spec:
   params:
     - name: eaasSpaceSecretRef
@@ -10,16 +10,22 @@ spec:
     - name: clusterName
       type: string
       description: The name of a ClusterTemplateInstance.
-    - name: bundleImage
-      description: Operator bundle image to be installed
+    - name: operatorImage
+      description: Operator image to be installed
     - name: namespace
       description: Namespace to be used for installation
-    - name: timeout
-      description: Install bundle timeout
-      default: "10m"
+      default: openshift-rhtas-operator
+    - name: resources_path
+      description: Resource directory to be kustomized and applied
+      default: config/env/openshift
+    - name: deployName
+      description: Deployment name
+      default: rhtas-operator-controller-manager
   volumes:
     - name: credentials
-      emptyDir: {}
+      emptyDir: { }
+  workspaces:
+    - name: source-code
   steps:
     - name: get-kubeconfig
       ref:
@@ -38,19 +44,25 @@ spec:
           value: "$(params.clusterName)"
         - name: credentials
           value: credentials
+    - name: kustomize-resources
+      image: registry.k8s.io/kustomize/kustomize:v5.6.0
+      workingDir: $(workspaces.source-code.path)
+      script: |
+        #!/bin/sh
+        kustomize edit set image controller=$(params.operatorImage)
+        echo "I am going to install following resources"
+        kustomize build $(params.resources_path)
+
     - name: run-operator
-      image: quay.io/operator-framework/operator-sdk:latest
+      image: registry.redhat.io/openshift4/ose-cli
       env:
         - name: KUBECONFIG
           value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
       volumeMounts:
         - name: credentials
           mountPath: /credentials
-      args:
-        - run
-        - bundle
-        - --namespace
-        - "$(params.namespace)"
-        - --timeout
-        - "$(params.timeout)"
-        - "$(params.bundleImage)"
+        - name: resources
+          mountPath: /storage
+      script: |
+        oc create -k /storage/resources/$(params.resources_path)
+        oc wait --for=condition=available deployment/$(params.deployName) --timeout=120s -n $(params.namespace)
