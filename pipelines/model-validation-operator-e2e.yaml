@@ -1,0 +1,376 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: model-validation-operator-e2e
+spec:
+  description: |
+    An integration test which provisions an ephemeral Hypershift cluster, deploys the model validation operator
+    from a Konflux snapshot and run the e2e test suite.
+  params:
+    - description: Snapshot of the application
+      name: SNAPSHOT
+      type: string
+    - description: OCP version
+      name: OCP_VERSION
+      type: string
+      default: "4.17"
+    - description: Namespace where the the Operator bundle will be deployed.
+      name: NAMESPACE
+      default: default
+      type: string
+    - description: RHTAS Bundle image
+      name: RHTAS_BUNDLE_IMAGE
+      default: registry.redhat.io/rhtas/rhtas-operator-bundle:1.2.0
+      type: string
+    - description: RHTAS git url
+      name: RHTAS_GIT_URL
+      default: https://github.com/securesign/secure-sign-operator
+      type: string
+    - description: RHTAS git revision
+      name: RHTAS_GIT_REVISION
+      default: main
+      type: string
+    - description: Namespace where TAS will be installed
+      name: TAS_E2E_NAMESPACE
+      default: tas-e2e
+      type: string
+    - description: Namespace where Model Validation Operator will be installed
+      name: MODEL_VALIDATION_OPERATOR_NS
+      default: model-validation-operator
+      type: string
+    - description: Model Validation operator Git Url
+      name: MODEL_VALIDATION_OPERATOR_GIT_URL
+      default: https://github.com/securesign/model-validation-operator
+      type: string
+  tasks:
+    - name: parse-metadata
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-metadata.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+    - name: provision-eaas-space
+      runAfter:
+        - parse-metadata
+      taskRef:
+        resolver: bundles
+        params:
+          - name: name
+            value: eaas-provision-space
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-4e4fa7355a6a51083954408e7e3b647e3bddb8d8
+          - name: kind
+            value: task
+      params:
+        - name: ownerName
+          value: $(context.pipelineRun.name)
+        - name: ownerUid
+          value: $(context.pipelineRun.uid)
+    - name: provision-cluster
+      runAfter:
+        - provision-eaas-space
+      taskSpec:
+        results:
+          - name: clusterName
+            value: "$(steps.create-cluster.results.clusterName)"
+        steps:
+          - name: pick-version
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+            params:
+              - name: prefix
+                value: "$(params.OCP_VERSION)"
+          - name: create-cluster
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: version
+                value: "$(steps.pick-version.results.version)"
+              - name: instanceType
+                value: m5.large
+              - name: timeout
+                value: 60m
+              - name: imageContentSources
+                value: |
+                  - source: registry.redhat.io/rhtas/model-validation-operator-bundle
+                    mirrors:
+                      - quay.io/securesign/model-validation-operator-bundle
+                  - source: registry.redhat.io/rhtas/model-validation-operator
+                    mirrors:
+                      - quay.io/securesign/model-validation-operator
+    - name: install-rhtas-operator
+      runAfter:
+        - provision-cluster
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-bundle.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: bundleImage
+          value: "$(params.RHTAS_BUNDLE_IMAGE)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+    - name: install-securesign
+      runAfter:
+        - install-rhtas-operator
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        results:
+          - name: oidc-hostname
+            value: "$(steps.install-keycloak.results.oidc-hostname)"
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+          - name: push-creds
+            secret:
+              secretName: securesign-test-dump-oci
+        steps:
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/git-clone.yaml
+            params:
+              - name: url
+                value: "$(params.RHTAS_GIT_URL)"
+              - name: revision
+                value: "$(params.RHTAS_GIT_REVISION)"
+              - name: repository
+                value: repository
+          - name: install-keycloak
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/install-keycloak.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+          - name: install-tas
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/install-tas.yaml
+            params:
+              - name: credentials
+                value: credentials
+              - name: repository
+                value: repository
+              - name: KUBECONFIG
+                value: "$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: workdir
+                value: source
+              - name: tas-namespace
+                value: "$(params.TAS_E2E_NAMESPACE)"
+              - name: OIDC_HOST
+                value: "$(steps.install-keycloak.results.oidc-hostname)"
+    - name: install-operator-from-bundle
+      runAfter:
+        - install-securesign
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-bundle.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: bundleImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: [ "model-validation-operator-bundle" ]
+    - name: install-operator-from-image
+      runAfter:
+        - install-securesign
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-image.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: operatorImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
+        - name: resources_url
+          value: "$(tasks.parse-metadata.results.git-url).git/config/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
+        - name: resources_path
+          value: "config/openshift"
+        - name: deployName
+          value: "model-validation-operator-manager"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: [ "model-validation-operator"]
+    - name: install-operator-from-fbc
+      timeout: "0h5m0s"
+      runAfter:
+        - install-securesign
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/install-operator-from-fbc.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(tasks.provision-eaas-space.results.secretRef)
+        - name: clusterName
+          value: "$(tasks.provision-cluster.results.clusterName)"
+        - name: fbcImage
+          value: "$(tasks.parse-metadata.results.image)"
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+        - name: operator-name
+          value: "model-validation-operator"
+        - name: operator-deployment-name
+          value: "model-validation-operator-manager"
+        - name: installChannel
+          value: "tech-preview"
+      when:
+        - input: "$(tasks.parse-metadata.results.component)"
+          operator: in
+          values: ["mvo-fbc-v4-15","mvo-fbc-v4-16","mvo-fbc-v4-17","mvo-fbc-v4-18"]
+    - name: model-validation-operator-e2e
+      runAfter:
+        - install-operator-from-image
+        - install-operator-from-bundle
+        - install-operator-from-fbc
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
+      taskSpec:
+        volumes:
+          - name: credentials
+            emptyDir: { }
+          - name: repository
+            emptyDir: { }
+          - name: binaries
+            emptyDir: { }
+          - name: dump
+            emptyDir: { }
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Setup Go
+            uses: actions/setup-go@v5
+            with:
+              go-version-file: go.mod
+              cache: true
+
+          - name: Create kind cluster
+            uses: helm/kind-action@v1
+            with:
+              cluster_name: kind
+
+          - name: Wait for kind cluster to be ready
+            run: |
+              kubectl wait --for=condition=Ready nodes --all --timeout=300s
+              kubectl wait --for=condition=Ready --namespace=kube-system pod --all --timeout=300s
+              echo "Cluster is ready"
+
+          - name: Swap to dev images
+            run: make dev-images
+
+          - name: Run E2E tests
+            run: |
+              make test-e2e-ci MODEL_TRANSPARENCY_IMG=${{ env.MODEL_TRANSPARENCY_IMG }}
