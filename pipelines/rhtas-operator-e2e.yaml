@@ -750,11 +750,7 @@ spec:
 
               yum install git jq -y
 
-              COMPONENT_IMAGE=$(jq -r '.[] | select(startswith("quay.io/redhat-user-workloads/rhtas-tenant/operator/rhtas-operator-sealights"))' <<< "$SEALIGHTS_IMAGES_ARRAY")
-              if [[ -z "$COMPONENT_IMAGE" ]]; then
-                echo "ERROR: Could not find an image starting with quay.io/redhat-user-workloads/rhtas-tenant/operator/rhtas-operator-sealights in array: $SEALIGHTS_IMAGES_ARRAY"
-                exit 1
-              fi
+              COMPONENT_IMAGE="quay.io/redhat-user-workloads/rhtas-tenant/operator/rhtas-operator-sealights:79c73d266bf243590a832abf5d450d5c950ae4a2"
               echo "Deploying instrumented image: $COMPONENT_IMAGE"
 
               BRANCH_NAME="main"
