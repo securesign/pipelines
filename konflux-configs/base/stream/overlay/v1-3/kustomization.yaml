@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-nameSuffix: -v1-2
+nameSuffix: -v1-3
 
 resources:
   - rhtas-operator-stream.yaml
@@ -9,7 +9,6 @@ resources:
 
 components:
   - ../../components/rhtas-fbc
-  - ../../components/ocp/v4.15
   - ../../components/ocp/v4.16
   - ../../components/ocp/v4.17
   - ../../components/ocp/v4.18

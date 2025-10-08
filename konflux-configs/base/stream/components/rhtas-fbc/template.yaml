@@ -1,0 +1,28 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  name: rhtas-fbc-project-template
+spec:
+  project: rhtas-fbc
+  variables:
+    - name: version
+      description: A version number for a new development stream
+    - name: gitRevision
+      description: The git revision we want to onboard
+    - name: baseName
+      description: FBC version number e.g rhtas-fbc
+      defaultValue: "rhtas-fbc"
+    - name: nameSuffix
+      description: A suffix which will be added to K8s resource name
+      defaultValue: "-{{hyphenize .version}}"
+    - name: operator
+      description: The operator to use
+  resources:
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Application
+      metadata:
+        annotations:
+          application.thumbnail: "9"
+        name: "{{.baseName}}{{.nameSuffix}}"
+      spec:
+        displayName: "{{.baseName}} ({{.version}})"

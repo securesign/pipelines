@@ -4,36 +4,15 @@ kind: Kustomization
 nameSuffix: -main
 
 resources:
-  - ../../base/ansible
-  - ../../base/fbc
-  - ../../base/operator
+  - rhtas-operator-stream.yaml
+  - rhtas-fbc-stream.yaml
 
-patches:
-  - path: patch.yaml
-    target:
-      name: ansible
-      kind: ProjectDevelopmentStream
-  - path: patch.yaml
-    target:
-      name: operator
-      kind: ProjectDevelopmentStream
-  - path: fbc-patch.yaml
-    target:
-      name: fbc-v4-14
-      kind: ProjectDevelopmentStream
-  - path: fbc-patch.yaml
-    target:
-      name: fbc-v4-15
-      kind: ProjectDevelopmentStream
-  - path: fbc-patch.yaml
-    target:
-      name: fbc-v4-16
-      kind: ProjectDevelopmentStream
-  - path: fbc-patch.yaml
-    target:
-      name: fbc-v4-17
-      kind: ProjectDevelopmentStream
-  - path: fbc-patch.yaml
-    target:
-      name: fbc-v4-18
-      kind: ProjectDevelopmentStream
+components:
+  - ../../components/rhtas-fbc
+  - ../../components/ocp/v4.16
+  - ../../components/ocp/v4.17
+  - ../../components/ocp/v4.18
+  - ../../components/ocp/v4.19
+
+configurations:
+  - kustomizeconfig.yaml

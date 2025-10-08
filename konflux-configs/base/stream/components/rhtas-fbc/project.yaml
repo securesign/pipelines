@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rhtas-fbc
+spec:
+  displayName: "FBC (RHTAS)"
+  description: |
+    FBC application for RHTAS.

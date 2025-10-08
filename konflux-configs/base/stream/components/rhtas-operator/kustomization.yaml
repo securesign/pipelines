@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - project.yaml
+  - template.yaml
+
+patches:
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/manager.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/bundle.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/ec.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/monorepo.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/e2e.yaml

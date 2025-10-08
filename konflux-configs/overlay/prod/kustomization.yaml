@@ -4,8 +4,7 @@ kind: Kustomization
 namespace: rhtas-tenant
 
 resources:
- # - ../../base/project
- # - ../../base/stream
+  - ../../base/stream
   - ../../base/service-account
   - ../../base/release-plan
   - ../../base/application
