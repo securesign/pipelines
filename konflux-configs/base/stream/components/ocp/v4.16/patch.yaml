@@ -1,0 +1,51 @@
+# OCP 4.16
+
+# Component
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+      name: "{{.baseName}}{{.nameSuffix}}-v4-16"
+    spec:
+      application: "{{.baseName}}{{.nameSuffix}}"
+      componentName: "{{.baseName}}{{.nameSuffix}}-v4-16"
+      source:
+        git:
+          context: "v4.16/{{.operator}}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.gitRevision}}"
+          url: https://github.com/securesign/fbc
+
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "{{.baseName}}{{.nameSuffix}}-v4-16-e2e"
+    spec:
+      application: "{{.baseName}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.baseName}}{{.nameSuffix}}-v4-16 updates
+          name: "component_{{.baseName}}{{.nameSuffix}}-v4-16"
+      params:
+        - name: OCP_VERSION
+          value: "4.16"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipeline
