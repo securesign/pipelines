@@ -171,7 +171,7 @@ spec:
       workspace: git-auth
   - name: sealights-instrumentation
     runAfter:
-      - prefetch-dependencies
+      - clone-repository
     taskRef:
       params:
       - name: name
@@ -215,6 +215,7 @@ spec:
     - name: dev-package-managers
       value: $(params.dev-package-managers)
     runAfter:
+    - sealights-instrumentation
     - clone-repository
     taskRef:
       params:
