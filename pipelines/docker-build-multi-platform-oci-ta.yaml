@@ -214,7 +214,6 @@ spec:
       value: $(params.dev-package-managers)
     runAfter:
     - clone-repository
-    - sealights-instrumentation
     taskRef:
       params:
       - name: name
