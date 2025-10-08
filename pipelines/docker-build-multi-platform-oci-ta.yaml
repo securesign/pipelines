@@ -200,6 +200,8 @@ spec:
         value: $(params.target-branch)
       - name: oci-storage
         value: $(params.sealights-output-image).sealights.git
+      - name: workspace-path
+        value: $(params.path-context)
   - name: prefetch-dependencies
     params:
     - name: input
