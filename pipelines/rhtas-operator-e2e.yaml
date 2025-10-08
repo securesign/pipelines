@@ -738,6 +738,8 @@ spec:
                   secretKeyRef:
                     name: imagerepository-for-operator-rhtas-operator-sealights-image-pull
                     key: .dockerconfigjson
+              - name: SEALIGHTS_LAB_ID
+                value: "$(tasks.sealights-get-refs.results.sealights-bsid)"
               - name: SEALIGHTS_AGENT_TOKEN
                 valueFrom:
                   secretKeyRef:
@@ -827,3 +829,4 @@ spec:
               export BASE_URL="http://${ROUTE_HOST}"
               echo "Application exposed at ${BASE_URL}"
               echo -n "${BASE_URL}" > /tekton/results/BASE_URL
+              sleep 20m
