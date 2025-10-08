@@ -788,9 +788,6 @@ spec:
                         ports:
                           - containerPort: 5000
                             protocol: TCP
-                        env:
-                          - name: SEALIGHTS_LAB_ID
-                            value: "$SEALIGHTS_LAB_ID"
                         resources:
                           requests:
                             memory: "128Mi"
