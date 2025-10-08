@@ -902,6 +902,7 @@ spec:
               for TEST in "${EXCLUDED_TESTS[@]}"; do
                   GINKGO_CMD+=("--skip=$TEST")
               done
+              GINKGO_CMD+=("--" "-tags=integration" "-timeout=30m")
 
               cd test/e2e && ( 
                   set +e 
