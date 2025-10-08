@@ -126,7 +126,7 @@ spec:
   - name: init
     params:
     - name: image-url
-      value: $(params.sealights-output-image)
+      value: $(params.output-image)
     - name: rebuild
       value: $(params.rebuild)
     - name: skip-checks
@@ -147,7 +147,7 @@ spec:
     - name: revision
       value: $(params.revision)
     - name: ociStorage
-      value: $(params.sealights-output-image).git
+      value: $(params.output-image).git
     - name: ociArtifactExpiresAfter
       value: $(params.sealights-image-expires-after)
     runAfter:
@@ -171,13 +171,13 @@ spec:
       workspace: git-auth
   - name: sealights-instrumentation
     runAfter:
-      - clone-repository
+      - prefetch-dependencies
     taskRef:
       params:
       - name: name
         value: sealights-go-oci-ta
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-sealights-go-oci-ta:0.1@sha256:830e4fd25f250dd0c8b3619693c5691f260f54c8458424c4b5f9925e72b517aa
+        value: quay.io/konflux-ci/tekton-catalog/task-sealights-go-oci-ta:0.1@sha256:ce75fd9d498365a9c1e42f8340cc3e7d09a68ab312588905d169964055f092b2
       - name: kind
         value: task
       resolver: bundles
@@ -198,10 +198,6 @@ spec:
         value: $(params.pull-request-number)
       - name: target-branch
         value: $(params.target-branch)
-      - name: packages-excluded
-        value:
-          - "github.com/your-org/your-repo/pkg/pkg1-to-ignore"
-          - "github.com/your-org/your-repo/pkg/pkg2-to-ignore"
       - name: oci-storage
         value: $(params.sealights-output-image).sealights.git
   - name: prefetch-dependencies
@@ -211,7 +207,7 @@ spec:
     - name: SOURCE_ARTIFACT
       value: $(tasks.sealights-instrumentation.results.SOURCE_ARTIFACT)
     - name: ociStorage
-      value: $(params.sealights-output-image).prefetch
+      value: $(params.output-image).prefetch
     - name: ociArtifactExpiresAfter
       value: $(params.sealights-image-expires-after)
     - name: dev-package-managers
@@ -264,7 +260,7 @@ spec:
     name: build-images
     params:
     - name: IMAGE
-      value: $(params.sealights-output-image)
+      value: $(params.output-image)
     - name: DOCKERFILE
       value: $(params.sealights-dockerfile)
     - name: CONTEXT
@@ -312,7 +308,7 @@ spec:
   - name: build-image-index
     params:
     - name: IMAGE
-      value: $(params.sealights-output-image)
+      value: $(params.output-image)
     - name: COMMIT_SHA
       value: $(tasks.clone-repository.results.commit)
     - name: IMAGE_EXPIRES_AFTER
@@ -324,12 +320,56 @@ spec:
       - $(tasks.build-images.results.IMAGE_REF[*])
     runAfter:
     - build-images
+    - build-container-sealights
     taskRef:
       params:
       - name: name
         value: build-image-index
       - name: bundle
         value: quay.io/konflux-ci/tekton-catalog/task-build-image-index:0.1@sha256:79784d53749584bc5a8de32142ec4e2f01cdbf42c20d94e59280e0b927c8597d
+      - name: kind
+        value: task
+      resolver: bundles
+    when:
+    - input: $(tasks.init.results.build)
+      operator: in
+      values:
+      - "true"
+  - name: build-container-sealights
+    params:
+    - name: SKIP_SBOM_GENERATION
+      value: "true"
+    - name: IMAGE
+      value: $(params.sealights-output-image)
+    - name: DOCKERFILE
+      value: $(params.dockerfile)
+    - name: CONTEXT
+      value: $(params.path-context)
+    - name: HERMETIC
+      value: $(params.hermetic)
+    - name: PREFETCH_INPUT
+      value: $(params.prefetch-input)
+    - name: IMAGE_EXPIRES_AFTER
+      value: $(params.image-expires-after)
+    - name: COMMIT_SHA
+      value: $(tasks.clone-repository.results.commit)
+    - name: BUILD_ARGS
+      value:
+      - $(params.build-args[*])
+    - name: BUILD_ARGS_FILE
+      value: $(params.build-args-file)
+    - name: SOURCE_ARTIFACT
+      value: $(tasks.sealights-instrumentation.results.SOURCE_ARTIFACT)
+    - name: CACHI2_ARTIFACT
+      value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+    runAfter:
+    - sealights-instrumentation
+    taskRef:
+      params:
+      - name: name
+        value: buildah-oci-ta
+      - name: bundle
+        value: quay.io/konflux-ci/tekton-catalog/task-buildah-oci-ta:0.5@sha256:fdd3f39c8ea97de0d77bcde160704dbd33fdcb9cd235836927bbb170aaefb80f
       - name: kind
         value: task
       resolver: bundles
