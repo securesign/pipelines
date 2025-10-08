@@ -149,7 +149,7 @@ spec:
     - name: ociStorage
       value: $(params.output-image).git
     - name: ociArtifactExpiresAfter
-      value: $(params.sealights-image-expires-after)
+      value: $(params.image-expires-after)
     runAfter:
     - init
     taskRef:
@@ -205,11 +205,11 @@ spec:
     - name: input
       value: $(params.prefetch-input)
     - name: SOURCE_ARTIFACT
-      value: $(tasks.sealights-instrumentation.results.SOURCE_ARTIFACT)
+      value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
     - name: ociStorage
       value: $(params.output-image).prefetch
     - name: ociArtifactExpiresAfter
-      value: $(params.sealights-image-expires-after)
+      value: $(params.image-expires-after)
     - name: dev-package-managers
       value: $(params.dev-package-managers)
     runAfter:
@@ -262,7 +262,7 @@ spec:
     - name: IMAGE
       value: $(params.output-image)
     - name: DOCKERFILE
-      value: $(params.sealights-dockerfile)
+      value: $(params.dockerfile)
     - name: CONTEXT
       value: $(params.path-context)
     - name: HERMETIC
@@ -270,7 +270,7 @@ spec:
     - name: PREFETCH_INPUT
       value: $(params.prefetch-input)
     - name: IMAGE_EXPIRES_AFTER
-      value: $(params.sealights-image-expires-after)
+      value: $(params.image-expires-after)
     - name: COMMIT_SHA
       value: $(tasks.clone-repository.results.commit)
     - name: BUILD_ARGS
@@ -312,7 +312,7 @@ spec:
     - name: COMMIT_SHA
       value: $(tasks.clone-repository.results.commit)
     - name: IMAGE_EXPIRES_AFTER
-      value: $(params.sealights-image-expires-after)
+      value: $(params.image-expires-after)
     - name: ALWAYS_BUILD_INDEX
       value: $(params.build-image-index)
     - name: IMAGES
@@ -598,7 +598,7 @@ spec:
     - name: IMAGE_DIGEST
       value: $(tasks.build-image-index.results.IMAGE_DIGEST)
     - name: DOCKERFILE
-      value: $(params.sealights-dockerfile)
+      value: $(params.dockerfile)
     - name: CONTEXT
       value: $(params.path-context)
     - name: SOURCE_ARTIFACT
