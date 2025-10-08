@@ -334,7 +334,12 @@ spec:
       operator: in
       values:
       - "true"
-  - name: build-container-sealights
+  - matrix:
+      params:
+      - name: PLATFORM
+        value:
+        - $(params.build-platforms)
+    name: build-container-sealights
     params:
     - name: SKIP_SBOM_GENERATION
       value: "true"
