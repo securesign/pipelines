@@ -266,7 +266,6 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "model-validation-operator-bundle" ]
-      timeout: "0h5m0s"
     - name: model-validation-operator-e2e
       runAfter:
         - install-operator-from-bundle
