@@ -267,37 +267,6 @@ spec:
           operator: in
           values: [ "model-validation-operator-bundle" ]
       timeout: "0h5m0s"
-      runAfter:
-        - install-securesign
-        - install-operator-from-bundle
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/securesign/pipelines.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: tasks/install-operator-from-fbc.yaml
-      params:
-        - name: eaasSpaceSecretRef
-          value: $(tasks.provision-eaas-space.results.secretRef)
-        - name: clusterName
-          value: "$(tasks.provision-cluster.results.clusterName)"
-        - name: fbcImage
-          value: "$(tasks.parse-metadata.results.image)"
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-        - name: operator-name
-          value: "model-validation-operator"
-        - name: operator-deployment-name
-          value: "model-validation-operator-manager"
-        - name: installChannel
-          value: "tech-preview"
-      when:
-        - input: "$(tasks.parse-metadata.results.component)"
-          operator: in
-          values: ["mvo-fbc-v4-15","mvo-fbc-v4-16","mvo-fbc-v4-17","mvo-fbc-v4-18"]
     - name: model-validation-operator-e2e
       runAfter:
         - install-operator-from-bundle
