@@ -348,29 +348,97 @@ spec:
           - name: dump
             emptyDir: { }
         steps:
-          - name: Checkout code
-            uses: actions/checkout@v4
-
-          - name: Setup Go
-            uses: actions/setup-go@v5
-            with:
-              go-version-file: go.mod
-              cache: true
-
-          - name: Create kind cluster
-            uses: helm/kind-action@v1
-            with:
-              cluster_name: kind
-
-          - name: Wait for kind cluster to be ready
-            run: |
-              kubectl wait --for=condition=Ready nodes --all --timeout=300s
-              kubectl wait --for=condition=Ready --namespace=kube-system pod --all --timeout=300s
-              echo "Cluster is ready"
-
-          - name: Swap to dev images
-            run: make dev-images
-
-          - name: Run E2E tests
-            run: |
+          - name: get-oc
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/extract-oc.yaml
+            params:
+              - name: volume
+                value: binaries
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+            params:
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: git-clone-mvo
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+            env:
+              - name: GIT_URL
+                value: "$(params.MODEL_VALIDATION_OPERATOR_GIT_URL)"
+              - name: GIT_REVISION
+                value: "$(tasks.parse-metadata.results.git-revision)"
+            volumeMounts:
+              - name: repository
+                mountPath: /repository
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+              cd /repository
+              echo "Cloning Policy Controller Operator"
+              git clone "$GIT_URL" source
+              cd source
+              if [ "$(tasks.parse-metadata.results.git-url)" == "$(params.MODEL_VALIDATION_OPERATOR_GIT_URL)" ]; then
+                git checkout "$GIT_REVISION"
+              fi
+          - name: execute-operator-e2e
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+            env:
+              - name: MODEL_TRANSPARENCY_IMG
+                value: quay.io/securesign/model-transparency@sha256:6db7fa2b956875a6f507811166b47b164d463dea78ab4403c6d7648d838b8acb
+              - name: OIDC_HOST
+                value: "$(tasks.install-securesign.results.oidc-hostname)"
+              - name: KUBECONFIG
+                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              - name: RHTAS_INSTALL_NAMESPACE
+                value: "$(params.TAS_E2E_NAMESPACE)"
+              - name: MODEL_VALIDATION_OPERATOR_NS
+                value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
+            computeResources:
+              requests:
+                cpu: "1500m"
+                memory: "3Gi"
+              limits:
+                cpu: "3"
+                memory: "6Gi"
+            volumeMounts:
+              - name: repository
+                mountPath: /repository
+              - name: binaries
+                mountPath: /binaries
+              - name: credentials
+                mountPath: /credentials
+            script: |
+              #!/bin/sh
+              set +e -o pipefail
+              cd /repository/source
+              export PATH="$PATH:/binaries"
               make test-e2e-ci MODEL_TRANSPARENCY_IMG=${{ env.MODEL_TRANSPARENCY_IMG }}
+              status=$?
+
+              if [[ $status -ne 0 ]]; then
+                pods=$(oc get pods -n "$MODEL_VALIDATION_OPERATOR_NS" -o jsonpath='{.items[*].metadata.name}')
+                for pod in $pods; do
+                  echo "===== logs for $pod ====="
+                  oc logs -n "$MODEL_VALIDATION_OPERATOR_NS" --all-containers --prefix "$pod" "$pod" || true
+                done
+              fi
+
+              exit "$status"
