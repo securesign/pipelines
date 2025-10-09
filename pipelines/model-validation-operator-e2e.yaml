@@ -244,18 +244,6 @@ spec:
     - name: install-operator-from-bundle
       runAfter:
         - install-securesign
-      results:
-        - name: bundle_ok
-      steps:
-        - name: install-attempt
-          image: registry.redhat.io/ubi9/ubi:9.4
-          script: |
-            #!/usr/bin/env bash
-            set +e
-            /scripts/install_from_bundle.sh "${BUNDLE_IMAGE}" "${NAMESPACE}"
-            rc=$?
-            if [[ $rc -eq 0 ]]; then echo -n true > /tekton/results/bundle_ok; exit 0; fi
-            echo -n false > /tekton/results/bundle_ok; exit 0
       taskRef:
         resolver: git
         params:
