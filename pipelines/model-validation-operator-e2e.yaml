@@ -266,42 +266,6 @@ spec:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "model-validation-operator-bundle" ]
-    # - name: install-operator-from-image
-    #   runAfter:
-    #     - install-securesign
-    #     - install-operator-from-bundle
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #       - name: url
-    #         value: https://github.com/securesign/pipelines.git
-    #       - name: revision
-    #         value: main
-    #       - name: pathInRepo
-    #         value: tasks/install-operator-from-image.yaml
-    #   params:
-    #     - name: eaasSpaceSecretRef
-    #       value: $(tasks.provision-eaas-space.results.secretRef)
-    #     - name: clusterName
-    #       value: "$(tasks.provision-cluster.results.clusterName)"
-    #     - name: operatorImage
-    #       value: "$(tasks.parse-metadata.results.image)"
-    #     - name: namespace
-    #       value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
-    #     - name: resources_url
-    #       value: "$(tasks.parse-metadata.results.git-url).git/config/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
-    #     - name: resources_path
-    #       value: "config/openshift"
-    #     - name: deployName
-    #       value: "model-validation-operator-manager"
-    #   when:
-    #     - input: "$(tasks.install-operator-from-bundle.status)"
-    #       operator: in
-    #       values: ["Failed", "Skipped", "None"]
-    #     - input: "$(tasks.parse-metadata.results.component)"
-    #       operator: in
-    #       values: [ "model-validation-operator"]
-    # - name: install-operator-from-fbc
       timeout: "0h5m0s"
       runAfter:
         - install-securesign
@@ -331,17 +295,12 @@ spec:
         - name: installChannel
           value: "tech-preview"
       when:
-        - input: "$(tasks.install-operator-from-bundle.status)"
-          operator: in
-          values: ["Failed", "Skipped", "None"]
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: ["mvo-fbc-v4-15","mvo-fbc-v4-16","mvo-fbc-v4-17","mvo-fbc-v4-18"]
     - name: model-validation-operator-e2e
       runAfter:
-        # - install-operator-from-image
         - install-operator-from-bundle
-        # - install-operator-from-fbc
       params:
         - name: namespace
           value: "$(params.NAMESPACE)"
