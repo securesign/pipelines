@@ -269,6 +269,7 @@ spec:
     - name: install-operator-from-image
       runAfter:
         - install-securesign
+        - install-operator-from-bundle
       taskRef:
         resolver: git
         params:
@@ -294,6 +295,9 @@ spec:
         - name: deployName
           value: "model-validation-operator-manager"
       when:
+        - input: "$(tasks.install-operator-from-bundle.status)"
+          operator: in
+          values: ["Failed", "Skipped", "None"]
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: [ "model-validation-operator"]
@@ -301,6 +305,7 @@ spec:
       timeout: "0h5m0s"
       runAfter:
         - install-securesign
+        - install-operator-from-bundle
       taskRef:
         resolver: git
         params:
@@ -326,6 +331,9 @@ spec:
         - name: installChannel
           value: "tech-preview"
       when:
+        - input: "$(tasks.install-operator-from-bundle.status)"
+          operator: in
+          values: ["Failed", "Skipped", "None"]
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
           values: ["mvo-fbc-v4-15","mvo-fbc-v4-16","mvo-fbc-v4-17","mvo-fbc-v4-18"]
