@@ -825,4 +825,4 @@ spec:
               export BASE_URL="http://${ROUTE_HOST}"
               echo "Application exposed at ${BASE_URL}"
               echo -n "${BASE_URL}" > /tekton/results/BASE_URL
-              sleep 20m
+              sleep 2h
