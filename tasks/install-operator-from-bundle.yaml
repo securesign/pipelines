@@ -16,7 +16,7 @@ spec:
       description: Namespace to be used for installation
     - name: timeout
       description: Install bundle timeout
-      default: "10m"
+      default: "20m"
   volumes:
     - name: credentials
       emptyDir: {}

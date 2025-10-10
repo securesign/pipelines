@@ -261,7 +261,7 @@ spec:
         - name: bundleImage
           value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
-          value: "$(params.NAMESPACE)"
+          value: openshift-operators #"$(params.NAMESPACE)"
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
@@ -271,7 +271,7 @@ spec:
         - install-operator-from-bundle
       params:
         - name: namespace
-          value: "$(params.NAMESPACE)"
+          value: openshift-operators # "$(params.NAMESPACE)"
       taskSpec:
         volumes:
           - name: credentials
@@ -327,7 +327,7 @@ spec:
               #!/usr/bin/env bash
               set -euo pipefail
               cd /repository
-              echo "Cloning Policy Controller Operator"
+              echo "Cloning Model Validation Operator"
               git clone "$GIT_URL" source
               cd source
               if [ "$(tasks.parse-metadata.results.git-url)" == "$(params.MODEL_VALIDATION_OPERATOR_GIT_URL)" ]; then
@@ -365,7 +365,7 @@ spec:
               set +e -o pipefail
               cd /repository/source
               export PATH="$PATH:/binaries"
-              make test-e2e-ci MODEL_TRANSPARENCY_IMG=${{ env.MODEL_TRANSPARENCY_IMG }}
+              make test-e2e-ci MODEL_TRANSPARENCY_IMG="$MODEL_TRANSPARENCY_IMG"
               status=$?
 
               if [[ $status -ne 0 ]]; then
