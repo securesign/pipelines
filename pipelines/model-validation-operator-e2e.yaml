@@ -363,6 +363,8 @@ spec:
             script: |
               #!/bin/sh
               set +e -o pipefail
+              curl -sSL -o /binaries/kubectl https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+              chmod +x /binaries/kubectl
               cd /repository/source
               export PATH="$PATH:/binaries"
               make test-e2e-ci MODEL_TRANSPARENCY_IMG="$MODEL_TRANSPARENCY_IMG"
