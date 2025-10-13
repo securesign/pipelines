@@ -44,18 +44,18 @@ spec:
       type: string
   tasks:
     - name: parse-metadata
-    #   taskRef:
-    #     resolver: git
-    #     params:
-    #       - name: url
-    #         value: https://github.com/securesign/pipelines.git
-    #       - name: revision
-    #         value: main
-    #       - name: pathInRepo
-    #         value: tasks/parse-metadata.yaml
-    #   params:
-    #     - name: SNAPSHOT
-    #       value: $(params.SNAPSHOT)
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/parse-metadata.yaml
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
     - name: provision-eaas-space
       runAfter:
         - parse-metadata
