@@ -87,7 +87,7 @@ spec:
   - name: ocp-release-version
     default: "v4.19"
     type: string
-    description: Current RHTAS release version
+    description: Target OpenShift Container Platform (OCP) release version for which the image is built
   results:
   - description: ""
     name: IMAGE_URL
