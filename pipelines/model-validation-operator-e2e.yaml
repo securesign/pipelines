@@ -43,7 +43,7 @@ spec:
       default: https://github.com/securesign/model-validation-operator
       type: string
   tasks:
-    # - name: parse-metadata
+    - name: parse-metadata
     #   taskRef:
     #     resolver: git
     #     params:
