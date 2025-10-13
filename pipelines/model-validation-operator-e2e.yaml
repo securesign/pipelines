@@ -338,10 +338,10 @@ spec:
             env:
               - name: MODEL_TRANSPARENCY_IMG
                 value: quay.io/securesign/model-transparency@sha256:6db7fa2b956875a6f507811166b47b164d463dea78ab4403c6d7648d838b8acb
-              - name: OIDC_HOST
-                value: "$(tasks.install-securesign.results.oidc-hostname)"
-              - name: KUBECONFIG
-                value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              # - name: OIDC_HOST
+              #   value: "$(tasks.install-securesign.results.oidc-hostname)"
+              # - name: KUBECONFIG
+              #   value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
               - name: RHTAS_INSTALL_NAMESPACE
                 value: "$(params.TAS_E2E_NAMESPACE)"
               - name: MODEL_VALIDATION_OPERATOR_NS
