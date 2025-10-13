@@ -83,6 +83,10 @@ spec:
     default: docker
     type: string
     description: The format for the resulting image's mediaType. Valid values are oci or docker.
+  - name: release-version
+    default: "1.3.1"
+    type: string
+    description: Current RHTAS release version
   results:
   - description: ""
     name: IMAGE_URL
@@ -174,7 +178,15 @@ spec:
   - name: generate-labels
     params:
     - name: label-templates
-      value: ["release=$SOURCE_DATE_EPOCH", "version=1.3.0", "vendor=Red Hat, Inc.", "maintainer=rhtas-support@redhat.com", "cpe=cpe:/a:redhat:trusted_artifact_signer:1.3.0::el9"]
+      value:
+        - "release=$SOURCE_DATE_EPOCH"
+        - "version=$(params.release-version)"
+        - "vendor=Red Hat, Inc."
+        - "maintainer=rhtas-support@redhat.com"
+        - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(params.release-version)::el9"
+        - "org.opencontainers.image.created=$SOURCE_DATE_EPOCH"
+        - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
+        - "url=https://catalog.redhat.com/en/software/container-stacks/detail/6604180e80e2fa3e4947d1d5#overview"
     - name: source-date-epoch
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     runAfter:
