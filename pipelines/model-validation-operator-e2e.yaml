@@ -296,23 +296,23 @@ spec:
             params:
               - name: volume
                 value: binaries
-          - name: get-kubeconfig
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-            params:
-              - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
-              - name: clusterName
-                value: "$(tasks.provision-cluster.results.clusterName)"
-              - name: credentials
-                value: credentials
+          # - name: get-kubeconfig
+          #   ref:
+          #     resolver: git
+          #     params:
+          #       - name: url
+          #         value: https://github.com/konflux-ci/build-definitions.git
+          #       - name: revision
+          #         value: main
+          #       - name: pathInRepo
+          #         value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+          #   params:
+          #     - name: eaasSpaceSecretRef
+          #       value: $(tasks.provision-eaas-space.results.secretRef)
+          #     - name: clusterName
+          #       value: "$(tasks.provision-cluster.results.clusterName)"
+          #     - name: credentials
+          #       value: credentials
           - name: git-clone-mvo
             image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
             env:
