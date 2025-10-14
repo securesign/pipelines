@@ -16,6 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Install OpenShift CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "latest"
+      
       - name: Checkout PR branch (HEAD)
         uses: actions/checkout@v4
         with:
@@ -39,16 +44,34 @@ jobs:
           set -e
           
           if [ $BUILD_EXIT_CODE -eq 0 ]; then
-            # Extract manifests from the built image using buildah
-            # For scratch images, we can't use podman create, so we mount the image directly
-            CONTAINER=$(buildah from konflux-config-base:latest)
-            MOUNT_PATH=$(buildah mount $CONTAINER)
-            cp $MOUNT_PATH/manifests.yaml /tmp/base-output.yaml
-            buildah umount $CONTAINER
-            buildah rm $CONTAINER
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "BASE build successful"
-            echo "Generated $(wc -l < /tmp/base-output.yaml) lines of manifests"
+            # Extract manifests using oc image extract (same as production)
+            # Use containers-storage: protocol to access images built by buildah/podman
+            echo "Extracting manifests using oc image extract..."
+            mkdir -p /tmp/base-extract
+            cd /tmp/base-extract
+            
+            # oc image extract from containers-storage (where buildah stores images)
+            if oc image extract containers-storage:konflux-config-base:latest --path="/manifests.yaml:." 2>&1 | tee /tmp/base-extract.log; then
+              if [ -f "./manifests.yaml" ]; then
+                mv ./manifests.yaml /tmp/base-output.yaml
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "BASE build successful"
+                echo "Generated $(wc -l < /tmp/base-output.yaml) lines of manifests"
+              else
+                echo "status=failed" >> $GITHUB_OUTPUT
+                echo "manifests.yaml not found after extraction"
+                cat /tmp/base-extract.log
+                exit 1
+              fi
+            else
+              echo "status=failed" >> $GITHUB_OUTPUT
+              echo "Failed to extract manifests.yaml from image"
+              cat /tmp/base-extract.log
+              exit 1
+            fi
+            
+            # Cleanup
+            rm -rf /tmp/base-extract
           else
             echo "status=failed" >> $GITHUB_OUTPUT
             echo "BASE build failed"
@@ -66,16 +89,34 @@ jobs:
           set -e
           
           if [ $BUILD_EXIT_CODE -eq 0 ]; then
-            # Extract manifests from the built image using buildah
-            # For scratch images, we can't use podman create, so we mount the image directly
-            CONTAINER=$(buildah from konflux-config-head:latest)
-            MOUNT_PATH=$(buildah mount $CONTAINER)
-            cp $MOUNT_PATH/manifests.yaml /tmp/head-output.yaml
-            buildah umount $CONTAINER
-            buildah rm $CONTAINER
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "HEAD build successful"
-            echo "Generated $(wc -l < /tmp/head-output.yaml) lines of manifests"
+            # Extract manifests using oc image extract (same as production)
+            # Use containers-storage: protocol to access images built by buildah/podman
+            echo "Extracting manifests using oc image extract..."
+            mkdir -p /tmp/head-extract
+            cd /tmp/head-extract
+            
+            # oc image extract from containers-storage (where buildah stores images)
+            if oc image extract containers-storage:konflux-config-head:latest --path="/manifests.yaml:." 2>&1 | tee /tmp/head-extract.log; then
+              if [ -f "./manifests.yaml" ]; then
+                mv ./manifests.yaml /tmp/head-output.yaml
+                echo "status=success" >> $GITHUB_OUTPUT
+                echo "HEAD build successful"
+                echo "Generated $(wc -l < /tmp/head-output.yaml) lines of manifests"
+              else
+                echo "status=failed" >> $GITHUB_OUTPUT
+                echo "manifests.yaml not found after extraction"
+                cat /tmp/head-extract.log
+                exit 1
+              fi
+            else
+              echo "status=failed" >> $GITHUB_OUTPUT
+              echo "Failed to extract manifests.yaml from image"
+              cat /tmp/head-extract.log
+              exit 1
+            fi
+            
+            # Cleanup
+            rm -rf /tmp/head-extract
           else
             echo "status=failed" >> $GITHUB_OUTPUT
             echo "HEAD build failed"
@@ -115,15 +156,15 @@ jobs:
           ## 🔍 Kustomize Configuration Diff Report
           
           **Build Method:** Buildah using `konflux-configs/Dockerfile`  
-          **Extraction:** `buildah mount` (works with scratch images)  
+          **Extraction:** `oc image extract` (same as production)  
           **Environment:** `prod` (ENVIRONMENT=prod)  
           **Base Branch:** `${{ github.event.pull_request.base.ref }}` (`${{ github.event.pull_request.base.sha }}`)  
           **PR Branch:** `${{ github.event.pull_request.head.ref }}` (`${{ github.event.pull_request.head.sha }}`)
           
           > 📦 This workflow builds manifests using **Buildah** (Red Hat's container tool) and the same
-          > Dockerfile that will be used in production. Files are extracted using `buildah mount` which
-          > works seamlessly with scratch-based images. This ensures the diff reflects the actual deployment
-          > process including any post-processing steps.
+          > Dockerfile that will be used in production. Files are extracted using **`oc image extract`**,
+          > the exact same method used in the production deployment pipeline (`extract-and-apply-manifests` task).
+          > This ensures the diff reflects the actual deployment process including any post-processing steps.
           
           ---
           
@@ -216,7 +257,7 @@ jobs:
           
           1. Review the diff above carefully
           2. Ensure all changes align with the PR objectives
-          3. Test locally: Build with `buildah bud` and extract with `buildah mount` (see tip below)
+          3. Test locally: Build with `buildah bud` and extract with `oc image extract` (see tip below)
           4. After approval, changes will auto-deploy to the cluster
           
           ---
@@ -227,18 +268,12 @@ jobs:
           git checkout ${{ github.event.pull_request.base.ref }}
           cd konflux-configs
           buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
-          CONTAINER_BASE=$(buildah from konflux-config-base)
-          MOUNT_BASE=$(buildah mount $CONTAINER_BASE)
-          cp $MOUNT_BASE/manifests.yaml /tmp/base.yaml
-          buildah umount $CONTAINER_BASE && buildah rm $CONTAINER_BASE
+          oc image extract containers-storage:konflux-config-base --path="/manifests.yaml:/tmp/base.yaml"
           
           # On PR branch
           git checkout ${{ github.event.pull_request.head.ref }}
           buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-head -f Dockerfile .
-          CONTAINER_HEAD=$(buildah from konflux-config-head)
-          MOUNT_HEAD=$(buildah mount $CONTAINER_HEAD)
-          cp $MOUNT_HEAD/manifests.yaml /tmp/head.yaml
-          buildah umount $CONTAINER_HEAD && buildah rm $CONTAINER_HEAD
+          oc image extract containers-storage:konflux-config-head --path="/manifests.yaml:/tmp/head.yaml"
           
           # Compare
           diff -u /tmp/base.yaml /tmp/head.yaml

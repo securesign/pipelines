@@ -16,14 +16,15 @@ The workflow runs automatically when:
 
 ### What It Does
 
-1. **Checks out both branches** - Gets both the PR branch (HEAD) and target branch (BASE)
-2. **Builds manifests using Buildah** - Runs `buildah bud` using `konflux-configs/Dockerfile` on both branches, exactly matching the production build process
-3. **Extracts manifests** - Uses `buildah mount` to directly access `/manifests.yaml` from the built images (works with scratch images)
-4. **Generates diff** - Creates a unified diff showing all changes
-5. **Posts PR comment** - Adds a detailed report directly to the pull request
-6. **Uploads artifacts** - Saves the generated manifests and diffs for 30 days
+1. **Installs OpenShift CLI** - Uses [redhat-actions/openshift-tools-installer](https://github.com/redhat-actions/openshift-tools-installer) to install `oc` with automatic caching
+2. **Checks out both branches** - Gets both the PR branch (HEAD) and target branch (BASE)
+3. **Builds manifests using Buildah** - Runs `buildah bud` using `konflux-configs/Dockerfile` on both branches, exactly matching the production build process
+4. **Extracts manifests** - Uses `oc image extract` to get `/manifests.yaml` from locally built images (same method as production)
+5. **Generates diff** - Creates a unified diff showing all changes
+6. **Posts PR comment** - Adds a detailed report directly to the pull request
+7. **Uploads artifacts** - Saves the generated manifests and diffs for 30 days
 
-> **Important:** This workflow uses **Buildah** (Red Hat's container building tool) and the same `Dockerfile` that Konflux uses in production to build the manifests. The workflow uses `buildah mount` to extract files, which works even with minimal scratch images. This ensures the diff reflects the actual deployment process, including any post-processing steps or future enhancements to the build process.
+> **Important:** This workflow uses **Buildah** (Red Hat's container building tool) and the same `Dockerfile` that Konflux uses in production to build the manifests. The workflow extracts files using **`oc image extract`**, which is the exact same command used in the production `extract-and-apply-manifests` task. The `oc` tool can extract files from images in local containers-storage without needing to push them to a registry. This ensures the diff reflects the actual deployment process, including any post-processing steps or future enhancements to the build process.
 
 ### Comment Features
 
@@ -101,9 +102,16 @@ The workflow requires:
 
 **Build fails:**
 - Review the error log in the PR comment
-- Test locally using the Docker build command (see Local Testing section)
+- Test locally using the same commands as the workflow (see Local Testing section)
 - Verify all referenced files exist in `base/` and `overlay/` directories
 - Check that the Konflux test image is accessible: `quay.io/konflux-ci/konflux-test:latest`
+
+**Extraction fails:**
+- The workflow uses `oc image extract containers-storage:image-name` to access local images
+- Verify the image was built successfully: `podman images | grep konflux-config`
+- Test extraction manually: `oc image extract containers-storage:image-name --path="/manifests.yaml:."`
+- Check that manifests.yaml exists in the image by inspecting the Dockerfile
+- Note: Use `containers-storage:` protocol, not `localhost/` (which tries to access a registry)
 
 **Comment not posted:**
 - Check workflow logs in GitHub Actions
@@ -116,7 +124,7 @@ The workflow requires:
 
 ### Local Testing
 
-To test changes locally before pushing (using Buildah, same as the workflow):
+To test changes locally before pushing (using Buildah + oc, same as the workflow):
 
 ```bash
 # Save current branch
@@ -126,20 +134,12 @@ CURRENT_BRANCH=$(git branch --show-current)
 git checkout main
 cd konflux-configs
 buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
-CONTAINER_BASE=$(buildah from konflux-config-base)
-MOUNT_BASE=$(buildah mount $CONTAINER_BASE)
-cp $MOUNT_BASE/manifests.yaml /tmp/base.yaml
-buildah umount $CONTAINER_BASE
-buildah rm $CONTAINER_BASE
+oc image extract containers-storage:konflux-config-base --path="/manifests.yaml:/tmp/base.yaml"
 
 # Build from your branch using Buildah
 git checkout $CURRENT_BRANCH
 buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-head -f Dockerfile .
-CONTAINER_HEAD=$(buildah from konflux-config-head)
-MOUNT_HEAD=$(buildah mount $CONTAINER_HEAD)
-cp $MOUNT_HEAD/manifests.yaml /tmp/head.yaml
-buildah umount $CONTAINER_HEAD
-buildah rm $CONTAINER_HEAD
+oc image extract containers-storage:konflux-config-head --path="/manifests.yaml:/tmp/head.yaml"
 
 # Compare
 diff -u /tmp/base.yaml /tmp/head.yaml | less
@@ -151,14 +151,17 @@ code --diff /tmp/base.yaml /tmp/head.yaml
 buildah rmi konflux-config-base konflux-config-head
 ```
 
-> **Note:** The workflow uses `buildah mount` to extract files from scratch images. If you prefer Docker:
-> ```bash
-> docker build --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
-> docker create --name base-c konflux-config-base sh  # Need to specify a command for scratch images
-> docker cp base-c:/manifests.yaml /tmp/base.yaml
-> docker rm base-c
-> ```
-> However, Buildah's mount approach is more straightforward for scratch images.
+> **Note:** This approach uses `oc image extract`, the exact same command used in your production `extract-and-apply-manifests` task. The `oc` tool can extract files from images stored in local containers-storage (created by buildah/podman) without needing to push them to a registry first. Use the `containers-storage:` protocol prefix to access local images: `containers-storage:image-name:tag`
+> 
+> **Requirements:** You need the `oc` CLI installed. You can:
+> - **Use the Red Hat Action (recommended):** The workflow uses [redhat-actions/openshift-tools-installer](https://github.com/redhat-actions/openshift-tools-installer) which installs and caches `oc` automatically
+> - **Manual install:**
+>   ```bash
+>   # Download from OpenShift mirror
+>   curl -sLO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz
+>   tar xzf openshift-client-linux.tar.gz
+>   sudo mv oc /usr/local/bin/
+>   ```
 
 ### Integration with PR Workflow
 
