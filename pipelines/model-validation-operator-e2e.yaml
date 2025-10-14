@@ -365,6 +365,9 @@ spec:
               set +e -o pipefail
               curl -sSL -o /binaries/kubectl https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
               chmod +x /binaries/kubectl
+              curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o /tmp/docker.tgz
+              tar -xzf /tmp/docker.tgz -C /binaries --strip-components=1 docker/docker
+              chmod +x /binaries/docker
               cd /repository/source
               export PATH="$PATH:/binaries"
               make test-e2e-ci MODEL_TRANSPARENCY_IMG="$MODEL_TRANSPARENCY_IMG"
