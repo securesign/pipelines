@@ -1,0 +1,19 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-configuration-as-code
+  labels:
+    appstudio.redhat.com/application: konflux
+    appstudio.redhat.com/component: configuration-as-code
+spec:
+  image:
+    name: rhtas-tenant/configuration-as-code
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
