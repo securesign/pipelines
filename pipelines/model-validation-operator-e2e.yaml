@@ -262,6 +262,8 @@ spec:
           value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
           value: "$(params.NAMESPACE)"
+        - name: timeout
+          value: 30m
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
