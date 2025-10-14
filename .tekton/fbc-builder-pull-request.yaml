@@ -33,6 +33,8 @@ spec:
     value: pipeline-tests/fbc/catalog.Dockerfile
   - name: path-context
     value: pipeline-tests/fbc
+  - name: ocp-release-version
+    value: "v4.19"
   pipelineRef:
     name: fbc-builder
   taskRunTemplate:
