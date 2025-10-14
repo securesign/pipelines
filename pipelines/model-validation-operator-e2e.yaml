@@ -242,8 +242,8 @@ spec:
       #         - name: OIDC_HOST
       #           value: "$(steps.install-keycloak.results.oidc-hostname)"
     - name: install-operator-from-bundle
-      runAfter:
-        - install-securesign
+      # runAfter:
+      #   - install-securesign
       taskRef:
         resolver: git
         params:
