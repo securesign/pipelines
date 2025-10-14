@@ -261,7 +261,7 @@ spec:
         - name: bundleImage
           value: "$(tasks.parse-metadata.results.image)"
         - name: namespace
-          value: "$(params.NAMESPACE)"
+          value: "rhtas-tenant"
         - name: timeout
           value: 30m
       when:
