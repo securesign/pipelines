@@ -14,7 +14,7 @@ spec:
   componentName: docker-build
   source:
     git:
-      url: https://github.com/securesign/pipelines.git
+      url: https://github.com/securesign/pipelines
       revision: main
       dockerfileUrl: pipeline-tests/Dockerfile
 
@@ -34,7 +34,7 @@ spec:
   componentName: docker-build-oci-ta
   source:
     git:
-      url: https://github.com/securesign/pipelines.git
+      url: https://github.com/securesign/pipelines
       revision: main
       dockerfileUrl: pipeline-tests/Dockerfile
 
@@ -55,7 +55,7 @@ spec:
   componentName: docker-build-multi-platform-oci-ta
   source:
     git:
-      url: https://github.com/securesign/pipelines.git
+      url: https://github.com/securesign/pipelines
       revision: main
       dockerfileUrl: pipeline-tests/Dockerfile
 
@@ -76,7 +76,7 @@ spec:
   componentName: fbc-builder
   source:
     git:
-      url: https://github.com/securesign/pipelines.git
+      url: https://github.com/securesign/pipelines
       revision: main
       context: pipeline-tests/fbc
       dockerfileUrl: pipeline-tests/fbc/catalog.Dockerfile
