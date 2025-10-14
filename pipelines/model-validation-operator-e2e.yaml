@@ -121,126 +121,126 @@ spec:
                   - source: registry.redhat.io/rhtas/model-validation-operator
                     mirrors:
                       - quay.io/securesign/model-validation-operator
-    - name: install-rhtas-operator
-      runAfter:
-        - provision-cluster
-      taskRef:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/securesign/pipelines.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: tasks/install-operator-from-bundle.yaml
-      params:
-        - name: eaasSpaceSecretRef
-          value: $(tasks.provision-eaas-space.results.secretRef)
-        - name: clusterName
-          value: "$(tasks.provision-cluster.results.clusterName)"
-        - name: bundleImage
-          value: "$(params.RHTAS_BUNDLE_IMAGE)"
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-    - name: install-securesign
-      runAfter:
-        - install-rhtas-operator
-      params:
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-      taskSpec:
-        results:
-          - name: oidc-hostname
-            value: "$(steps.install-keycloak.results.oidc-hostname)"
-        volumes:
-          - name: credentials
-            emptyDir: { }
-          - name: repository
-            emptyDir: { }
-          - name: binaries
-            emptyDir: { }
-          - name: dump
-            emptyDir: { }
-          - name: push-creds
-            secret:
-              secretName: securesign-test-dump-oci
-        steps:
-          - name: get-kubeconfig
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-            params:
-              - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
-              - name: clusterName
-                value: "$(tasks.provision-cluster.results.clusterName)"
-              - name: credentials
-                value: credentials
-          - name: git-clone-operator
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/git-clone.yaml
-            params:
-              - name: url
-                value: "$(params.RHTAS_GIT_URL)"
-              - name: revision
-                value: "$(params.RHTAS_GIT_REVISION)"
-              - name: repository
-                value: repository
-          - name: install-keycloak
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/install-keycloak.yaml
-            params:
-              - name: credentials
-                value: credentials
-              - name: repository
-                value: repository
-              - name: KUBECONFIG
-                value: "$(steps.get-kubeconfig.results.kubeconfig)"
-              - name: workdir
-                value: source
-          - name: install-tas
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/install-tas.yaml
-            params:
-              - name: credentials
-                value: credentials
-              - name: repository
-                value: repository
-              - name: KUBECONFIG
-                value: "$(steps.get-kubeconfig.results.kubeconfig)"
-              - name: workdir
-                value: source
-              - name: tas-namespace
-                value: "$(params.TAS_E2E_NAMESPACE)"
-              - name: OIDC_HOST
-                value: "$(steps.install-keycloak.results.oidc-hostname)"
+    # - name: install-rhtas-operator
+    #   runAfter:
+    #     - provision-cluster
+    #   taskRef:
+    #     resolver: git
+    #     params:
+    #       - name: url
+    #         value: https://github.com/securesign/pipelines.git
+    #       - name: revision
+    #         value: main
+    #       - name: pathInRepo
+    #         value: tasks/install-operator-from-bundle.yaml
+    #   params:
+    #     - name: eaasSpaceSecretRef
+    #       value: $(tasks.provision-eaas-space.results.secretRef)
+    #     - name: clusterName
+    #       value: "$(tasks.provision-cluster.results.clusterName)"
+    #     - name: bundleImage
+    #       value: "$(params.RHTAS_BUNDLE_IMAGE)"
+    #     - name: namespace
+    #       value: "$(params.NAMESPACE)"
+    # - name: install-securesign
+      # runAfter:
+      #   - install-rhtas-operator
+      # params:
+      #   - name: namespace
+      #     value: "$(params.NAMESPACE)"
+      # taskSpec:
+      #   results:
+      #     - name: oidc-hostname
+      #       value: "$(steps.install-keycloak.results.oidc-hostname)"
+      #   volumes:
+      #     - name: credentials
+      #       emptyDir: { }
+      #     - name: repository
+      #       emptyDir: { }
+      #     - name: binaries
+      #       emptyDir: { }
+      #     - name: dump
+      #       emptyDir: { }
+      #     - name: push-creds
+      #       secret:
+      #         secretName: securesign-test-dump-oci
+      #   steps:
+      #     - name: get-kubeconfig
+      #       ref:
+      #         resolver: git
+      #         params:
+      #           - name: url
+      #             value: https://github.com/konflux-ci/build-definitions.git
+      #           - name: revision
+      #             value: main
+      #           - name: pathInRepo
+      #             value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+      #       params:
+      #         - name: eaasSpaceSecretRef
+      #           value: $(tasks.provision-eaas-space.results.secretRef)
+      #         - name: clusterName
+      #           value: "$(tasks.provision-cluster.results.clusterName)"
+      #         - name: credentials
+      #           value: credentials
+      #     - name: git-clone-operator
+      #       ref:
+      #         resolver: git
+      #         params:
+      #           - name: url
+      #             value: https://github.com/securesign/pipelines.git
+      #           - name: revision
+      #             value: main
+      #           - name: pathInRepo
+      #             value: stepactions/git-clone.yaml
+      #       params:
+      #         - name: url
+      #           value: "$(params.RHTAS_GIT_URL)"
+      #         - name: revision
+      #           value: "$(params.RHTAS_GIT_REVISION)"
+      #         - name: repository
+      #           value: repository
+      #     - name: install-keycloak
+      #       ref:
+      #         resolver: git
+      #         params:
+      #           - name: url
+      #             value: https://github.com/securesign/pipelines.git
+      #           - name: revision
+      #             value: main
+      #           - name: pathInRepo
+      #             value: stepactions/install-keycloak.yaml
+      #       params:
+      #         - name: credentials
+      #           value: credentials
+      #         - name: repository
+      #           value: repository
+      #         - name: KUBECONFIG
+      #           value: "$(steps.get-kubeconfig.results.kubeconfig)"
+      #         - name: workdir
+      #           value: source
+      #     - name: install-tas
+      #       ref:
+      #         resolver: git
+      #         params:
+      #           - name: url
+      #             value: https://github.com/securesign/pipelines.git
+      #           - name: revision
+      #             value: main
+      #           - name: pathInRepo
+      #             value: stepactions/install-tas.yaml
+      #       params:
+      #         - name: credentials
+      #           value: credentials
+      #         - name: repository
+      #           value: repository
+      #         - name: KUBECONFIG
+      #           value: "$(steps.get-kubeconfig.results.kubeconfig)"
+      #         - name: workdir
+      #           value: source
+      #         - name: tas-namespace
+      #           value: "$(params.TAS_E2E_NAMESPACE)"
+      #         - name: OIDC_HOST
+      #           value: "$(steps.install-keycloak.results.oidc-hostname)"
     - name: install-operator-from-bundle
       runAfter:
         - install-securesign
