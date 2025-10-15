@@ -14,7 +14,6 @@ spec:
       description: Operator bundle image to be installed
     - name: namespace
       description: Namespace to be used for installation
-      default: rhtas-tenant
     - name: timeout
       description: Install bundle timeout
       default: "30m"
