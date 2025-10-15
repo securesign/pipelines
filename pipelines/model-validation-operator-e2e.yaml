@@ -154,7 +154,7 @@ spec:
         - name: operatorImage
           value: "$(tasks.parse-metadata.results.image)"
         - name: deployName
-          value: "model-validation-operator-controller-manager"
+          value: "model-validation-controller-manager"
         - name: namespace
           value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
         - name: resources_url
