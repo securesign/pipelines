@@ -7,4 +7,4 @@ metadata:
   name: promote-to-candidate-
   namespace: rhtas-tenant
 spec:
-  application: operator-v1-0
+  application: operator-v1-3
