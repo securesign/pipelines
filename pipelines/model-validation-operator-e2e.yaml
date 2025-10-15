@@ -20,7 +20,7 @@ spec:
       type: string
     - description: Namespace where Model Validation Operator will be installed
       name: MODEL_VALIDATION_OPERATOR_NS
-      default: model-validation-operator
+      default: model-validation-operator-system
       type: string
     - description: Model Validation operator Git Url
       name: MODEL_VALIDATION_OPERATOR_GIT_URL
@@ -155,6 +155,8 @@ spec:
           value: "$(tasks.parse-metadata.results.image)"
         - name: deployName
           value: "model-validation-operator-controller-manager"
+        - name: namespace
+          value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
         - name: resources_url
           value: "$(tasks.parse-metadata.results.git-url).git/config/env/openshift?ref=$(tasks.parse-metadata.results.git-revision)"
       when:
