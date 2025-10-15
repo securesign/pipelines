@@ -17,7 +17,7 @@ spec:
     params:
       - name: SNAPSHOT
       - name: OCP_VERSION
-        default: "4.17"
+        default: "4.19"
       - name: TAS_DEPLOY_NAMESPACE
         default: "tas-e2e"
     workspaces:
