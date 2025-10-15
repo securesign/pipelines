@@ -1,0 +1,248 @@
+name: Kustomize Diff Review
+
+on:
+  pull_request:
+    paths:
+      - 'konflux-configs/**'
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  kustomize-diff:
+    name: Compare Kustomize Outputs
+    runs-on: ubuntu-latest
+    
+    env:
+      KUSTOMIZE_ENV: prod
+      CONFIG_DIR: konflux-configs
+      DOCKERFILE_PATH: Dockerfile
+      BASE_IMAGE_NAME: konflux-config-base:latest
+      HEAD_IMAGE_NAME: konflux-config-head:latest
+      DIFF_TRUNCATE_LINES: 500
+      ARTIFACT_RETENTION_DAYS: 30
+      DYFF_VERSION: 1.10.2
+    
+    steps:
+      - name: Install tools
+        run: |
+          # Install dyff
+          curl -sL https://github.com/homeport/dyff/releases/download/v${DYFF_VERSION}/dyff_${DYFF_VERSION}_linux_amd64.tar.gz | tar xz
+          sudo mv dyff /usr/local/bin/
+          dyff version
+          
+          # Install gomplate
+          curl -sL https://github.com/hairyhenderson/gomplate/releases/download/v3.11.7/gomplate_linux-amd64 -o gomplate
+          chmod +x gomplate
+          sudo mv gomplate /usr/local/bin/
+          gomplate --version
+   
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-head
+      
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: pr-base
+      
+      - name: Build base manifests
+        id: base-build
+        run: |
+          cd pr-base/${CONFIG_DIR}
+          echo "Building manifests from base branch..."
+          
+          if ! buildah bud --build-arg ENVIRONMENT=${KUSTOMIZE_ENV} -t ${BASE_IMAGE_NAME} -f ${DOCKERFILE_PATH} . 2>&1 | tee /tmp/base-build.log; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            cp /tmp/base-build.log /tmp/base-error.log
+            exit 0
+          fi
+          
+          echo "Extracting manifests..."
+          container=$(podman create --entrypoint "" ${BASE_IMAGE_NAME} /bin/true)
+          if podman cp ${container}:/manifests.yaml /tmp/base-output.yaml 2>/dev/null && [ -s /tmp/base-output.yaml ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "Extracted $(wc -l < /tmp/base-output.yaml) lines"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "Failed to extract manifests from base image" | tee /tmp/base-error.log
+          fi
+          podman rm ${container} 2>/dev/null || true
+      
+      - name: Build HEAD manifests
+        id: head-build
+        run: |
+          cd pr-head/${CONFIG_DIR}
+          echo "Building manifests from HEAD branch..."
+          
+          if ! buildah bud --build-arg ENVIRONMENT=${KUSTOMIZE_ENV} -t ${HEAD_IMAGE_NAME} -f ${DOCKERFILE_PATH} . 2>&1 | tee /tmp/head-build.log; then
+            echo "status=failed" >> $GITHUB_OUTPUT
+            cp /tmp/head-build.log /tmp/head-error.log
+            exit 0
+          fi
+          
+          echo "Extracting manifests..."
+          container=$(podman create --entrypoint "" ${HEAD_IMAGE_NAME} /bin/true)
+          if podman cp ${container}:/manifests.yaml /tmp/head-output.yaml 2>/dev/null && [ -s /tmp/head-output.yaml ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "Extracted $(wc -l < /tmp/head-output.yaml) lines"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "Failed to extract manifests from HEAD image" | tee /tmp/head-error.log
+          fi
+          podman rm ${container} 2>/dev/null || true
+      
+      - name: Generate diff
+        id: diff
+        if: steps.base-build.outputs.status == 'success' && steps.head-build.outputs.status == 'success'
+        run: |
+          echo "Generating diff with dyff..."
+          dyff between --output github /tmp/base-output.yaml /tmp/head-output.yaml > /tmp/dyff-output.txt 2>&1 || true
+          
+          if [ -s /tmp/dyff-output.txt ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            
+            # Extract summary from dyff's GitHub output
+            # dyff shows things like "one document removed:", "one document added:", etc.
+            DOCS_ADDED=$(grep -c "document added:" /tmp/dyff-output.txt 2>/dev/null || true)
+            DOCS_REMOVED=$(grep -c "document removed:" /tmp/dyff-output.txt 2>/dev/null || true)
+            DOCS_MODIFIED=$(grep -c "± value change" /tmp/dyff-output.txt 2>/dev/null || true)
+            
+            # Default to 0 if empty and ensure clean integers
+            DOCS_ADDED=${DOCS_ADDED:-0}
+            DOCS_REMOVED=${DOCS_REMOVED:-0}
+            DOCS_MODIFIED=${DOCS_MODIFIED:-0}
+            
+            {
+              echo "docs_added=$DOCS_ADDED"
+              echo "docs_removed=$DOCS_REMOVED"
+              echo "docs_modified=$DOCS_MODIFIED"
+            } >> $GITHUB_OUTPUT
+            
+            echo "Found: +$DOCS_ADDED -$DOCS_REMOVED ~$DOCS_MODIFIED documents"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            {
+              echo "docs_added=0"
+              echo "docs_removed=0"
+              echo "docs_modified=0"
+            } >> $GITHUB_OUTPUT
+            echo "No differences found"
+          fi
+      
+      - name: Create PR comment
+        run: |
+          # Collect data from previous steps
+          ADDED="${{ steps.diff.outputs.docs_added }}"
+          REMOVED="${{ steps.diff.outputs.docs_removed }}"
+          MODIFIED="${{ steps.diff.outputs.docs_modified }}"
+          TOTAL=$((ADDED + REMOVED + MODIFIED))
+          
+          # Collect error information
+          ERROR_MESSAGE=""
+          ERROR_LOG=""
+          if [ "${{ steps.base-build.outputs.status }}" == "failed" ]; then
+            ERROR_MESSAGE="The base branch build failed. This might indicate an existing issue in the target branch."
+            ERROR_LOG=$(cat /tmp/base-error.log 2>/dev/null || echo "No error log available")
+          elif [ "${{ steps.head-build.outputs.status }}" == "failed" ]; then
+            ERROR_MESSAGE="The PR branch build failed. Please fix the configuration errors."
+            ERROR_LOG=$(cat /tmp/head-error.log 2>/dev/null || echo "No error log available")
+          fi
+          
+          # Collect diff content
+          DIFF_CONTENT=""
+          if [ -f /tmp/dyff-output.txt ] && [ -s /tmp/dyff-output.txt ]; then
+            DIFF_CONTENT=$(head -n ${DIFF_TRUNCATE_LINES} /tmp/dyff-output.txt)
+            if [ $(wc -l < /tmp/dyff-output.txt) -gt ${DIFF_TRUNCATE_LINES} ]; then
+              DIFF_CONTENT="${DIFF_CONTENT}"$'\n'"... (diff truncated, showing first ${DIFF_TRUNCATE_LINES} lines)"
+            fi
+          fi
+          
+          # Generate JSON data for template
+          jq -n \
+            --arg repo "${{ github.repository }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg error_message "$ERROR_MESSAGE" \
+            --arg error_log "$ERROR_LOG" \
+            --argjson total "$TOTAL" \
+            --argjson added "$ADDED" \
+            --argjson removed "$REMOVED" \
+            --argjson modified "$MODIFIED" \
+            --arg diff_content "$DIFF_CONTENT" \
+            '{
+              repo: $repo,
+              run_id: $run_id,
+              error_message: (if $error_message == "" then null else $error_message end),
+              error_log: (if $error_log == "" then null else $error_log end),
+              total: $total,
+              added: $added,
+              removed: $removed,
+              modified: $modified,
+              diff_content: (if $diff_content == "" then null else $diff_content end)
+            }' > /tmp/template-data.json
+          
+          echo "Generated JSON data:"
+          cat /tmp/template-data.json
+          
+          # Generate comment using gomplate
+          gomplate -c .=/tmp/template-data.json -f pr-head/.github/workflows/templates/pr-comment.md -o /tmp/comment.md
+      
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('/tmp/comment.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && c.body.includes('Configuration Diff')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+              console.log('Updated existing comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+              console.log('Created new comment');
+            }
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kustomize-diff-outputs
+          path: |
+            /tmp/base-output.yaml
+            /tmp/head-output.yaml
+            /tmp/dyff-output.txt
+            /tmp/base-error.log
+            /tmp/head-error.log
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+      
+      - name: Fail on build error
+        if: steps.head-build.outputs.status == 'failed'
+        run: |
+          echo "::error::Kustomize build failed. Please fix configuration errors."
+          exit 1
