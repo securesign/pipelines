@@ -1,0 +1,181 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: molecule-test-
+spec:
+  workspaces:
+    - name: work
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+  pipelineSpec:
+    params:
+      - name: SNAPSHOT
+      - name: OCP_VERSION
+        default: "4.19"
+      - name: TAS_DEPLOY_NAMESPACE
+        default: "tas-e2e"
+    workspaces:
+      - name: work
+    tasks:
+      - name: parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/konflux-ci/tekton-integration-catalog
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/test-metadata/0.3/test-metadata.yaml
+        params:
+          - name: SNAPSHOT
+            value: $(params.SNAPSHOT)
+      - name: clone-source-code
+        runAfter:
+          - parse-metadata
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: $(tasks.parse-metadata.results.git-url)
+          - name: revision
+            value: $(tasks.parse-metadata.results.git-revision)
+          - name: subdirectory
+            value: "ansible"
+        workspaces:
+          - name: output
+            workspace: work
+      - name: prepare-tests
+        runAfter:
+          - clone-source-code
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          results:
+            - name: rhio-username
+              description: The username for registry.redhat.io
+            - name: rhio-password
+              description: The password for registry.redhat.io
+          workspaces:
+            - name: work
+          volumes:
+            # reuse existing secret
+            - name: rhio-creds
+              secret:
+                secretName: ansible-registry-redhat-io-pull-secret
+          steps:
+            - name: extract-release-image-content
+              image: "gcr.io/go-containerregistry/crane"
+              args:
+                - export
+                - $(tasks.parse-metadata.results.container-image)
+                - $(workspaces.work.path)/image.tar
+            - name: prepare-tests
+              image: "quay.io/redhat-appstudio/konflux-test:stable"
+              volumeMounts:
+                - name: rhio-creds
+                  mountPath: /creds
+              script: |
+                #!/bin/sh
+                set -ex
+                # extract registry.redhat.io credentials from the secret
+                jq -r '.auths["registry.redhat.io"].username' /creds/.dockerconfigjson > "$(results.rhio-username.path)"
+                jq -r '.auths["registry.redhat.io"].password' /creds/.dockerconfigjson > "$(results.rhio-password.path)"
+
+                # extract the release image content
+                tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
+
+                # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
+                find $(workspaces.work.path)/ansible/molecule -type f -name "converge.yml" \
+                -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
+            - name: install-dependencies
+              image: "registry.redhat.io/ansible-automation-platform-25/ansible-dev-tools-rhel8@sha256:5cfbffa83dedf8ab03b0ca68f18f9c88876c50c53e22b7e3d6ef96ce293f7fb5"
+              workingDir: $(workspaces.work.path)/ansible
+              script: |
+                #!/bin/sh
+                set -ex
+                # warm up dependencies for parallel execution
+                python -m pip install --upgrade pip
+                python -m venv $(workspaces.work.path)/venv
+                source $(workspaces.work.path)/venv/bin/activate
+                pip3 install -r $(workspaces.work.path)/ansible/testing-requirements.txt
+                
+                #ansible-galaxy install -r $(workspaces.work.path)/ansible/requirements.yml
+                #ansible-galaxy install -r $(workspaces.work.path)/ansible/molecule/requirements.yml
+      - name: run-molecule
+        runAfter:
+          - prepare-tests
+        matrix:
+          params:
+            - name: scenario
+              value:
+                - default
+               # - user_provided
+               # - key_rotation
+               # - backup_restore_migrate
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: jbouska_ansible
+            - name: pathInRepo
+              value: integration-test-pipelines/tasks/run-molecule.yaml
+        params:
+          - name: rhio-username
+            value: $(tasks.prepare-tests.results.rhio-username)
+          - name: rhio-password
+            value: $(tasks.prepare-tests.results.rhio-password)
+          - name: molecule-command
+            value: "test"
+          - name: run-id
+            value: "$(context.pipelineRun.name)"
+        workspaces:
+          - name: work
+            workspace: work
+  #  finally:
+  #    - name: ensure-molecule-cleanup
+  #      taskRef:
+  #        resolver: git
+  #        params:
+  #          - name: url
+  #            value: https://github.com/securesign/pipelines.git
+  #          - name: revision
+  #            value: jbouska_ansible
+  #          - name: pathInRepo
+  #            value: integration-test-pipelines/tasks/run-molecule.yaml
+  #        matrix:
+  #          params:
+  #            - name: scenario
+  #              value:
+  #                - default
+  #                - user_provided
+  #                - key_rotation
+  #                - backup_restore_migrate
+  #        params:
+  #        - name: rhio-username
+  #          value: $(tasks.prepare-tests.results.rhio-username)
+  #        - name: rhio-password
+  #          value: $(tasks.prepare-tests.results.rhio-password)
+  #        - name: molecule-command
+  #          value: "destroy"
+  #        - name: run-id
+  #          value: "$(context.pipelineRun.name)"
+  #      workspaces:
+  #        - name: work
+  #          workspace: work

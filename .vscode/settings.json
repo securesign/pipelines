@@ -1,0 +1,15 @@
+{
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/tektoncd/pipeline/refs/heads/main/pkg/apis/pipeline/v1/swagger.json": [
+      "**/*.yaml",
+      "**/*.yml"
+    ]
+  },
+  "yaml.validate": true,
+  "yaml.hover": true,
+  "yaml.completion": true,
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml"
+  }
+}

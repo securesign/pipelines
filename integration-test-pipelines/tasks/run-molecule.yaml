@@ -1,0 +1,85 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: run-molecule
+spec:
+  params:
+      - name: scenario
+        type: string
+        description: "Molecule scenario to run"
+      - name: rhio-username
+        type: string
+        description: "registry.redhat.io username"
+      - name: rhio-password
+        type: string
+        description: "registry.redhat.io password"
+      - name: molecule-command
+        type: string
+        description: "molecule command to run"
+      - name: run-id
+        type: string
+        description: "run id"
+      - name: venv
+        type: string
+        description: "venv directory"
+        default: "$(workspaces.work.path)/venv"
+  workspaces:
+    - name: work
+      description: "Workspace for molecule ephemeral directory and ansible collections"
+  volumes:
+    - name: aws-creds
+      secret:
+        secretName: aws-ci-test
+  steps:
+    - name: run-molecule
+      image: "registry.redhat.io/ansible-automation-platform-25/ansible-dev-tools-rhel8@sha256:5cfbffa83dedf8ab03b0ca68f18f9c88876c50c53e22b7e3d6ef96ce293f7fb5"
+      workingDir: $(workspaces.work.path)/ansible
+      volumeMounts:
+        - name: aws-creds
+          mountPath: /creds
+      env:
+        - name: TAS_SINGLE_NODE_REGISTRY_USERNAME
+          value: "$(params.rhio-username)"
+        - name: TAS_SINGLE_NODE_REGISTRY_PASSWORD
+          value: "$(params.rhio-password)"
+        - name: AWS_DEFAULT_REGION
+          value: "eu-north-1"
+        - name: AWS_KEY_NAME
+          value: CI-TEST
+      script: |
+        #!/bin/sh
+        set -ex
+
+        echo "$RUN_ID: $RUN_ID"
+        
+        ansible-galaxy collection install $(workspaces.work.path)/releases/redhat-artifact_signer-*.tar.gz --force
+
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        touch ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/known_hosts
+
+        cp /creds/private.pem ~/.ssh/
+        chmod 400 ~/.ssh/private.pem
+        eval $(ssh-agent -s); ssh-add ~/.ssh/private.pem
+        
+        export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
+        export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
+        
+        #use cached virtual environment and dependencies
+        source $(params.venv)/bin/activate
+
+        ansible-galaxy install -r requirements.yml
+        ansible-galaxy install -r molecule/requirements.yml  
+
+        molecule $(params.molecule-command) --scenario-name $(params.scenario)
+      securityContext:
+        privileged: true
+      computeResources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 3
+          memory: 4Gi
