@@ -4,6 +4,7 @@ kind: Kustomization
 nameSuffix: -main
 
 resources:
+  - ansible-stream.yaml
   - rhtas-operator-stream.yaml
 
 configurations:

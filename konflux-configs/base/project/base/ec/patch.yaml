@@ -1,0 +1,24 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: "{{.application}}{{.nameSuffix}}-enterprise-contract"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      params:
+        - name: POLICY_CONFIGURATION
+          value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
