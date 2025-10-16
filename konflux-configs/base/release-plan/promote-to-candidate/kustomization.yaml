@@ -4,6 +4,5 @@ kind: Kustomization
 resources:
   - components/overlays/
   - fbc/overlays/
-  - operator/overlays/
   - pco-fbc/overlays/
   - policy-controller-operator/overlays/
