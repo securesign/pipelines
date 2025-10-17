@@ -15,8 +15,27 @@ configMapGenerator:
     literals:
       - registry-namespace=rhtas-dev-tenant
       - github-org=securesign
+      - mintmaker-disabled=true
 
 replacements:
+  # Set mintmaker disabled annotation to "true" for all Components (standalone and in templates)
+  - source:
+      kind: ConfigMap
+      name: registry-config
+      fieldPath: data.mintmaker-disabled
+    targets:
+      - select:
+          kind: Component
+        fieldPaths:
+          - metadata.annotations.[mintmaker.appstudio.redhat.com/disabled]
+        options:
+          create: true
+      - select:
+          kind: ProjectDevelopmentStreamTemplate
+        fieldPaths:
+          - spec.resources.[kind=Component].metadata.annotations.[mintmaker.appstudio.redhat.com/disabled]
+        options:
+          create: true
   - source:
       kind: ConfigMap
       name: registry-config
