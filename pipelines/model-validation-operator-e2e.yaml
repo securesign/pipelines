@@ -105,6 +105,9 @@ spec:
                   - source: registry.redhat.io/rhtas/model-validation-operator
                     mirrors:
                       - quay.io/securesign/model-validation-operator
+                  - source: registry.redhat.io/rhtas/model-validation-rhel9-operator
+                    mirrors:
+                      - quay.io/securesign/model-validation-rhel9-operator
     - name: install-operator-from-bundle
       runAfter:
         - provision-cluster
