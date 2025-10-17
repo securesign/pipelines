@@ -12,12 +12,15 @@ spec:
       description: The name of a ClusterTemplateInstance.
     - name: operatorImage
       description: Operator image to be installed
+    - name: replaceImage
+      description: Image name to be replaced
+      default: registry.redhat.io/rhtas/rhtas-rhel9-operator
     - name: namespace
       description: Namespace to be used for installation
       default: openshift-rhtas-operator
-    - name: resources_path
+    - name: resourcesPath
       description: Resource directory to be kustomized and applied
-      default: config/env/openshift
+      default: $(workspaces.source-code.path)/config/env/openshift
     - name: deployName
       description: Deployment name
       default: rhtas-operator-controller-manager
@@ -46,12 +49,12 @@ spec:
           value: credentials
     - name: kustomize-resources
       image: registry.k8s.io/kustomize/kustomize:v5.6.0
-      workingDir: $(workspaces.source-code.path)
+      workingDir: $(params.resourcesPath)
       script: |
         #!/bin/sh
-        kustomize edit set image controller=$(params.operatorImage)
+        kustomize edit set image $(params.replaceImage)=$(params.operatorImage)
         echo "I am going to install following resources"
-        kustomize build $(params.resources_path)
+        kustomize build
 
     - name: run-operator
       image: registry.redhat.io/openshift4/ose-cli
@@ -61,8 +64,6 @@ spec:
       volumeMounts:
         - name: credentials
           mountPath: /credentials
-        - name: resources
-          mountPath: /storage
       script: |
-        oc create -k /storage/resources/$(params.resources_path)
+        oc create -k $(params.resourcesPath)
         oc wait --for=condition=available deployment/$(params.deployName) --timeout=120s -n $(params.namespace)
