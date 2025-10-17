@@ -272,6 +272,8 @@ spec:
               chmod +x /binaries/kubectl
               cd /repository/source
               export PATH="$PATH:/binaries"
-              kubectl get namespace e2e-webhook-test-ns >/dev/null 2>&1 || kubectl create namespace e2e-webhook-test-ns
+              MODEL_VALIDATION_OPERATOR_E2E_NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-e2e-webhook-test-ns}"
 
+              kubectl get namespace "$MODEL_VALIDATION_OPERATOR_E2E_NS" >/dev/null 2>&1 || \
+              kubectl create namespace "$MODEL_VALIDATION_OPERATOR_E2E_NS"
               make test-e2e
