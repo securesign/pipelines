@@ -327,7 +327,7 @@ spec:
         - name: operator-deployment-name
           value: "policy-controller-manager"
         - name: installChannel
-          value: "tech-preview"
+          value: "stable"
       when:
         - input: "$(tasks.parse-metadata.results.component)"
           operator: in
