@@ -22,6 +22,10 @@ spec:
       name: MODEL_VALIDATION_OPERATOR_NS
       default: model-validation-operator-system
       type: string
+    - description: Namespace where Model Validation Operator E2E will be run
+      name: MODEL_VALIDATION_OPERATOR_E2E_NS
+      default: e2e-webhook-test-ns
+      type: string 
     - description: Model Validation operator Git Url
       name: MODEL_VALIDATION_OPERATOR_GIT_URL
       default: https://github.com/securesign/model-validation-operator
@@ -141,7 +145,7 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: prepare-env
+          - name: create-namespaces
             ref:
               resolver: git
               params:
