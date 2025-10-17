@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: prepare-mvo-environment
+spec:
+  description: >-
+    This StepAction prepares the environment for MVO.
+  image: registry.redhat.io/openshift4/ose-cli
+  params:
+    - name: credentials
+      type: string
+      description: Name of the volume with credentials.
+    - name: KUBECONFIG
+      type: string
+      description: KUBECONFIG path.
+    - name: mvo-namespace
+      description: Namespace in which the MVO is created.
+      type: string
+    - name: mvo-e2e-namespace
+      description: Namespace in which the MVO E2E Tests run.
+      type: string
+  volumeMounts:
+    - name: "$(params.credentials)"
+      mountPath: /credentials
+  env:
+    - name: KUBECONFIG
+      value: "/credentials/$(params.KUBECONFIG)"
+    - name: MVO_NAMESPACE
+      value: "$(params.mvo-namespace)"
+    - name: MVO_E2E_NAMESPACE
+      value: "$(params.mvo-e2e-namespace)"
+  script: |
+    oc create ns $MVO_NAMESPACE
+    oc create ns $MVO_E2E_NAMESPACE
