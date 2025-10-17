@@ -173,7 +173,6 @@ spec:
       runAfter:
         - install-operator-from-image
         - install-operator-from-bundle
-        - install-operator-from-fbc
       params:
         - name: namespace
           value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
