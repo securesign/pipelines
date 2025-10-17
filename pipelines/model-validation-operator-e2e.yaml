@@ -166,7 +166,7 @@ spec:
                 value: "$(params.MODEL_VALIDATION_OPERATOR_E2E_NS)"
     - name: install-operator-from-bundle
       runAfter:
-        - prepare-tests
+        - prepare-environment
       taskRef:
         resolver: git
         params:
@@ -193,7 +193,7 @@ spec:
           values: [ "model-validation-operator-bundle" ]
     - name: install-operator-from-image
       runAfter:
-        - prepare-tests
+        - prepare-environment
       taskRef:
         resolver: git
         params:
