@@ -27,6 +27,7 @@ spec:
     - name: fulcio-url
     - name: tuf-url
     - name: rekor-url
+    - name: rekor-ui-url
     - name: tsa-url
   volumeMounts:
     - name: "$(params.credentials)"
@@ -52,4 +53,5 @@ spec:
     oc get fulcio -o jsonpath='{.items[0].status.url}' -n $TASNAMESPACE > "$(step.results.fulcio-url.path)"
     oc get tuf -o jsonpath='{.items[0].status.url}' -n $TASNAMESPACE > "$(step.results.tuf-url.path)"
     oc get rekor -o jsonpath='{.items[0].status.url}' -n $TASNAMESPACE > "$(step.results.rekor-url.path)"
+    oc get rekor -o jsonpath='{.items[0].status.rekorSearchUIUrl}' -n $TASNAMESPACE > "$(step.results.rekor-ui-url.path)"
     oc get timestampauthority -o jsonpath='{.items[0].status.url}' -n $TASNAMESPACE > "$(step.results.tsa-url.path)"
