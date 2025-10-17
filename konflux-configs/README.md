@@ -45,7 +45,7 @@ your target namespace.
 
 ```bash
 # Set your target namespace
-export NAMESPACE=rhtas-tenant  # or tturek-tenant for dev
+export NAMESPACE=rhtas-tenant  # or rhtas-dev-tenant for dev
 
 # Verify cluster access
 oc whoami --show-console
@@ -256,7 +256,7 @@ konflux-configs/
 │       └── release-sa.yaml
 ├── overlay/                    # Environment-specific configs
 │   ├── dev/                    # Development environment
-│   │   └── kustomization.yaml  # namespace: tturek-tenant
+│   │   └── kustomization.yaml  # namespace: rhtas-dev-tenant
 │   └── prod/                   # Production environment
 │       └── kustomization.yaml  # namespace: rhtas-tenant
 ├── releasePlans/               # Component release plans

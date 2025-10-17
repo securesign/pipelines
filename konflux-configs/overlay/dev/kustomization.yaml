@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: tturek-tenant
+namespace: rhtas-dev-tenant
 
 resources:
   - ../../base/service-account
@@ -13,8 +13,8 @@ resources:
 configMapGenerator:
   - name: registry-config
     literals:
-      - registry-namespace=tturek-tenant
-      - github-org=osmman
+      - registry-namespace=rhtas-dev-tenant
+      - github-org=securesign
 
 replacements:
   - source:
