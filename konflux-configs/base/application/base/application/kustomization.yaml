@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+components:
+ - ../ec
+ - ../promote-to-candidate
+
+replacements:
+  - source:
+      kind: Application
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Component
+        fieldPaths:
+          - spec.application
+        options:
+          create: true
+      - select:
+          kind: IntegrationTestScenario
+        fieldPaths:
+          - spec.application
+        options:
+          create: true
+      - select:
+          kind: ReleasePlan
+        fieldPaths:
+          - spec.application
+        options:
+          create: true
+      - select:
+          kind: ImageRepository
+        fieldPaths:
+          - metadata.labels.[appstudio.redhat.com/application]
+        options:
+          create: true

@@ -3,4 +3,7 @@ kind: Kustomization
 
 resources:
   - konflux/base
-  - pipelines/base
+  - pipelines/base  
+  - rekor/base
+  - rekor-monitor/base
+  - rekor-search/base

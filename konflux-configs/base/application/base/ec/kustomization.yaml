@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - ec.yaml
+
+replacements:
+  - source:
+      kind: Application
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: IntegrationTestScenario
+          name: -enterprise-contract
+        fieldPaths:
+          - spec.application
+        options:
+          create: true
+      - select:
+          kind: IntegrationTestScenario
+          name: -enterprise-contract
+        fieldPaths:
+          - metadata.name
+        options:
+          delimiter: "-"
+          index: 0
