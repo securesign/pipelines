@@ -19,6 +19,6 @@
           - name: revision
             value: main
           - name: pathInRepo
-            value: pipelines/rhtas-operator-e2e.yaml
+            value: pipelines/integration-test/rhtas-operator-e2e.yaml
         resolver: git
-        resourceKind: pipeline
+        resourceKind: pipelinerun
