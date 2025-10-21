@@ -1,0 +1,29 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/tags: "konflux"
+  name: fips-check
+spec:
+  description: >-
+    The fips-check task uses the check-payload tool to verify if an image is FIPS compliant.
+  params:
+    - name: image-digest
+      description: Image digest to scan.
+    - name: image-url
+      description: Image URL.
+  results:
+    - name: TEST_OUTPUT
+      description: Tekton task test output.
+  steps:
+    - name: fips-check
+      image: quay.io/konflux-ci/konflux-test:v1.4.34@sha256:62a7bf68015c711e0eb0698c10d203d0393a8e0efa09306f1fce543dea383f3c
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        check-payload
