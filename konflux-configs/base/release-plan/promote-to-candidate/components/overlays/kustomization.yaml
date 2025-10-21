@@ -3,7 +3,6 @@ resources:
   - tough
   - segment-backup-job
   - scaffold
-  - fulcio
   - cli
   - certificate-transparency-go
   - policy-controller
