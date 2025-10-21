@@ -147,25 +147,26 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: git-clone-operator
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/securesign/pipelines.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/git-clone.yaml
-            params:
-              - name: url
-                value: "https://github.com/securesign/model-validation-operator.git"
-              - name: revision
-                value: "test-e2e-pipeline"
+          - name: git-clone-mvo
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+            env:
+              - name: GIT_URL
+                value: "$(params.MODEL_VALIDATION_OPERATOR_GIT_URL)"
+              - name: GIT_REVISION
+                value: "$(tasks.parse-metadata.results.git-revision)"
+            volumeMounts:
               - name: repository
-                value: repository
-              - name: dir
-                value: source
+                mountPath: /repository
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+              cd /repository
+              echo "Cloning Model Validation Operator"
+              git clone "$GIT_URL" source
+              cd source
+              if [ "$(tasks.parse-metadata.results.git-url)" == "$(params.MODEL_VALIDATION_OPERATOR_GIT_URL)" ]; then
+                git checkout "$GIT_REVISION"
+              fi
           - name: push-test-image
             image: quay.io/konflux-ci/buildah-task:latest@sha256:27400eaf836985bcc35182d62d727629f061538f61603c05b85d5d99bfa7da2d
             results:
