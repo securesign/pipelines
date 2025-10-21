@@ -132,7 +132,7 @@ spec:
         when:
           - input: "$(tasks.parse-metadata.results.component-name)"
             operator: in
-            values: [ "model-validation-operator" ]
+            values: [ "model-validation-operator", "model-validation-operator-bundle" ]
       - name: prepare-env
         runAfter:
           - clone-operator-source-code
