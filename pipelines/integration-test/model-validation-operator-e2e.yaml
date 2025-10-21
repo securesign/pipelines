@@ -3,9 +3,6 @@ kind: PipelineRun
 metadata:
   generateName: model-validation-operator-e2e-
 spec:
-  description: |
-    An integration test which provisions an ephemeral Hypershift cluster, deploys the model validation operator
-    from a Konflux snapshot and run the e2e test suite.
   workspaces:
     - name: work
       volumeClaimTemplate:
@@ -366,7 +363,7 @@ spec:
                 set +e -o pipefail
                 cd test/e2e/testdata/
                 sed -i -E "s|(^[[:space:]]*image:[[:space:]]*).*|\1${MODEL_TEST_IMAGE}|" model-data-daemonset.yaml
-                oc apply -n "$MVO_E2E_NAMESPACE" model-data-daemonset.yaml
+                oc apply -n "$MODEL_VALIDATION_OPERATOR_E2E_NS" model-data-daemonset.yaml
                 cd /operator/
                 make e2e-test
                 status=$?
