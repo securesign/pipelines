@@ -154,7 +154,7 @@ spec:
                 - name: url
                   value: "https://github.com/securesign/model-validation-operator.git"
                 - name: revision
-                  value: "mvo-e2e-pipeline"
+                  value: "test-e2e-pipeline"
                 - name: pathInRepo
                   value: stepactions/git-clone.yaml
             params:
