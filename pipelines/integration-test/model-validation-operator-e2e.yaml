@@ -205,6 +205,8 @@ spec:
             value: "$(tasks.provision-cluster.results.clusterName)"
           - name: bundleImage
             value: "$(tasks.parse-metadata.results.container-image)"
+          - name: namespace
+            value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
         when:
           - input: "$(tasks.parse-metadata.results.component-name)"
             operator: in
@@ -320,6 +322,9 @@ spec:
                 capabilities:
                   add:
                     - SETFCAP
+              params:
+                - name: WORKDIR
+                  value: $(workspaces.source-code.path)/operator
               computeResources:
                 limits:
                   memory: 8Gi
@@ -329,7 +334,8 @@ spec:
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh
-                cd testdata/
+                cd $WORKDIR/testdata/
+                ls -la
                 IMAGE="ttl.sh/model-validation-test-model:latest"
                 printf "%s" "$IMAGE" > "$(step.results.image.path)"
 
