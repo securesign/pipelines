@@ -1,0 +1,136 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: run-sigstore-e2e
+spec:
+  params:
+      - name: sigstore_e2e_repo
+        description: "OCI artifact URI containing the cached repository"
+      - name: info
+  volumes:
+    - name: work
+      emptyDir: {}
+  steps:
+    - name: extract-instance-info
+      image: "quay.io/redhat-appstudio/konflux-test:stable"
+      results:
+        - name: ip
+        - name: id
+        - name: name
+      script: |
+        #!/bin/sh
+        set -ex
+        echo '$(params.info)' | jq -r '.ip' > $(step.results.ip.path)
+        echo '$(params.info)' | jq -r '.id' > $(step.results.id.path)
+        echo '$(params.info)' | jq -r '.scenario' > $(step.results.name.path)
+    - name: extract-dependency-cache
+      volumeMounts:
+        - name: work
+          mountPath: /work
+      image: "quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:4e39fb97f4444c2946944482df47b39c5bbc195c54c6560b0647635f553ab23d"
+      args:
+        - use
+        - $(params.sigstore_e2e_repo)=/work/sigstore-e2e
+    - name: push-test-image
+      image: quay.io/konflux-ci/buildah-task:latest@sha256:27400eaf836985bcc35182d62d727629f061538f61603c05b85d5d99bfa7da2d
+      results:
+        - name: image
+          type: string
+      securityContext:
+        capabilities:
+          add:
+            - SETFCAP
+      computeResources:
+        limits:
+          memory: 8Gi
+        requests:
+          memory: 2Gi
+          cpu: '1'
+      script: |
+        #!/bin/sh
+        IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
+        printf "%s" "$IMAGE" > "$(step.results.image.path)"
+        buildah pull alpine:latest
+        buildah tag alpine:latest $IMAGE
+        buildah push $IMAGE
+    - name: execute-tas-e2e
+      image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+      computeResources:
+        limits:
+          memory: 4Gi
+        requests:
+          memory: 512Mi
+      volumeMounts:
+        - name: work
+          mountPath: /work
+      env:
+        - name: OIDC_HOST
+          value: "dex-idp"
+        - name: CLI_STRATEGY
+          value: "cli_server"
+        - name: TARGET_IMAGE_NAME
+          value: "$(steps.push-test-image.results.image)"
+        - name: MANUAL_IMAGE_SETUP
+          value: "true"
+        - name: OIDC_AUTH_TOKEN
+          value: "dHJ1c3RlZC1hcnRpZmFjdC1zaWduZXI6WlhoaGJYQnNaUzFoY0hBdGMyVmpjbVYw"
+        - name: IP
+          value: $(steps.extract-instance-info.results.ip)
+        - name: SCENARIO
+          value: $(steps.extract-instance-info.results.name)
+      script: |
+        #!/bin/bash
+        set -x
+        
+        DOMAIN='myrhtas'
+        # backup_restore_migrate scenario changes the domain name
+        if [[ "$(echo $SCENARIO | tr -d '\n')" == 'backup_restore_migrate' ]]; then
+          DOMAIN='yourrhtas'
+        fi
+        
+        export FULCIO_HOST="fulcio.${DOMAIN}"
+        export REKOR_HOST="rekor.${DOMAIN}"
+        export TSA_HOST="tsa.${DOMAIN}"
+        export TUF_HOST="tuf.${DOMAIN}"
+        export REKOR_SEARCH_HOST="rekor-search.${DOMAIN}"
+        export CLI_SERVER_HOST="cli-server.${DOMAIN}"
+        
+        INSTANCE_IP=$(echo $IP | tr -d '\n')
+        SERVICES="${FULCIO_HOST} ${REKOR_HOST} ${TSA_HOST} ${TUF_HOST} ${REKOR_SEARCH_HOST} ${CLI_SERVER_HOST} ${OIDC_HOST}"
+        echo "$INSTANCE_IP $SERVICES" >> /etc/hosts
+
+        echo "Add certificate to ca-bundle.crt"
+        temp_dir=$(mktemp -d)
+        openssl s_client -showcerts -connect "${REKOR_HOST}:443" < /dev/null | awk -v temp_dir="${temp_dir}" '/BEGIN CERTIFICATE/,/END CERTIFICATE/{ if(/BEGIN CERTIFICATE/){a++}; out=temp_dir "/cert"a".pem"; print >out}'
+        for cert in "${temp_dir}"/*.pem; do
+        newname="$(openssl x509 -noout -subject -in "$cert" | sed -nE 's/.*CN ?= ?(.*)/\1/; s/[ ,.*]/_/g; s/__/_/g; s/_-_/-/; s/^_//g;p' | tr '[:upper:]' '[:lower:]')".pem
+        echo "${newname}"; mv "${cert}" "${temp_dir}/${newname}"
+        done
+        cp "${temp_dir}/${DOMAIN}.pem" "/etc/pki/ca-trust/source/anchors/"
+        update-ca-trust extract
+        
+        export OIDC_TOKEN="$(curl -s -X POST http://${OIDC_HOST}:5556/dex/token \
+        -H "Authorization: Basic ${OIDC_AUTH_TOKEN}" \
+        -H 'Content-Type: application/x-www-form-urlencoded' \
+        --data-urlencode 'grant_type=password' \
+        --data-urlencode 'scope=openid email profile' \
+        --data-urlencode 'username=jdoe@redhat.com' \
+        --data-urlencode 'password=secure' | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')"
+        
+        export CLI_SERVER_URL="https://${CLI_SERVER_HOST}"
+        export FULCIO_URL="https://${FULCIO_HOST}"
+        export REKOR_URL="https://${REKOR_HOST}"
+        export REKOR_UI_URL="https://${REKOR_SEARCH_HOST}"
+        export TUF_URL="https://${TUF_HOST}"
+        export TSA_URL="https://${TSA_HOST}/api/v1/timestamp"
+        export OIDC_ISSUER_URL="http://${OIDC_HOST}:5556/dex"
+        
+        echo "Run tests"
+        cd /work/sigstore-e2e
+        source ./tas-env-variables.sh
+        go mod vendor
+        # exclude UI and benchmark tests 
+        go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v
+      securityContext:
+        runAsUser: 0

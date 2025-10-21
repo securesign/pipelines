@@ -14,3 +14,7 @@ patches:
       name: ansible-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/collection.yaml
+  - target:
+      name: ansible-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/e2e.yaml
