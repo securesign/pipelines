@@ -7,3 +7,4 @@ resources:
   - rekor/base
   - rekor-monitor/base
   - rekor-search/base
+  - timestamp-authority/base
