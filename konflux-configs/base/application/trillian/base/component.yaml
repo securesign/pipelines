@@ -1,0 +1,115 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: createtree
+spec:
+  componentName: createtree
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.createtree.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: database
+spec:
+  componentName: database
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.database.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: logserver
+spec:
+  componentName: logserver
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.logserver.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: logsigner
+spec:
+  componentName: logsigner
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.logsigner.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: redis
+spec:
+  componentName: redis
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.redis.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: updatetree
+spec:
+  componentName: updatetree
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.updatetree.rh
+
+---
