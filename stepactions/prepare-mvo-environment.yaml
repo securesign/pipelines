@@ -10,6 +10,12 @@ spec:
     - name: credentials
       type: string
       description: Name of the volume with credentials.
+    - name: repository
+      type: string
+      description: Volume with resources to be applied.
+    - name: workdir
+      type: string
+      description: Repository home directory.
     - name: KUBECONFIG
       type: string
       description: KUBECONFIG path.
@@ -19,9 +25,14 @@ spec:
     - name: mvo-e2e-namespace
       description: Namespace in which the MVO E2E Tests run.
       type: string
+    - name: model-test-image
+      description: Model Test Image.
+      type: string
   volumeMounts:
     - name: "$(params.credentials)"
       mountPath: /credentials
+    - name: "$(params.repository)"
+      mountPath: /repository
   env:
     - name: KUBECONFIG
       value: "/credentials/$(params.KUBECONFIG)"
@@ -29,6 +40,17 @@ spec:
       value: "$(params.mvo-namespace)"
     - name: MVO_E2E_NAMESPACE
       value: "$(params.mvo-e2e-namespace)"
+    - name: WORKDIR
+      value: "$(params.workdir)"
   script: |
-    oc create ns $MVO_NAMESPACE
-    oc create ns $MVO_E2E_NAMESPACE
+    cd /repository/$WORKDIR/test/e2e/testdata/
+    oc get ns "$MVO_NAMESPACE" >/dev/null 2>&1 || oc create ns "$MVO_NAMESPACE"
+    oc get ns "$MVO_E2E_NAMESPACE" >/dev/null 2>&1 || oc create ns "$MVO_E2E_NAMESPACE"
+    
+    # Update Image name
+    MODEL_TEST_IMAGE="$(params.model-test-image)"
+    YAML_FILE="model-data-daemonset.yaml"
+
+    sed -i -E "s|(^[[:space:]]*image:[[:space:]]*).*|\1${MODEL_TEST_IMAGE}|" "$YAML_FILE"
+
+    oc apply -n "$MVO_E2E_NAMESPACE" "$YAML_FILE"

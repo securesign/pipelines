@@ -125,6 +125,8 @@ spec:
         volumes:
           - name: credentials
             emptyDir: { }
+          - name: repository
+            emptyDir: { }
           - name: dump
             emptyDir: { }
         steps:
@@ -145,7 +147,58 @@ spec:
                 value: "$(tasks.provision-cluster.results.clusterName)"
               - name: credentials
                 value: credentials
-          - name: create-namespaces
+          - name: git-clone-operator
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/securesign/pipelines.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/git-clone.yaml
+            params:
+              - name: url
+                value: "$(tasks.parse-metadata.results.operator-url)"
+              - name: revision
+                value: "$(tasks.parse-metadata.results.operator-revision)"
+              - name: repository
+                value: repository
+          - name: push-test-image
+            image: quay.io/konflux-ci/buildah-task:latest@sha256:27400eaf836985bcc35182d62d727629f061538f61603c05b85d5d99bfa7da2d
+            results:
+              - name: image
+                type: string
+            securityContext:
+              capabilities:
+                add:
+                  - SETFCAP
+            computeResources:
+              limits:
+                memory: 8Gi
+              requests:
+                memory: 2Gi
+                cpu: '1'
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+              - name: repository
+                mountPath: /repository
+            script: |
+              #!/bin/sh
+              set -euo pipefail 
+              cd /repository/source/testdata
+              IMAGE="ttl.sh/model-validation-test-model:latest"
+              printf "%s" "$IMAGE" > "$(results.image.path)"
+
+              echo "Building test model image..."
+              buildah bud --no-cache --isolation=chroot --storage-driver=vfs \
+                -t "$IMAGE" -f docker/test-model.Dockerfile .
+
+              echo "Pushing test model image..."
+              buildah push "$IMAGE"
+              echo "Done."
+          - name: prepare-mvo-env
             ref:
               resolver: git
               params:
@@ -164,6 +217,12 @@ spec:
                 value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
               - name: mvo-e2e-namespace
                 value: "$(params.MODEL_VALIDATION_OPERATOR_E2E_NS)"
+              - name: repository
+                value: repository
+              - name: workdir
+                value: source
+              - name: model-test-image
+                value: "$(steps.push-test-image.results.image)"
     - name: install-operator-from-bundle
       runAfter:
         - prepare-environment
