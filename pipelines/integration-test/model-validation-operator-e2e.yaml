@@ -39,32 +39,6 @@ spec:
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
-      - name: clone-operator-source-code
-        runAfter:
-          - parse-metadata
-        taskRef:
-          params:
-            - name: name
-              value: git-clone
-            - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
-            - name: kind
-              value: task
-          resolver: bundles
-        params:
-          - name: url
-            value: $(tasks.parse-metadata.results.git-url)
-          - name: revision
-            value: $(tasks.parse-metadata.results.git-revision)
-          - name: subdirectory
-            value: "operator"
-        workspaces:
-          - name: output
-            workspace: work
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: in
-            values: [ "model-validation-operator" ]
       - name: provision-eaas-space
         taskRef:
           resolver: bundles
@@ -131,6 +105,34 @@ spec:
                     - source: registry.redhat.io/rhtas/model-validation-rhel9-operator
                       mirrors:
                         - quay.io/securesign/model-validation-operator
+      - name: clone-operator-source-code
+        runAfter:
+          - parse-metadata
+          - provision-eaas-space
+          - provision-cluster
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: $(tasks.parse-metadata.results.git-url)
+          - name: revision
+            value: $(tasks.parse-metadata.results.git-revision)
+          - name: subdirectory
+            value: "operator"
+        workspaces:
+          - name: output
+            workspace: work
+        when:
+          - input: "$(tasks.parse-metadata.results.component-name)"
+            operator: in
+            values: [ "model-validation-operator" ]
       - name: prepare-env
         runAfter:
           - clone-operator-source-code
@@ -211,6 +213,7 @@ spec:
         runAfter:
           - provision-cluster
           - parse-metadata
+          - prepare-env
         taskRef:
           resolver: git
           params:
@@ -247,6 +250,7 @@ spec:
         runAfter:
           - provision-cluster
           - parse-metadata
+          - prepare-env
         taskRef:
           resolver: git
           params:
