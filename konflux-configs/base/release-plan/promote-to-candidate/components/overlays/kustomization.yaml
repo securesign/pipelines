@@ -4,5 +4,4 @@ resources:
   - segment-backup-job
   - scaffold
   - cli
-  - certificate-transparency-go
   - policy-controller
