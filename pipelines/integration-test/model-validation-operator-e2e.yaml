@@ -322,9 +322,6 @@ spec:
                 capabilities:
                   add:
                     - SETFCAP
-              params:
-                - name: WORKDIR
-                  value: $(workspaces.source-code.path)/operator
               computeResources:
                 limits:
                   memory: 8Gi
@@ -334,7 +331,9 @@ spec:
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh
-                cd $WORKDIR/testdata/
+                pwd
+                ls -la
+                cd testdata/
                 ls -la
                 IMAGE="ttl.sh/model-validation-test-model:latest"
                 printf "%s" "$IMAGE" > "$(step.results.image.path)"
