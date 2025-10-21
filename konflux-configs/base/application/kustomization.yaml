@@ -2,8 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  # Konflux components
   - konflux/base
-  - pipelines/base  
+  - pipelines/base
+  # RHTAS components
+  - certificate-transparency-go/base
   - fulcio/base
   - rekor/base
   - rekor-monitor/base
