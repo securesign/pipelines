@@ -177,7 +177,7 @@ spec:
                 - name: KUBECONFIG
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
-                  value: $(workspaces.source-code.path)/tas-operator
+                  value: $(workspaces.source-code.path)/operator
                 - name: mvo-namespace
                   value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
                 - name: mvo-e2e-namespace
