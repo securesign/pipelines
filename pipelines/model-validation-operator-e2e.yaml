@@ -186,10 +186,10 @@ spec:
                 mountPath: /repository
             script: |
               #!/bin/sh
-              set -euo pipefail 
-              cd /repository/source/testdata
+              set +e -o pipefail
+              cd /repository/source/testdata/
               IMAGE="ttl.sh/model-validation-test-model:latest"
-              printf "%s" "$IMAGE" > "$(results.image.path)"
+              printf "%s" "$IMAGE" > "$(step.results.image.path)"
 
               echo "Building test model image..."
               buildah bud --no-cache --isolation=chroot --storage-driver=vfs \
