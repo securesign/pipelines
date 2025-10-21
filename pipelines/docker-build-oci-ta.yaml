@@ -584,7 +584,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: '1855ea94a04e088f79413be1291f89d49fc51a98'
+        value: 'f39b06a4eba7d12b4c06eba4f238f31befe6c54d'
       - name: pathInRepo
         value: 'tasks/fips-check.yaml'
     params:
