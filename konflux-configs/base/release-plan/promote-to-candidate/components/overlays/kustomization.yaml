@@ -4,7 +4,6 @@ resources:
   - timestamp-authority
   - segment-backup-job
   - scaffold
-  - fulcio
   - cli
   - certificate-transparency-go
   - policy-controller

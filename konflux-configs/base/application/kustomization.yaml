@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - konflux/base
   - pipelines/base  
+  - fulcio/base
   - rekor/base
   - rekor-monitor/base
   - rekor-search/base
