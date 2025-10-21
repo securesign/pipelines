@@ -1,0 +1,58 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-rekor-backfill-redis
+  labels:
+    appstudio.redhat.com/component: backfill-redis
+spec:
+  image:
+    name: rhtas-tenant/backfill-redis
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-rekor-rekor-cli
+  labels:
+    appstudio.redhat.com/component: rekor-cli
+spec:
+  image:
+    name: rhtas-tenant/rekor-cli
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-rekor-rekor-server
+  labels:
+    appstudio.redhat.com/component: rekor-server
+spec:
+  image:
+    name: rhtas-tenant/rekor-server
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---

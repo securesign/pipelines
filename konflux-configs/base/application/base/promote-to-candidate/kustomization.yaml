@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - releaseplan.yaml
+
+replacements:
+  - source:
+      kind: Application
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: ReleasePlan
+          name: promote-to-candidate-
+        fieldPaths:
+          - spec.application
+        options:
+          create: true
+      - select:
+          kind: ReleasePlan
+          name: promote-to-candidate-
+        fieldPaths:
+          - metadata.name
+        options:
+          delimiter: "-"
+          index: 3
