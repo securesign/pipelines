@@ -1,0 +1,127 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: run-molecule
+spec:
+  params:
+      - name: scenario
+        type: string
+        description: "Molecule scenario to run"
+      - name: run-id
+        type: string
+        description: "run id"
+      - name: CACHE
+        type: string
+        description: "OCI artifact URI containing the Ansible cache"
+      - name: ANSIBLE_REPO
+        type: string
+  results:
+    - name: instance-id
+      value: $(steps.extract-instance-info.results.instance_id)
+    - name: instance-ip
+      value: $(steps.extract-instance-info.results.instance_ip)
+  volumes:
+    - name: aws-creds
+      secret:
+        secretName: aws-ci-test
+    - name: dockerfile
+      secret:
+        secretName: ansible-registry-redhat-io-pull-secret
+    - name: work
+      emptyDir: {}
+    - name: cache
+      emptyDir: {}
+  steps:
+    - name: extract-dependency-cache
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+        - name: work
+          mountPath: /work
+      image: "quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:4e39fb97f4444c2946944482df47b39c5bbc195c54c6560b0647635f553ab23d"
+      args:
+        - use
+        - $(params.CACHE)=/cache
+        - $(params.ANSIBLE_REPO)=/work/ansible
+    - name: extract-registry-credentials
+      image: "quay.io/redhat-appstudio/konflux-test:stable"
+      volumeMounts:
+        - name: dockerfile
+          mountPath: /dockerfile
+        - name: work
+          mountPath: /work
+      script: |
+        #!/bin/sh
+        set -ex
+        # extract registry.redhat.io credentials from the secret
+        # jq is missing in the ansible-dev-tools-rhel8 image
+        jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /work/rhio-username
+        jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /work/rhio-password
+    - name: create-instance
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: jbouska_ansible
+          - name: pathInRepo
+            value: stepactions/integration-test/molecule.yaml
+      params:
+        - name: cache
+          value: cache
+        - name: work
+          value: work
+        - name: aws-creds
+          value: aws-creds
+        - name: args
+          value:
+            - create
+            - --scenario-name
+            - $(params.scenario)
+    - name: extract-instance-info
+      results:
+        - name: instance_id
+        - name: instance_ip
+      image: "quay.io/redhat-appstudio/konflux-test:stable"
+      volumeMounts:
+        - name: work
+          mountPath: /work
+      env:
+        - name: INSTANCE_CONFIG
+          value: /work/molecule/instance_config.yml
+      script: |
+        #!/bin/sh
+        set -ex
+        if [ -f "${INSTANCE_CONFIG}" ]; then
+          yq -r '.[0].instance' ${INSTANCE_CONFIG} >> $(step.results.instance_id.path)
+          yq -r '.[0].address' ${INSTANCE_CONFIG} >> $(step.results.instance_ip.path) 
+        else
+          echo "File '${INSTANCE_CONFIG}' does not exist. Can't continue."
+          exit 1
+        fi
+    - name: run-tests
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: jbouska_ansible
+          - name: pathInRepo
+            value: stepactions/integration-test/molecule.yaml
+      params:
+        - name: cache
+          value: cache
+        - name: work
+          value: work
+        - name: aws-creds
+          value: aws-creds
+        - name: args
+          value:
+            - test
+            - --scenario-name
+            - $(params.scenario)
+            - --destroy
+            - never

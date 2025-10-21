@@ -1,0 +1,67 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: run-molecule
+spec:
+  image: "registry.redhat.io/ansible-automation-platform-25/ansible-dev-tools-rhel8@sha256:5cfbffa83dedf8ab03b0ca68f18f9c88876c50c53e22b7e3d6ef96ce293f7fb5"
+  params:
+    - name: work
+      type: string
+      description: Name of the work volume.
+    - name: cache
+      type: string
+      description: Name of the cache volume.
+    - name: aws-creds
+      type: string
+      description: Name of the volume with aws-creds.
+    - name: args
+      type: array
+  volumeMounts:
+    - name: $(params.aws-creds)
+      mountPath: /creds
+    - name: $(params.work)
+      mountPath: /work
+    - name: $(params.cache)
+      mountPath: /cache
+  env:
+    - name: AWS_DEFAULT_REGION
+      value: "eu-north-1"
+    - name: AWS_KEY_NAME
+      value: CI-TEST
+    - name: ANSIBLE_COLLECTIONS_PATH
+      value: /cache/ansible/collections
+    - name: ANSIBLE_ROLES_PATH
+      value: /cache/ansible/roles
+    - name: PYTHONPATH
+      value: /cache/pip
+    - name: MOLECULE_EPHEMERAL_DIRECTORY
+      value: /work/molecule
+  workingDir: /work/ansible
+  args: ["$($(params.args)"]
+  script: |
+    #!/bin/sh
+    set -ex
+
+    mkdir -p ~/.ssh /work/molecule
+    chmod 700 ~/.ssh
+    touch ~/.ssh/known_hosts
+    chmod 600 ~/.ssh/known_hosts
+
+    cp /creds/private.pem ~/.ssh/
+    chmod 400 ~/.ssh/private.pem
+    eval $(ssh-agent -s); ssh-add ~/.ssh/private.pem
+
+    set +x
+    export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
+    export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
+    export TAS_SINGLE_NODE_REGISTRY_USERNAME=$(cat /work/rhio-username)
+    export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /work/rhio-password)
+    set -x
+    # molecule $@
+  computeResources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
