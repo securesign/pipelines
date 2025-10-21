@@ -1,5 +1,4 @@
 resources:
-  - tough
   - segment-backup-job
   - scaffold
   - cli
