@@ -337,20 +337,20 @@ spec:
               script: |
                 #!/bin/sh
                 set -eu
-                echo "Installing make..."
+                echo "Installing packages..."
                 if command -v microdnf >/dev/null 2>&1; then
-                    microdnf install -y make
+                    microdnf install -y make openssl
                 elif command -v dnf >/dev/null 2>&1; then
-                    dnf install -y make
+                    dnf install -y make openssl
                 elif command -v yum >/dev/null 2>&1; then
-                    yum install -y make
+                    yum install -y make openssl
                 elif command -v apt-get >/dev/null 2>&1; then
-                    apt-get update -y && apt-get install -y make
+                    apt-get update -y && apt-get install -y make openssl
                 else
-                    echo "No supported package manager found to install make"
+                    echo "No supported package manager found to install packages"
                     exit 1
                 fi
-                echo "make installed successfully"
+                echo "packages installed successfully"
                 make --version || true
                 make e2e-generate-test-keys
 
@@ -413,20 +413,6 @@ spec:
                 curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                 chmod +x /usr/local/bin/kubectl
                 kubectl version --client || true
-
-                echo "Installing Openssl..."
-                if command -v microdnf >/dev/null 2>&1; then
-                    microdnf install -y openssl
-                elif command -v dnf >/dev/null 2>&1; then
-                    dnf install -y openssl
-                elif command -v yum >/dev/null 2>&1; then
-                    yum install -y openssl
-                elif command -v apt-get >/dev/null 2>&1; then
-                    apt-get update -y && apt-get install -y openssl
-                else
-                    echo "No supported package manager found to install OpenSSL."
-                    exit 1
-                fi
 
                 echo "Setup model-data volume..."
                 kubectl delete daemonset model-data-setup -n "$E2E_TEST_NAMESPACE" 2>/dev/null || true
