@@ -23,6 +23,8 @@ spec:
         default: e2e-webhook-test-ns
       - name: MODEL_VALIDATION_OPERATOR_GIT_URL
         default: https://github.com/securesign/model-validation-operator
+      - name: MODEL_TRANSPARENCY_IMG
+        default: quay.io/securesign/model-transparency@sha256:6db7fa2b956875a6f507811166b47b164d463dea78ab4403c6d7648d838b8acb
     workspaces:
       - name: work
     tasks:
@@ -322,6 +324,9 @@ spec:
                 capabilities:
                   add:
                     - SETFCAP
+              env:
+                - name: MODEL_TRANSPARENCY_IMG
+                  value: "$(params.MODEL_TRANSPARENCY_IMG)"
               computeResources:
                 limits:
                   memory: 8Gi
@@ -332,8 +337,35 @@ spec:
               script: |
                 #!/bin/sh
                 set -eu
+                echo "Installing make..."
+                if command -v microdnf >/dev/null 2>&1; then
+                    microdnf install -y make
+                elif command -v dnf >/dev/null 2>&1; then
+                    dnf install -y make
+                elif command -v yum >/dev/null 2>&1; then
+                    yum install -y make
+                elif command -v apt-get >/dev/null 2>&1; then
+                    apt-get update -y && apt-get install -y make
+                else
+                    echo "No supported package manager found to install make"
+                    exit 1
+                fi
+                echo "make installed successfully"
+                make --version || true
+                make e2e-generate-test-keys
 
-                pwd
+                echo "Pulling latest Model transparency image..."
+                buildah pull "$MODEL_TRANSPARENCY_IMG"
+
+                buildah run --rm \
+                  -v ./testdata/tensorflow_saved_model:/model \
+                  -v ./testdata/docker/test_private_key.priv:/test_private_key.priv \
+                  --entrypoint "" \
+                  "$MODEL_TRANSPARENCY_IMG" \
+                  model_signing sign key /model \
+                  --private_key /test_private_key.priv \
+                  --signature /model/model.sig
+
                 ls -la testdata/docker || true
                 IMAGE="ttl.sh/model-validation-test-model:latest"
                 printf "%s" "$IMAGE" > "$(step.results.image.path)"
@@ -373,8 +405,21 @@ spec:
                 set +e -o pipefail
                 cd test/e2e/testdata/
                 sed -i -E "s|(^[[:space:]]*image:[[:space:]]*).*|\1${MODEL_TEST_IMAGE}|" model-data-daemonset.yaml
-                oc apply -n "$MODEL_VALIDATION_OPERATOR_E2E_NS" model-data-daemonset.yaml
-                cd /operator/
+                echo "Installing kubectl..."
+                curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                chmod +x /usr/local/bin/kubectl
+                kubectl version --client || true
+
+                kubectl delete daemonset model-data-setup -n "$E2E_TEST_NAMESPACE" 2>/dev/null || true
+                echo "Waiting for cleanup to complete..."
+                sleep 5
+                echo "Deploying model data setup DaemonSet..."
+                kubectl apply -f test/e2e/testdata/model-data-daemonset.yaml
+                echo "Waiting for model data to be available on all nodes..."
+                kubectl rollout status daemonset/model-data-setup -n $(E2E_TEST_NAMESPACE) --timeout=120s
+
+                echo "Initiating e2e tests..."
+
                 make e2e-test
                 status=$?
                 
