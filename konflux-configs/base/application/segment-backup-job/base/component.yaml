@@ -1,0 +1,16 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: segment-backup-job
+spec:
+  componentName: segment-backup-job
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/segment-backup-job
+      revision: main
+      dockerfileUrl: Dockerfile.segment-backup-job.rh
