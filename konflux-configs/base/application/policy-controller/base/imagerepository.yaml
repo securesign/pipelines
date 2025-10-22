@@ -1,0 +1,16 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-policy-controller-policy-controller
+  labels:
+    appstudio.redhat.com/component: policy-controller
+spec:
+  image:
+    name: rhtas-tenant/policy-controller
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino

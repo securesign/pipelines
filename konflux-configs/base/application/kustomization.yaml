@@ -8,6 +8,8 @@ resources:
   # RHTAS components
   - certificate-transparency-go/base
   - fulcio/base
+  - policy-controller/base
+  - policy-controller-operator/base
   - rekor/base
   - rekor-monitor/base
   - rekor-search/base
