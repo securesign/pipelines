@@ -7,6 +7,7 @@ resources:
   - pipelines/base
   # RHTAS components
   - certificate-transparency-go/base
+  - cli/base
   - fulcio/base
   - policy-controller/base
   - policy-controller-operator/base
