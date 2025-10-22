@@ -1,7 +1,6 @@
 resources:
   - trillian
   - tough
-  - timestamp-authority
   - segment-backup-job
   - scaffold
   - fulcio
