@@ -1,0 +1,77 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: client-server
+spec:
+  componentName: client-server
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/cosign
+      revision: main
+      dockerfileUrl: Dockerfile.clients.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: cosign
+spec:
+  componentName: cosign
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/cosign
+      revision: main
+      dockerfileUrl: Dockerfile.cosign.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: fetch-tsa-certs
+spec:
+  componentName: fetch-tsa-certs
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/timestamp-authority
+      revision: main
+      dockerfileUrl: Dockerfile.fetch_tsa_certs.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: gitsign
+spec:
+  componentName: gitsign
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/gitsign
+      revision: main
+      dockerfileUrl: Dockerfile.gitsign.rh
+
+---
