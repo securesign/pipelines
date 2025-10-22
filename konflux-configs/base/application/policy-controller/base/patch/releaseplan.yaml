@@ -1,13 +1,8 @@
 apiVersion: appstudio.redhat.com/v1alpha1
 kind: ReleasePlan
 metadata:
-  labels:
-    release.appstudio.openshift.io/auto-release: 'true'
-    release.appstudio.openshift.io/standing-attribution: 'true'
-  name: promote-to-candidate-
-  namespace: rhtas-tenant
+  name: promote-to-candidate-policy-controller
 spec:
-  application: policy-controller
   tenantPipeline:
     params:
     - name: git-url
