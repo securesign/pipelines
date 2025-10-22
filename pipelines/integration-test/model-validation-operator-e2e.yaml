@@ -357,10 +357,9 @@ spec:
                 echo "Pulling latest Model transparency image..."
                 buildah pull "$MODEL_TRANSPARENCY_IMG"
 
-                buildah run --rm \
+                buildah run \
                   -v ./testdata/tensorflow_saved_model:/model \
                   -v ./testdata/docker/test_private_key.priv:/test_private_key.priv \
-                  --entrypoint "" \
                   "$MODEL_TRANSPARENCY_IMG" \
                   model_signing sign key /model \
                   --private_key /test_private_key.priv \
