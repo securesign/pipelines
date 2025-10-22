@@ -331,16 +331,17 @@ spec:
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh
+                set -eu
+
                 pwd
-                ls -la
-                cd testdata/
-                ls -la
+                ls -la testdata/docker || true
                 IMAGE="ttl.sh/model-validation-test-model:latest"
                 printf "%s" "$IMAGE" > "$(step.results.image.path)"
 
                 echo "Building test model image..."
                 buildah bud --no-cache --isolation=chroot --storage-driver=vfs \
-                  -t "$IMAGE" -f docker/test-model.Dockerfile .
+                  -t "$IMAGE" -f testdata/docker/test-model.Dockerfile \
+                  testdata
 
                 echo "Pushing test model image..."
                 buildah push "$IMAGE"
