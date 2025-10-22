@@ -13,3 +13,4 @@ resources:
   - rekor-search/base
   - timestamp-authority/base
   - trillian/base
+  - tough/base

@@ -1,0 +1,39 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-tough-tuf-tool
+  labels:
+    appstudio.redhat.com/component: tuf-tool
+spec:
+  image:
+    name: rhtas-tenant/tough/tuf-tool
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: imagerepository-for-tough-tuffer
+  labels:
+    appstudio.redhat.com/component: tuffer
+spec:
+  image:
+    name: rhtas-tenant/tough/tuffer
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---

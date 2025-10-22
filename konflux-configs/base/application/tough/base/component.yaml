@@ -1,0 +1,37 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: tuf-tool
+spec:
+  componentName: tuf-tool
+  source:
+    git:
+      url: https://github.com/securesign/tough
+      revision: develop
+      dockerfileUrl: Dockerfile.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: tuffer
+spec:
+  componentName: tuffer
+  source:
+    git:
+      url: https://github.com/securesign/tough
+      revision: develop
+      dockerfileUrl: Dockerfile.tuffer
+
+---
