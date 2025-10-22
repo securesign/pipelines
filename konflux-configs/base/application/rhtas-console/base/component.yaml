@@ -1,0 +1,38 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: rhtas-console
+spec:
+  componentName: rhtas-console
+  source:
+    git:
+      url: https://github.com/securesign/rhtas-console
+      revision: main
+      dockerfileUrl: Dockerfile.rh
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: rhtas-console-ui
+spec:
+  componentName: rhtas-console-ui
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/rhtas-console-ui/
+      revision: main
+      dockerfileUrl: Dockerfile
+
+---
