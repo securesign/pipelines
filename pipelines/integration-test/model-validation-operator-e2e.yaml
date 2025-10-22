@@ -389,6 +389,10 @@ spec:
                   value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
                 - name: TEST_IMAGE
                   value: "$(steps.push-test-image.results.image)"
+              securityContext:
+                capabilities:
+                  add:
+                    - SETFCAP
               computeResources:
                 requests:
                   cpu: "1500m"
@@ -410,6 +414,21 @@ spec:
                 chmod +x /usr/local/bin/kubectl
                 kubectl version --client || true
 
+                echo "Installing Openssl..."
+                if command -v microdnf >/dev/null 2>&1; then
+                    microdnf install -y openssl
+                elif command -v dnf >/dev/null 2>&1; then
+                    dnf install -y openssl
+                elif command -v yum >/dev/null 2>&1; then
+                    yum install -y openssl
+                elif command -v apt-get >/dev/null 2>&1; then
+                    apt-get update -y && apt-get install -y openssl
+                else
+                    echo "No supported package manager found to install OpenSSL."
+                    exit 1
+                fi
+
+                echo "Setup model-data volume..."
                 kubectl delete daemonset model-data-setup -n "$E2E_TEST_NAMESPACE" 2>/dev/null || true
                 echo "Waiting for cleanup to complete..."
                 sleep 5
