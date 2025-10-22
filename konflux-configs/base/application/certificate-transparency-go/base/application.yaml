@@ -1,0 +1,6 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Application
+metadata:
+  name: certificate-transparency-go
+spec:
+  displayName: certificate-transparency-go (main)
