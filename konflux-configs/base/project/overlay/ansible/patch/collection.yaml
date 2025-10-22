@@ -7,6 +7,7 @@
       annotations:
         build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
         build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/artifact-signer-ansible/pull/259","configuration-time":"Wed, 07 Aug 2024 08:59:18 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "false"
       name: "artifact-signer-ansible{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
