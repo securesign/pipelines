@@ -1,5 +1,4 @@
 resources:
-  - trillian
   - tough
   - segment-backup-job
   - scaffold
