@@ -423,39 +423,61 @@ spec:
                   mountPath: /credentials
               workingDir: $(workspaces.source-code.path)/operator
               script: |
-                #!/bin/sh
-                set +e -o pipefail
+                #!/usr/bin/env bash
+                set -euo pipefail
 
-                cd test/e2e/testdata/
+                pwd
+
+                export KUBECONFIG="${KUBECONFIG:-/credentials/$(steps.get-kubeconfig.results.kubeconfig)}"
+                NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
+
+                echo "Working dir: $(pwd)"
+                echo "Ensuring namespace exists: $NS"
+                kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create ns "$NS"
+
+                echo "Go to testdata..."
+                cd test/e2e/testdata
                 ls -la
 
+                echo "Patch test image into DaemonSet manifest..."
                 sed -i -E 's|(^[[:space:]]*image:[[:space:]]*).*|\1'"${TEST_IMAGE}"'|' model-data-daemonset.yaml
 
-                echo "Installing kubectl..."
+                echo "Install kubectl (client only)..."
                 mkdir -p binaries
                 curl -sSL -o binaries/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                 chmod +x binaries/kubectl
-                ls -la binaries/
-
                 export PATH="$(pwd)/binaries:$PATH"
-
                 kubectl version --client || true
 
-                NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
+                echo "Apply OpenShift SCC allowance for hostPath DaemonSet..."
+                # This creates a ServiceAccount and RoleBinding to use the 'privileged' SCC
+                # (Requires OpenShift; safe to re-apply)
+                kubectl apply -n "$NS" -f model-data-scc.yaml
 
-                echo "Setup model-data volume..."
-                kubectl delete daemonset model-data-setup -n "$NS" 2>/dev/null || true
-                echo "Waiting for cleanup to complete..."
-                sleep 5
+                echo "Deploy model-data setup DaemonSet..."
+                kubectl delete daemonset model-data-setup -n "$NS" --ignore-not-found
+                kubectl apply -n "$NS" -f model-data-daemonset.yaml
 
-                echo "Deploying model data setup DaemonSet..."
-                kubectl apply -f model-data-daemonset.yaml -n "$NS"
+                echo "Wait for DaemonSet rollout (5m)..."
+                if ! kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=5m; then
+                  echo "DaemonSet failed to roll out. Recent events:"
+                  kubectl get ds model-data-setup -n "$NS" -o yaml | sed -n '1,120p' || true
+                  kubectl get pods -n "$NS" -o wide || true
+                  kubectl get events -n "$NS" --sort-by=.lastTimestamp | tail -n 80 || true
+                  echo "Exiting due to DaemonSet rollout failure."
+                  exit 1
+                fi
 
-                echo "Waiting for model data to be available on all nodes..."
-                kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=120s
+                echo "Describe DaemonSet (namespace-scoped)..."
+                kubectl describe daemonset/model-data-setup -n "$NS" || true
 
-                kubectl describe daemonset/model-data-setup
+                echo "Starting e2e tests..."
+                cd ../../..   # back to $(workspaces.source-code.path)/operator
 
-                echo "Initiating e2e tests..."#
-                cd
-                make test-e2e
+                # Prefer Makefile target if present; otherwise run go tests directly.
+                if grep -qE '^[[:space:]]*test-e2e:' Makefile 2>/dev/null; then
+                  make test-e2e
+                else
+                  echo "Makefile target 'test-e2e' not found; running 'go test ./test/e2e -v' instead."
+                  go test ./test/e2e -v
+                fi
