@@ -384,7 +384,7 @@ spec:
         when:
           - input: "$(tasks.parse-metadata.results.component-name)"
             operator: in
-            values: ["pco-fbc-v4-15","pco-fbc-v4-16","pco-fbc-v4-17","pco-fbc-v4-18","pco-fbc-v4-19"]
+            values: ["pco-fbc-v4-15","pco-fbc-v4-16","pco-fbc-v4-17","pco-fbc-v4-18","pco-fbc-v4-19","pco-fbc-v4-20"]
       - name: download-binaries
         workspaces:
           - name: work
