@@ -425,35 +425,34 @@ spec:
               script: |
                 #!/bin/sh
                 set +e -o pipefail
+
                 cd test/e2e/testdata/
-                sed -i -E "s|(^[[:space:]]*image:[[:space:]]*).*|\1${MODEL_TEST_IMAGE}|" model-data-daemonset.yaml
+                ls -la
+
+                sed -i -E 's|(^[[:space:]]*image:[[:space:]]*).*|\1'"${TEST_IMAGE}"'|' model-data-daemonset.yaml
+
                 echo "Installing kubectl..."
-                mkdir binaries
+                mkdir -p binaries
                 curl -sSL -o binaries/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                 chmod +x binaries/kubectl
-                export PATH="$PATH:$(pwd)/binaries/kubectl"
+                ls -la binaries/
+
+                export PATH="$(pwd)/binaries:$PATH"
+
                 kubectl version --client || true
 
+                NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
+
                 echo "Setup model-data volume..."
-                kubectl delete daemonset model-data-setup -n "$E2E_TEST_NAMESPACE" 2>/dev/null || true
+                kubectl delete daemonset model-data-setup -n "$NS" 2>/dev/null || true
                 echo "Waiting for cleanup to complete..."
                 sleep 5
+
                 echo "Deploying model data setup DaemonSet..."
-                kubectl apply -f test/e2e/testdata/model-data-daemonset.yaml
+                kubectl apply -f model-data-daemonset.yaml -n "$NS"
+
                 echo "Waiting for model data to be available on all nodes..."
-                kubectl rollout status daemonset/model-data-setup -n $(E2E_TEST_NAMESPACE) --timeout=120s
+                kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=120s
 
                 echo "Initiating e2e tests..."
-
-                make e2e-test
-                status=$?
-                
-                if [[ $status -ne 0 ]]; then
-                  pods=$(oc get pods -n "$MODEL_VALIDATION_OPERATOR_NS" -o jsonpath='{.items[*].metadata.name}')
-                  for pod in $pods; do
-                    echo "===== logs for $pod ====="
-                    oc logs -n "$MODEL_VALIDATION_OPERATOR_NS" --all-containers --prefix true "$pod" || true
-                  done
-                fi
-                
-                exit "$status"
+                make test-e2e
