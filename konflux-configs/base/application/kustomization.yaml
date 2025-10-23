@@ -14,6 +14,7 @@ resources:
   - rekor-monitor/base
   - rekor-search/base
   - rhtas-console/base
+  - segment-backup-job/base
   - timestamp-authority/base
   - trillian/base
   - tough/base
