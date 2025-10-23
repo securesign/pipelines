@@ -428,8 +428,10 @@ spec:
                 cd test/e2e/testdata/
                 sed -i -E "s|(^[[:space:]]*image:[[:space:]]*).*|\1${MODEL_TEST_IMAGE}|" model-data-daemonset.yaml
                 echo "Installing kubectl..."
-                curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                chmod +x /usr/local/bin/kubectl
+                mkdir binaries
+                curl -sSL -o binaries/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                chmod +x binaries/kubectl
+                export PATH="$PATH:$(pwd)/binaries/kubectl"
                 kubectl version --client || true
 
                 echo "Setup model-data volume..."
