@@ -454,5 +454,8 @@ spec:
                 echo "Waiting for model data to be available on all nodes..."
                 kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=120s
 
-                echo "Initiating e2e tests..."
+                kubectl describe daemonset/model-data-setup
+
+                echo "Initiating e2e tests..."#
+                cd
                 make test-e2e
