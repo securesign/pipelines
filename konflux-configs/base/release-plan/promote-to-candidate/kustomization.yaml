@@ -5,4 +5,3 @@ resources:
   - components/overlays/
   - fbc/overlays/
   - pco-fbc/overlays/
-  - policy-controller-operator/overlays/

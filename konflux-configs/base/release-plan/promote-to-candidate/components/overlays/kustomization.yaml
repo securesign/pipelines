@@ -2,4 +2,3 @@ resources:
   - segment-backup-job
   - scaffold
   - cli
-  - policy-controller
