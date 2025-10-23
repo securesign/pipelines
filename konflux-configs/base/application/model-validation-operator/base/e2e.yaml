@@ -13,7 +13,7 @@ spec:
     - name: url
       value: https://github.com/securesign/pipelines.git
     - name: revision
-      value: main
+      value: mvo-e2e
     - name: pathInRepo
       value: pipelines/integration-test/model-validation-operator-e2e.yaml
     resolver: git

@@ -3,4 +3,4 @@ kind: Application
 metadata:
   name: model-validation-operator
 spec:
-  displayName: model-validation-operator (main)
+  displayName: model-validation-operator
