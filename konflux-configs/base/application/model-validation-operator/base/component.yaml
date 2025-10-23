@@ -1,0 +1,37 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: model-validation-operator
+spec:
+  componentName: model-validation-operator
+  source:
+    git:
+      url: https://github.com/securesign/model-validation-operator
+      revision: test-e2e-pipeline
+      dockerfileUrl: Dockerfile
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: model-validation-operator-bundle
+spec:
+  componentName: model-validation-operator-bundle  
+  source:
+    git:
+      url: https://github.com/securesign/model-validation-operator
+      revision: test-e2e-pipeline
+      dockerfileUrl: bundle.Dockerfile
+
+---

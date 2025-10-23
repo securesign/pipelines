@@ -1,0 +1,39 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: model-validation-operator
+  labels:
+    appstudio.redhat.com/component: model-validation-operator
+spec:
+  image:
+    name: rhtas-tenant/model-validation-operator
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: model-validation-operator-bundle
+  labels:
+    appstudio.redhat.com/component: model-validation-operator-bundle
+spec:
+  image:
+    name: rhtas-tenant/model-validation-operator-bundle
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---

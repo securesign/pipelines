@@ -1,0 +1,20 @@
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  name: model-validation-operator-e2e
+  labels:
+    test.appstudio.openshift.io/optional: "true"
+spec:
+  contexts:
+    - description: execute the integration test for a Snapshot of the `component` type
+      name: component
+  resolverRef:
+    params:
+    - name: url
+      value: https://github.com/securesign/pipelines.git
+    - name: revision
+      value: main
+    - name: pathInRepo
+      value: pipelines/integration-test/model-validation-operator-e2e.yaml
+    resolver: git
+    resourceKind: pipelinerun

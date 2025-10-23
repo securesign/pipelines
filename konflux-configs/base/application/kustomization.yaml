@@ -19,3 +19,4 @@ resources:
   - timestamp-authority/base
   - trillian/base
   - tough/base
+  - model-validation-operator/base
