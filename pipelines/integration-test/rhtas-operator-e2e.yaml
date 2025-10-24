@@ -140,12 +140,14 @@ spec:
                         - quay.io/securesign/rhtas-operator-bundle-v1-0
                         - quay.io/securesign/rhtas-operator-bundle-v1-1
                         - quay.io/securesign/rhtas-operator-bundle-v1-2
+                        - quay.io/securesign/rhtas-operator-bundle-v1-3
                     - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
                       mirrors:
                         - quay.io/securesign/rhtas-operator
                         - quay.io/securesign/rhtas-operator-v1-0
                         - quay.io/securesign/rhtas-operator-v1-1
                         - quay.io/securesign/rhtas-operator-v1-2
+                        - quay.io/securesign/rhtas-operator-v1-3
                     - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
                       mirrors:
                       - quay.io/securesign/trillian-logsigner
@@ -224,7 +226,7 @@ spec:
         when:
           - input: "$(tasks.parse-metadata.results.component)"
             operator: in
-            values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-1", "rhtas-operator-bundle-v1-2" ]
+            values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-1", "rhtas-operator-bundle-v1-2", "rhtas-operator-bundle-v1-3" ]
       - name: install-operator-from-image
         runAfter:
           - provision-cluster
@@ -254,7 +256,7 @@ spec:
         when:
           - input: "$(tasks.parse-metadata.results.component)"
             operator: in
-            values: [ "rhtas-operator", "rhtas-operator-v1-1", "rhtas-operator-v1-2" ]
+            values: [ "rhtas-operator", "rhtas-operator-v1-1", "rhtas-operator-v1-2", "rhtas-operator-v1-3" ]
       - name: install-operator-from-fbc
         timeout: "0h5m0s"
         runAfter:
