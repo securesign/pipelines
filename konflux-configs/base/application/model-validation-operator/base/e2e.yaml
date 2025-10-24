@@ -9,6 +9,10 @@ spec:
   contexts:
     - description: execute the integration test for a Snapshot of the `component` type
       name: component
+    - description: runs the integration test for a group Snapshot
+      name: group
+    - description: execute the integration test for a Snapshot created for a `push` event
+      name: push
   resolverRef:
     params:
     - name: url
