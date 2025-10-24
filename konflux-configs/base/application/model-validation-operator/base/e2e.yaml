@@ -18,4 +18,4 @@ spec:
     - name: pathInRepo
       value: pipelines/integration-test/model-validation-operator-e2e.yaml
     resolver: git
-    resourceKind: pipeline
+    resourceKind: pipelinerun
