@@ -11,6 +11,6 @@
       source:
         git:
           context: ./
-          dockerfileUrl: Dockerfile.model-validation-bundle.rh
+          dockerfileUrl: Dockerfile.model-validation.rh
           revision: "{{.branch}}"
-          url: https://github.com/securesign/secure-sign-operator
+          url: https://github.com/securesign/model-validation-operator

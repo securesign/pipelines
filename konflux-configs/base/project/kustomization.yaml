@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - overlay/ansible
   - overlay/rhtas-operator
+  - overlay/model-validation-operator
