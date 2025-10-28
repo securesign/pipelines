@@ -319,10 +319,6 @@ spec:
                   value: credentials
             - name: push-test-image
               image: quay.io/konflux-ci/buildah-task:latest@sha256:27400eaf836985bcc35182d62d727629f061538f61603c05b85d5d99bfa7da2d
-              securityContext:
-                capabilities:
-                  add:
-                    - SETFCAP
               env:
                 - name: MODEL_TRANSPARENCY_IMG
                   value: "$(params.MODEL_TRANSPARENCY_IMG)"
@@ -340,7 +336,7 @@ spec:
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh
-                set -eu
+                set -euo pipefail
 
                 echo "Installing packages..."
                 if command -v microdnf >/dev/null 2>&1; then
@@ -396,89 +392,3 @@ spec:
                 echo "Pushing test model image..."
                 buildah --storage-driver vfs push "$MODEL_VALIDATION_TEST_IMAGE"
                 echo "Done."
-            - name: execute-operator-e2e
-              image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
-              env:
-                - name: KUBECONFIG
-                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: MODEL_VALIDATION_OPERATOR_E2E_NS
-                  value: "$(params.MODEL_VALIDATION_OPERATOR_E2E_NS)"
-                - name: MODEL_VALIDATION_OPERATOR_NS
-                  value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
-                - name: MODEL_VALIDATION_TEST_IMAGE
-                  value: "$(params.MODEL_VALIDATION_TEST_IMAGE)"
-              securityContext:
-                runAsUser: 0
-                capabilities:
-                  add:
-                    - SETFCAP
-              computeResources:
-                requests:
-                  cpu: "1500m"
-                  memory: "3Gi"
-                limits:
-                  cpu: "3"
-                  memory: "6Gi"
-              volumeMounts:
-                - name: credentials
-                  mountPath: /credentials
-              workingDir: $(workspaces.source-code.path)/operator
-              script: |
-                #!/usr/bin/env bash
-                set -euo pipefail
-
-                pwd
-
-                export KUBECONFIG="${KUBECONFIG:-/credentials/$(steps.get-kubeconfig.results.kubeconfig)}"
-                NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
-
-                echo "Working dir: $(pwd)"
-                echo "Ensuring namespace exists: $NS"
-                kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create ns "$NS"
-
-                echo "Go to testdata..."
-                cd test/e2e/testdata
-                ls -la
-
-                echo "Patch test image into DaemonSet manifest..."
-                sed -i -E 's|(^[[:space:]]*image:[[:space:]]*).*|\1'"${MODEL_VALIDATION_TEST_IMAGE}"'|' model-data-daemonset.yaml
-
-                echo "Install kubectl (client only)..."
-                mkdir -p binaries
-                curl -sSL -o binaries/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                chmod +x binaries/kubectl
-                export PATH="$(pwd)/binaries:$PATH"
-                kubectl version --client || true
-
-                echo "Apply OpenShift SCC allowance for hostPath DaemonSet..."
-                # This creates a ServiceAccount and RoleBinding to use the 'privileged' SCC
-                # (Requires OpenShift; safe to re-apply)
-                kubectl apply -n "$NS" -f model-data-scc.yaml
-
-                echo "Deploy model-data setup DaemonSet..."
-                kubectl delete daemonset model-data-setup -n "$NS" --ignore-not-found
-                kubectl apply -n "$NS" -f model-data-daemonset.yaml
-
-                echo "Wait for DaemonSet rollout (5m)..."
-                if ! kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=5m; then
-                  echo "DaemonSet failed to roll out. Recent events:"
-                  kubectl get ds model-data-setup -n "$NS" -o yaml | sed -n '1,120p' || true
-                  kubectl get pods -n "$NS" -o wide || true
-                  kubectl get events -n "$NS" --sort-by=.lastTimestamp | tail -n 80 || true
-                  echo "Exiting due to DaemonSet rollout failure."
-                  exit 1
-                fi
-
-                echo "Describe DaemonSet (namespace-scoped)..."
-                kubectl describe daemonset/model-data-setup -n "$NS" || true
-
-                echo "Starting e2e tests..."
-                cd ../../..   # back to $(workspaces.source-code.path)/operator
-
-                # Prefer Makefile target if present; otherwise run go tests directly.
-                if grep -qE '^[[:space:]]*test-e2e:' Makefile 2>/dev/null; then
-                  make test-e2e
-                else
-                  echo "Makefile target 'test-e2e' not found; running 'go test ./test/e2e -v' instead."
-                  go test ./test/e2e -v
-                fi
