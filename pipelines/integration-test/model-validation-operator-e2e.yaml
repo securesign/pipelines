@@ -319,6 +319,12 @@ spec:
                   value: credentials
             - name: push-test-image
               image: quay.io/konflux-ci/buildah-task:latest@sha256:27400eaf836985bcc35182d62d727629f061538f61603c05b85d5d99bfa7da2d
+              securityContext:
+                runAsUser: 0
+                runAsNonRoot: false
+                capabilities:
+                  add:
+                    - SETFCAP
               env:
                 - name: MODEL_TRANSPARENCY_IMG
                   value: "$(params.MODEL_TRANSPARENCY_IMG)"
