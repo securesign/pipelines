@@ -428,7 +428,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -euo pipefail
-                export KUBECONFIG="${KUBECONFIG:-/credentials/$(steps.get-kubeconfig.results.kubeconfig)}"
+
                 NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
 
                 echo "Working dir: $(pwd)"
