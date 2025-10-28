@@ -388,6 +388,13 @@ spec:
                   --private_key /test_private_key.priv \
                   --signature /model/model.sig
 
+                mnt="$(buildah --storage-driver vfs mount "$ctr")"
+                sig_src="$mnt/model/model.sig"
+                sig_dst="./testdata/tensorflow_saved_model/model.sig"
+                cp "$sig_src" "$sig_dst"
+
+                ls -la testdata/tensorflow_saved_model/
+
                 chmod -R 777 testdata/
 
                 echo "Building test model image..."
