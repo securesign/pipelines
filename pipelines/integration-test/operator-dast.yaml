@@ -183,7 +183,7 @@ spec:
                       mirrors:
                       - quay.io/securesign/tuffer
       - name: install-operator-from-fbc
-        timeout: "0h5m0s"
+        timeout: "0h10m0s"
         runAfter:
           - provision-cluster
           - parse-metadata
