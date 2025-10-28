@@ -478,6 +478,15 @@ spec:
                 echo "Describe DaemonSet (namespace-scoped)..."
                 kubectl describe daemonset/model-data-setup -n "$NS" || true
 
+                echo "Check inside DaemonSet volumes..."
+                kubectl exec -n "$NS" -it $(kubectl get pod -n "$NS" -l app=model-data-setup -o name | head -n1) -- sh -c '
+                echo "=== /data ==="
+                ls -la /data
+                echo "=== /keys ==="
+                ls -la /keys
+                '
+
+
                 echo "Starting e2e tests..."
                 cd ../../..   # back to $(workspaces.source-code.path)/operator
 
