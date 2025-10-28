@@ -398,3 +398,33 @@ spec:
                 echo "Pushing test model image..."
                 buildah --storage-driver vfs push "$MODEL_VALIDATION_TEST_IMAGE"
                 echo "Done."
+            - name: execute-operator-e2e
+              image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+              env:
+                - name: KUBECONFIG
+                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+                - name: MODEL_VALIDATION_OPERATOR_E2E_NS
+                  value: "$(params.MODEL_VALIDATION_OPERATOR_E2E_NS)"
+                - name: MODEL_VALIDATION_OPERATOR_NS
+                  value: "$(params.MODEL_VALIDATION_OPERATOR_NS)"
+                - name: MODEL_VALIDATION_TEST_IMAGE
+                  value: "$(params.MODEL_VALIDATION_TEST_IMAGE)"
+              securityContext:
+                runAsUser: 0
+                capabilities:
+                  add:
+                    - SETFCAP
+              computeResources:
+                requests:
+                  cpu: "1500m"
+                  memory: "3Gi"
+                limits:
+                  cpu: "3"
+                  memory: "6Gi"
+              volumeMounts:
+                - name: credentials
+                  mountPath: /credentials
+              workingDir: $(workspaces.source-code.path)/operator
+              script: |
+                #!/usr/bin/env bash
+                set -euo pipefail
