@@ -428,3 +428,52 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -euo pipefail
+                export KUBECONFIG="${KUBECONFIG:-/credentials/$(steps.get-kubeconfig.results.kubeconfig)}"
+                NS="${MODEL_VALIDATION_OPERATOR_E2E_NS:-default}"
+
+                echo "Working dir: $(pwd)"
+
+                echo "Go to testdata..."
+                cd test/e2e/testdata
+                ls -la
+
+                echo "Patch test image into DaemonSet manifest..."
+                sed -i -E 's|(^[[:space:]]*image:[[:space:]]*).*|\1'"${MODEL_VALIDATION_TEST_IMAGE}"'|' model-data-daemonset.yaml
+
+                echo "Install kubectl (client only)..."
+                mkdir -p binaries
+                curl -sSL -o binaries/kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                chmod +x binaries/kubectl
+                export PATH="$(pwd)/binaries:$PATH"
+                kubectl version --client || true
+
+                echo "Ensuring namespace exists: $NS"
+                kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create ns "$NS"
+
+                echo "Apply OpenShift SCC allowance for hostPath DaemonSet..."
+                # This creates a ServiceAccount and RoleBinding to use the 'privileged' SCC
+                kubectl apply -n "$NS" -f model-data-scc.yaml
+
+                echo "Deploy model-data setup DaemonSet..."
+                kubectl delete daemonset model-data-setup -n "$NS" --ignore-not-found
+                kubectl apply -n "$NS" -f model-data-daemonset.yaml
+
+                echo "Wait for DaemonSet rollout (5m)..."
+                if ! kubectl rollout status daemonset/model-data-setup -n "$NS" --timeout=5m; then
+                  echo "DaemonSet failed to roll out. Recent events:"
+                  kubectl get ds model-data-setup -n "$NS" -o yaml | sed -n '1,120p' || true
+                  kubectl get pods -n "$NS" -o wide || true
+                  kubectl get events -n "$NS" --sort-by=.lastTimestamp | tail -n 80 || true
+                  echo "Exiting due to DaemonSet rollout failure."
+                  exit 1
+                fi
+
+                echo "Describe DaemonSet (namespace-scoped)..."
+                kubectl describe daemonset/model-data-setup -n "$NS" || true
+
+                echo "Starting e2e tests..."
+                cd ../../..   # back to $(workspaces.source-code.path)/operator
+
+                echo "Current dir: $(pwd)"
+
+                make test-e2e
