@@ -1,0 +1,15 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  name: promote-to-candidate-model-validation-operator
+spec:
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: "operator"
+    - name: file-name
+      value: "model-validation-operator.json"

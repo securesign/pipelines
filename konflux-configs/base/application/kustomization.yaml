@@ -9,6 +9,8 @@ resources:
   - certificate-transparency-go/base
   - cli/base
   - fulcio/base
+  - model-transparency/base
+  - model-validation-operator/base
   - policy-controller/base
   - policy-controller-operator/base
   - rekor/base

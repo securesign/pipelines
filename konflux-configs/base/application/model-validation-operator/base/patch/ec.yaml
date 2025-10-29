@@ -1,0 +1,14 @@
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  name: model-validation-operator-enterprise-contract
+spec:
+  contexts:
+  - description: execute the integration test when component model-validation-operator
+      updates
+    name: component_model-validation-operator
+  params:
+  - name: POLICY_CONFIGURATION
+    value: rhtap-releng-tenant/registry-rhtas
+  - name: SINGLE_COMPONENT
+    value: "true"

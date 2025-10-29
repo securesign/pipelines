@@ -1,0 +1,20 @@
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  annotations:
+    test.appstudio.openshift.io/kind: enterprise-contract
+  name: model-validation-operator-monorepo-snapshot
+spec:
+  contexts:
+  - description: execute the integration test for a Snapshot created for a `push` event
+    name: push
+  resolverRef:
+    params:
+      - name: url
+        value: https://github.com/securesign/pipelines.git
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/monorepo-check.yaml
+    resolver: git
+    resourceKind: pipeline
