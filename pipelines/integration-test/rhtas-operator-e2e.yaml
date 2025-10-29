@@ -231,6 +231,7 @@ spec:
         runAfter:
           - provision-cluster
           - parse-metadata
+          - clone-operator-source-code
         taskRef:
           resolver: git
           params:
@@ -292,6 +293,7 @@ spec:
           - install-operator-from-image
           - install-operator-from-bundle
           - install-operator-from-fbc
+          - clone-operator-source-code
         workspaces:
           - name: source-code
             workspace: work
