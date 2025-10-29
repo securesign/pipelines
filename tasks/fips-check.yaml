@@ -1,0 +1,85 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: fips-check
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/tags: "konflux"
+spec:
+  description: >-
+    The fips-check task uses the check-payload tool to verify if an image is FIPS compliant.
+  params:
+    - name: image-digest
+      description: Image digest to scan.
+      type: string
+    - name: image-url
+      description: Image URL.
+      type: string
+  stepTemplate:
+    volumeMounts:
+      - name: workdir
+        mountPath: /var/workdir
+    workingDir: /var/workdir
+    env:
+      - name: IMAGE_URL
+        value: $(params.image-url)
+      - name: IMAGE_DIGEST
+        value: $(params.image-digest)
+      - name: RETRY_COUNT
+        value: "5"
+      - name: RETRY_INTERVAL
+        value: "5"
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  steps:
+    - name: fetch-oci-artifact
+      image: quay.io/konflux-ci/konflux-test:v1.4.34@sha256:62a7bf68015c711e0eb0698c10d203d0393a8e0efa09306f1fce543dea383f3c
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        . /utils.sh
+
+        IMAGE_REF="${IMAGE_URL%:*}@${IMAGE_DIGEST}"
+
+        mkdir -p "/var/workdir/oci" "/var/workdir/unpacked"
+        if ! retry skopeo copy --remove-signatures "docker://${IMAGE_REF}" "oci:/var/workdir/oci:latest"; then
+          echo -e "Error: Unable to scan image: Could not convert image ${IMAGE_REF} to OCI format\n" >&2
+          exit 1
+        fi
+
+        if ! retry umoci raw unpack --rootless --image "/var/workdir/oci:latest" "/var/workdir/unpacked"; then
+          echo -e "Error: Unable to scan image: Could not unpack OCI image ${IMAGE_REF}\n" >&2
+          exit 1
+        fi
+
+    - name: fips-check
+      image: quay.io/konflux-ci/konflux-test:v1.4.34@sha256:62a7bf68015c711e0eb0698c10d203d0393a8e0efa09306f1fce543dea383f3c
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        . /utils.sh
+
+        # The check-payload tool checks the following to ensure FIPS compatibility
+
+        #   All
+        #     scans validate the inclusion of OpenSSL via libcrypto found in /usr/lib64 or /usr/lib. 
+        #     The OpenSSL library is also validated to include {FIPS_mode, fips_mode, or EVP_default_properties_is_fips_enabled}.
+
+        #   Regular Executables
+        #     Must be dynamically linked
+
+        #   Golang Executables
+        #     validateGoVersion  - enumerates the golang version and compile details
+        #     validateGoCgo      - ensure CGO_ENABLED=1 is set
+        #     validateGoCGOInit  - ensure cgo_init is within the binary
+        #     validateGoStatic   - ensure binary is dynamically linked
+        #     validateGoOpenssl  - ensure openssl matches the dynamic library within the system
+        #     validateGoTags     - ensure golang tags are set
+
+        if ! check-payload scan local --path="/var/workdir/unpacked" ; then
+          echo -e "check-payload scan failed for ${IMAGE_URL}\n" >&2
+          exit 1
+        fi

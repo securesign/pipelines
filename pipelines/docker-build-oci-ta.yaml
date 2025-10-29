@@ -95,6 +95,10 @@ spec:
     default: "1.3.1"
     type: string
     description: Current RHTAS release version
+  - name: fips-check
+    default: "false"
+    type: string
+    description: Check built image is FIPS compatible
   results:
   - description: ""
     name: IMAGE_URL
@@ -568,6 +572,28 @@ spec:
       value: $(params.go_base_image)
     when:
     - input: "$(params.go_unit_test)"
+      operator: in
+      values:
+      - "true"
+  - name: fips-check
+    runAfter:
+    - prefetch-dependencies
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: 'https://github.com/securesign/pipelines.git'
+      - name: revision
+        value: '6f187bddc0318c8cef9c89670a4eaabca16778c1'
+      - name: pathInRepo
+        value: 'tasks/fips-check.yaml'
+    params:
+    - name: image-url
+      value: $(tasks.build-image-index.results.IMAGE_URL)
+    - name: image-digest
+      value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+    when:
+    - input: "$(params.fips-check)"
       operator: in
       values:
       - "true"
