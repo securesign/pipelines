@@ -122,7 +122,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: jbouska_ansible
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/ansible/build-test-cache.yaml
         params:
@@ -159,7 +159,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: jbouska_ansible
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/ansible/run-molecule-tests.yaml
       - name: run-sigstore-e2e-tests
@@ -178,7 +178,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: jbouska_ansible
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/ansible/run-sigstore-e2e-tests.yaml
     finally:
