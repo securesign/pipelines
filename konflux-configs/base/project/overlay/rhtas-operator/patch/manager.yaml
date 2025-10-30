@@ -5,7 +5,7 @@
     kind: Component
     metadata:
       annotations:
-        mintmaker.appstudio.redhat.com/disabled: "false"
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
       name: "rhtas-operator{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
