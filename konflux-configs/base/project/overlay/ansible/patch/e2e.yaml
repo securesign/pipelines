@@ -1,0 +1,24 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "ansible-e2e-test{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: runs molecule and go-e2e test suite on ansible collection
+          name: application
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun

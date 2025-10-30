@@ -1,0 +1,132 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: run-molecule
+spec:
+  params:
+      - name: scenario
+        type: string
+        description: "Molecule scenario to run"
+      - name: run-id
+        type: string
+        description: "run id"
+      - name: cache
+        type: string
+        description: "OCI artifact URI containing the Ansible cache"
+      - name: ansible_repo
+        type: string
+  results:
+    - name: instance-info
+  volumes:
+    - name: aws-creds
+      secret:
+        secretName: aws-ci-test
+    - name: dockerfile
+      secret:
+        secretName: ansible-registry-redhat-io-pull-secret
+    - name: work
+      emptyDir: {}
+    - name: cache
+      emptyDir: {}
+  steps:
+    - name: extract-dependency-cache
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+        - name: work
+          mountPath: /work
+      image: "quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:4e39fb97f4444c2946944482df47b39c5bbc195c54c6560b0647635f553ab23d"
+      args:
+        - use
+        - $(params.cache)=/cache
+        - $(params.ansible_repo)=/work/ansible
+    - name: extract-registry-credentials
+      image: "quay.io/redhat-appstudio/konflux-test:stable"
+      volumeMounts:
+        - name: dockerfile
+          mountPath: /dockerfile
+        - name: work
+          mountPath: /work
+      script: |
+        #!/bin/sh
+        set -ex
+        # extract registry.redhat.io credentials from the secret
+        # jq is missing in the ansible-dev-tools-rhel8 image
+        jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /work/rhio-username
+        jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /work/rhio-password
+    - name: run-test
+      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:e672dcffeb6824f4f5e2826e9b94a2c1aaa46e7dd0fc4bdb655f00ae94a0fc6a"
+      volumeMounts:
+        - name: aws-creds
+          mountPath: /creds
+        - name: work
+          mountPath: /work
+        - name: cache
+          mountPath: /cache
+      env:
+        - name: RUN_ID
+          value: $(params.run-id)
+        - name: SCENARIO_NAME
+          value: $(params.scenario)
+        - name: AWS_DEFAULT_REGION
+          value: "eu-north-1"
+        - name: AWS_KEY_NAME
+          value: CI-TEST
+        - name: ANSIBLE_COLLECTIONS_PATH
+          value: /cache/ansible/collections
+        - name: ANSIBLE_ROLES_PATH
+          value: /cache/ansible/roles
+        - name: PYTHONPATH
+          value: /cache/pip
+        - name: MOLECULE_EPHEMERAL_DIRECTORY
+          value: /work/molecule
+      workingDir: /work/ansible
+      script: |
+        #!/bin/sh
+        set -ex
+    
+        mkdir -p ~/.ssh /work/molecule
+        chmod 700 ~/.ssh
+        touch ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/known_hosts
+    
+        cp /creds/private.pem ~/.ssh/
+        chmod 400 ~/.ssh/private.pem
+        eval $(ssh-agent -s); ssh-add ~/.ssh/private.pem
+    
+        set +x
+        export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
+        export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
+        export TAS_SINGLE_NODE_REGISTRY_USERNAME=$(cat /work/rhio-username)
+        export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /work/rhio-password)
+        set -x
+        molecule test --scenario-name $(params.scenario) --destroy never
+      computeResources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: "2.5"
+          memory: 4Gi
+    - name: instance-info
+      image: "quay.io/redhat-appstudio/konflux-test:stable"
+      volumeMounts:
+        - name: work
+          mountPath: /work
+      env:
+        - name: INSTANCE_CONFIG
+          value: /work/molecule/instance_config.yml
+      script: |
+        #!/bin/sh
+        set -ex
+        if [ -f "${INSTANCE_CONFIG}" ]; then
+          INSTANCE_ID=$(yq -r '.[0].instance' ${INSTANCE_CONFIG})
+          INSTANCE_IP=$(yq -r '.[0].address' ${INSTANCE_CONFIG})
+          # workaround - it is not possible to pass object from matrix test
+          JSON_OUTPUT=$(printf '{"id": "%s", "ip": "%s", "scenario": "%s"}' "$INSTANCE_ID" "$INSTANCE_IP" "$(params.scenario)")
+          echo -n "$JSON_OUTPUT" > $(results.instance-info.path)
+        else
+          echo "File '${INSTANCE_CONFIG}' does not exist. Can't continue."
+          exit 1
+        fi

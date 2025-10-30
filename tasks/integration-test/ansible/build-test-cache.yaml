@@ -1,0 +1,90 @@
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-ansible-cache
+spec:
+  params:
+    - name: pythonRequirementsFile
+      type: string
+      description: "Requirements file to install"
+    - name: ansibleRequirementsFile
+      type: string
+      description: "Ansible requirements file to install"
+    - name: moleculeRequirementsFile
+      type: string
+      description: "Molecule requirements file to install"
+    - name: releaseArtifactSignerFile
+      type: string
+      description: "Release artifact signer file to install"
+    - name: ociStorage
+      type: string
+      description: "OCI storage location for the cache artifact"
+    - name: ociArtifactExpiresAfter
+      type: string
+      default: "2h"
+      description: "Cache expiration time"
+  volumes:
+    - name: cache
+      emptyDir: {}
+    - name: dockerfile
+      secret:
+        secretName: securesign-test-dump-oci
+  workspaces:
+    - name: work
+  results:
+    - name: cache
+    - name: ansible_repo
+    - name: sigstore_e2e_repo
+  steps:
+    - name: install-ansible-dependencies
+      image: "registry.redhat.io/ansible-automation-platform-25/ansible-dev-tools-rhel8@sha256:5cfbffa83dedf8ab03b0ca68f18f9c88876c50c53e22b7e3d6ef96ce293f7fb5"
+      workingDir: /cache
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+      env:
+        - name: ANSIBLE_COLLECTIONS_PATH
+          value: /cache/ansible/collections
+        - name: ANSIBLE_ROLES_PATH
+          value: /cache/ansible/roles
+        - name: PIP_PATH
+          value: /cache/pip
+      script: |
+        #!/bin/sh
+        set -ex
+        
+        # Create cache directory structure
+        mkdir -p /cache/ansible/{collections,roles} "$PIP_PATH"
+        
+        # Install Python dependencies
+        pip3 install --target="$PIP_PATH" --upgrade pip
+        pip3 install --target="$PIP_PATH" -r $(params.pythonRequirementsFile)
+        
+        ansible-galaxy install -r $(params.ansibleRequirementsFile)
+        ansible-galaxy install -r $(params.moleculeRequirementsFile)
+        ansible-galaxy collection install $(params.releaseArtifactSignerFile) --force
+
+    - name: push-cache-to-oci
+      volumeMounts:
+        - name: cache
+          mountPath: /cache
+        - name: dockerfile
+          mountPath: /home/usr/.docker/config.json
+          # compatibility with https://github.com/konflux-ci/tekton-integration-catalog/blob/main/stepactions/secure-push-oci/0.1/secure-push-oci.yaml#L34C5-L35C42
+          subPath: oci-storage-dockerconfigjson
+      image: "quay.io/redhat-appstudio/build-trusted-artifacts:latest"
+      env:
+      - name: HOME
+        value: /home/usr/
+      - name: IMAGE_EXPIRES_AFTER
+        value: $(params.ociArtifactExpiresAfter)
+      args:
+        - create
+        - $(results.cache.path)=/cache
+        - $(results.ansible_repo.path)=$(workspaces.work.path)/ansible
+        - $(results.sigstore_e2e_repo.path)=$(workspaces.work.path)/sigstore-e2e
+        - --store
+        - $(params.ociStorage)
+
+
