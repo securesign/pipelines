@@ -4,6 +4,8 @@
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: Component
     metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "false"
       name: "rhtas-operator{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
