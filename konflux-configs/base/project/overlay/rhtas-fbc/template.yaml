@@ -1,12 +1,12 @@
 apiVersion: projctl.konflux.dev/v1beta1
 kind: ProjectDevelopmentStreamTemplate
 metadata:
-  name: operator-template
+  name: rhtas-fbc-template
   labels:
-    build.rhtas.com/ec: registry-rhtas-operator
-    build.rhtas.com/type: operator
+    build.rhtas.com/ec: fbc-standard
+    build.rhtas.com/type: fbc
 spec:
-  project: operator
+  project: rhtas-fbc
   variables:
     - name: version
       description: A version number for a new development stream
@@ -18,13 +18,13 @@ spec:
       defaultValue: "-{{hyphenize .version}}"
     - name: application
       description: The application name
-      defaultValue: "operator"
-    - name: operator
-      description: The operator name
-      defaultValue: "rhtas-operator"
+      defaultValue: "rhtas-fbc"
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
+    - name: operator
+      description: The operator name
+      defaultValue: "rhtas-operator"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application
@@ -33,4 +33,4 @@ spec:
           application.thumbnail: "5"
         name: "{{.application}}{{.nameSuffix}}"
       spec:
-        displayName: "{{.operator}} ({{.version}})"
+        displayName: "{{.application}} ({{.version}})"

@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - overlay/ansible
+  - overlay/rhtas-fbc
   - overlay/rhtas-operator

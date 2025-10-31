@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rhtas-fbc
+spec:
+  displayName: "RHTAS FBC"
+  description: |
+    File-Based Catalogs for Red Hat Trusted Artifact Signer.

@@ -6,21 +6,19 @@
     metadata:
       annotations:
         test.appstudio.openshift.io/kind: enterprise-contract
-      name: "{{.application}}{{.nameSuffix}}-enterprise-contract"
+      name: "{{.application}}{{.nameSuffix}}-enterprise-contract-group"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: "execute the integration test when component rhtas-operator{{.nameSuffix}} updates"
-          name: "component_rhtas-operator{{.nameSuffix}}"
+        - description: execute the integration test for a Snapshot of the `group` type
+          name: group
       params:
         - name: POLICY_CONFIGURATION
           value: rhtap-releng-tenant/registry-rhtas
-        - name: SINGLE_COMPONENT
-          value: "true"
       resolverRef:
         params:
           - name: url
-            value: https://github.com/redhat-appstudio/build-definitions
+            value: https://github.com/konflux-ci/build-definitions
           - name: revision
             value: main
           - name: pathInRepo
@@ -36,19 +34,21 @@
     metadata:
       annotations:
         test.appstudio.openshift.io/kind: enterprise-contract
-      name: "{{.application}}{{.nameSuffix}}-enterprise-contract-group"
+      name: "{{.application}}{{.nameSuffix}}-enterprise-contract"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test for a Snapshot of the `group` type
-          name: group
+        - description: "execute the integration test when component {{.operator}}{{.nameSuffix}} updates"
+          name: "component_{{.operator}}{{.nameSuffix}}"
       params:
         - name: POLICY_CONFIGURATION
           value: rhtap-releng-tenant/registry-rhtas
+        - name: SINGLE_COMPONENT
+          value: "true"
       resolverRef:
         params:
           - name: url
-            value: https://github.com/konflux-ci/build-definitions
+            value: https://github.com/redhat-appstudio/build-definitions
           - name: revision
             value: main
           - name: pathInRepo
