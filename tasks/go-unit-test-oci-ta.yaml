@@ -49,6 +49,9 @@ spec:
         fi
         go mod vendor
         $(params.GO_TEST_COMMAND)
+      resources:
+        limits:
+          memory: 3Gi
   volumes:
     - name: workdir
       emptyDir: {}
