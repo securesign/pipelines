@@ -1,0 +1,13 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-fbc-stage
+spec:
+  project: rhtas-fbc
+  template:
+    name: rhtas-fbc-template
+    values:
+      - name: version
+        value: "stage"
+      - name: branch
+        value: "stage"
