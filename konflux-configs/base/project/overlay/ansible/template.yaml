@@ -2,6 +2,8 @@ apiVersion: projctl.konflux.dev/v1beta1
 kind: ProjectDevelopmentStreamTemplate
 metadata:
   name: ansible-template
+  labels:
+    build.rhtas.com/type: ansible
 spec:
   project: ansible
   variables:

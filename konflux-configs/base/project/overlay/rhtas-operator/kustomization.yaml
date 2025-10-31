@@ -6,8 +6,9 @@ resources:
   - template.yaml
 
 components:
-  - ../../base/release-plan
+  - ../../base/ec
   - ../../base/monorepo
+  - ../../base/release-plan
 
 patches:
   - target:
@@ -18,10 +19,6 @@ patches:
       name: operator-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/bundle.yaml
-  - target:
-      name: operator-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/ec.yaml
   - target:
       name: operator-template
       kind: ProjectDevelopmentStreamTemplate

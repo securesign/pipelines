@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-fbc-release
+spec:
+  project: rhtas-fbc
+  template:
+    name: rhtas-fbc-template
+    values:
+      - name: version
+        value: "release"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

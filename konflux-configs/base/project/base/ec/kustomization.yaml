@@ -2,6 +2,26 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 patches:
+  # For templates without build.rhtas.com/ec label
   - target:
       kind: ProjectDevelopmentStreamTemplate
-    path: patch.yaml
+      labelSelector: "!build.rhtas.com/ec"
+    path: patch/registry-rhtas.yaml
+
+  # For templates with build.rhtas.com/ec=registry-rhtas (standard patch)
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      labelSelector: "build.rhtas.com/ec=registry-rhtas"
+    path: patch/registry-rhtas.yaml
+
+  # For templates with build.rhtas.com/ec=registry-rhtas-operator (operator patch)
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      labelSelector: "build.rhtas.com/ec=registry-rhtas-operator"
+    path: patch/registry-rhtas-operator.yaml
+
+  # For templates with build.rhtas.com/ec=fbc-standard (FBC patch)
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      labelSelector: "build.rhtas.com/ec=fbc-standard"
+    path: patch/fbc-standard.yaml

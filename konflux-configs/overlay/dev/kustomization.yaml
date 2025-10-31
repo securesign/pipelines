@@ -34,8 +34,6 @@ replacements:
           kind: ProjectDevelopmentStreamTemplate
         fieldPaths:
           - spec.resources.[kind=Component].metadata.annotations.[mintmaker.appstudio.redhat.com/disabled]
-        options:
-          create: true
   - source:
       kind: ConfigMap
       name: registry-config
