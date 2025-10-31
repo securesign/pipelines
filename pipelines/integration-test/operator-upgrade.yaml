@@ -1,0 +1,334 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: operator-upgrade-
+spec:
+  workspaces:
+    - name: work
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+  pipelineSpec:
+    params:
+      - name: SNAPSHOT
+      - name: OCP_VERSION
+        default: "4.19"
+      - name: TAS_DEPLOY_NAMESPACE
+        default: "tas-e2e"
+    workspaces:
+      - name: work
+    tasks:
+      - name: parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/parse-metadata.yaml
+        params:
+          - name: SNAPSHOT
+            value: $(params.SNAPSHOT)
+      - name: clone-operator-source-code
+        runAfter:
+          - parse-metadata
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: $(tasks.parse-metadata.results.operator-url)
+          - name: revision
+            value: $(tasks.parse-metadata.results.operator-revision)
+          - name: subdirectory
+            value: "operator"
+        workspaces:
+          - name: output
+            workspace: work
+      - name: provision-eaas-space
+        taskRef:
+          resolver: bundles
+          params:
+            - name: name
+              value: eaas-provision-space
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-eaas-provision-space:0.1-4e4fa7355a6a51083954408e7e3b647e3bddb8d8
+            - name: kind
+              value: task
+        params:
+          - name: ownerName
+            value: $(context.pipelineRun.name)
+          - name: ownerUid
+            value: $(context.pipelineRun.uid)
+      - name: provision-cluster
+        runAfter:
+          - provision-eaas-space
+        taskSpec:
+          results:
+            - name: clusterName
+              type: string
+              value: "$(steps.create-cluster.results.clusterName)"
+          steps:
+            - name: pick-version
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+              params:
+                - name: prefix
+                  value: "$(params.OCP_VERSION)"
+            - name: create-cluster
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
+              params:
+                - name: eaasSpaceSecretRef
+                  value: $(tasks.provision-eaas-space.results.secretRef)
+                - name: version
+                  value: "$(steps.pick-version.results.version)"
+                - name: instanceType
+                  value: m5.large
+                - name: timeout
+                  value: 60m
+                - name: imageContentSources
+                  value: |
+                    - source: registry.redhat.io/rhtas/rhtas-operator-bundle
+                      mirrors:
+                        - quay.io/securesign/rhtas-operator-bundle
+                        - quay.io/securesign/rhtas-operator-bundle-v1-0
+                        - quay.io/securesign/rhtas-operator-bundle-v1-1
+                        - quay.io/securesign/rhtas-operator-bundle-v1-2
+                        - quay.io/securesign/rhtas-operator-bundle-v1-3
+                    - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
+                      mirrors:
+                        - quay.io/securesign/rhtas-operator
+                        - quay.io/securesign/rhtas-operator-v1-0
+                        - quay.io/securesign/rhtas-operator-v1-1
+                        - quay.io/securesign/rhtas-operator-v1-2
+                        - quay.io/securesign/rhtas-operator-v1-3
+                    - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-logsigner
+                    - source: registry.redhat.io/rhtas/trillian-logserver-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-logserver
+                    - source: registry.redhat.io/rhtas/trillian-database-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-database
+                    - source: registry.redhat.io/rhtas/fulcio-rhel9
+                      mirrors:
+                      - quay.io/securesign/fulcio-server
+                    - source: registry.redhat.io/rhtas/trillian-redis-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-redis
+                    - source: registry.redhat.io/rhtas/rekor-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-server
+                    - source: registry.redhat.io/rhtas/rekor-search-ui-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-search-ui
+                    - source: registry.redhat.io/rhtas/rekor-backfill-redis-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-backfill-redis
+                    - source: registry.redhat.io/rhtas/rekor-monitor-rhel9
+                      mirrors:
+                      - quay.io/securesign/rekor-monitor
+                    - source: registry.redhat.io/rhtas/tuf-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/scaffold-tuf-server
+                    - source: registry.redhat.io/rhtas/certificate-transparency-rhel9
+                      mirrors:
+                      - quay.io/securesign/certificate-transparency-go
+                    - source: registry.redhat.io/rhtas/client-server-cg-rhel9
+                      mirrors:
+                      - quay.io/securesign/cli-client-server-cg
+                    - source: registry.redhat.io/rhtas/client-server-re-rhel9
+                      mirrors:
+                      - quay.io/securesign/client-server-re
+                    - source: registry.redhat.io/rhtas/segment-reporting-rhel9
+                      mirrors:
+                      - quay.io/securesign/segment-backup-job
+                    - source: registry.redhat.io/rhtas/timestamp-authority-rhel9
+                      mirrors:
+                      - quay.io/securesign/timestamp-authority
+                    - source: registry.redhat.io/rhtas/createtree-rhel9
+                      mirrors:
+                      - quay.io/securesign/trillian-createtree
+                    - source: registry.redhat.io/rhtas/client-server-rhel9
+                      mirrors:
+                      - quay.io/securesign/client-server
+                    - source: registry.redhat.io/rhtas/tuffer-rhel9
+                      mirrors:
+                      - quay.io/securesign/tuffer
+      - name: download-binaries
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: work
+          steps:
+            - name: get-cosign
+              image: registry.redhat.io/rhtas/cosign-rhel9:1.3.0
+              script: |
+                mkdir -p $(workspaces.work.path)/binaries
+                cp /usr/local/bin/cosign $(workspaces.work.path)/binaries/
+      - name: prepare-tests
+        runAfter:
+          - provision-cluster
+          - clone-operator-source-code
+        workspaces:
+          - name: source-code
+            workspace: work
+        taskSpec:
+          results:
+            - name: oidc-hostname
+              type: string
+              value: "$(steps.install-keycloak.results.oidc-hostname)"
+          volumes:
+            - name: credentials
+              emptyDir: { }
+          workspaces:
+            - name: source-code
+          steps:
+            - name: get-kubeconfig
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+              params:
+                - name: eaasSpaceSecretRef
+                  value: $(tasks.provision-eaas-space.results.secretRef)
+                - name: clusterName
+                  value: "$(tasks.provision-cluster.results.clusterName)"
+                - name: credentials
+                  value: credentials
+            - name: install-keycloak
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/securesign/pipelines.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/integration-test/install-keycloak.yaml
+              params:
+                - name: credentials
+                  value: credentials
+                - name: KUBECONFIG
+                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
+                - name: workdir
+                  value: "$(workspaces.source-code.path)/operator"
+      - name: run-operator-upgrade
+        runAfter:
+          - prepare-tests
+          - download-binaries
+        workspaces:
+          - name: source-code
+            workspace: work
+        taskSpec:
+          results:
+            - name: TEST_OUTPUT
+              description: "Full JSON summary of test results"
+          volumes:
+            - name: credentials
+              emptyDir: { }
+          workspaces:
+            - name: source-code
+          steps:
+            - name: get-kubeconfig
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/build-definitions.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+              params:
+                - name: eaasSpaceSecretRef
+                  value: $(tasks.provision-eaas-space.results.secretRef)
+                - name: clusterName
+                  value: "$(tasks.provision-cluster.results.clusterName)"
+                - name: credentials
+                  value: credentials
+            - name: execute-test
+              onError: continue
+              image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+              env:
+                - name: OIDC_HOST
+                  value: "$(tasks.prepare-tests.results.oidc-hostname)"
+                - name: KUBECONFIG
+                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+                - name: CI
+                  value: "true"
+                - name: TEST_BASE_CATALOG
+                  value: "registry.redhat.io/redhat/redhat-operator-index:v$(params.OCP_VERSION)"
+                - name: TEST_TARGET_CATALOG
+                  value: "$(tasks.parse-metadata.results.image)"
+              volumeMounts:
+                - name: credentials
+                  mountPath: /credentials
+              workingDir: $(workspaces.source-code.path)/operator
+              script: |
+                #!/bin/sh
+                set +e -o pipefail
+      
+                mkdir -p $(workspaces.source-code.path)/dump/operator-upgrade/
+      
+                export PATH="$PATH:$(workspaces.source-code.path)/binaries"
+                export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
+                openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
+                export SSL_CERT_FILE=/tmp/ssl.cert
+                go mod vendor
+                make generate
+                go test -p 1 ./test/e2e/... -tags=upgrade -timeout 20m -json > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+      
+                cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-upgrade/ || echo "no test dump files found"
+
+              securityContext:
+                runAsUser: 0
+            - name: process-test-results
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/securesign/pipelines.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/integration-test/process-go-test-results.yaml
+              params:
+                - name: test_output_file
+                  value: $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
