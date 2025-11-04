@@ -4,4 +4,5 @@ kind: Component
 
 resources:
   - ansible-stream.yaml
+  - rekor-monitor-stream.yaml
   - rhtas-operator-stream.yaml
