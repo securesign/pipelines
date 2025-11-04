@@ -1,0 +1,69 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  name: rekor-monitor-template
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: rekor-monitor
+spec:
+  project: rekor-monitor
+  variables:
+    - name: version
+      description: A version number for a new development stream
+    - name: branch
+      description: Git branch
+      defaultValue: "main"
+    - name: nameSuffix
+      description: A suffix which will be added to K8s resource name
+      defaultValue: "-{{hyphenize .version}}"
+    - name: application
+      description: The application name
+      defaultValue: "rekor-monitor"
+    - name: component
+      description: The component name
+      defaultValue: "rekor-monitor"
+    - name: mintmakerDisabled
+      description: Whether to disable mintmaker annotation on the Component
+      defaultValue: "false"
+  resources:
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Application
+      metadata:
+        annotations:
+          application.thumbnail: "5"
+        name: "{{.application}}{{.nameSuffix}}"
+      spec:
+        displayName: "{{.component}} ({{.version}})"
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Component
+      metadata:
+        annotations:
+          build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+          git-provider: github
+          git-provider-url: https://github.com
+          build.appstudio.openshift.io/mintmaker-disabled: "{{.mintmakerDisabled}}"
+        name: "{{.component}}{{.nameSuffix}}"
+      spec:
+        application: "{{.application}}{{.nameSuffix}}"
+        componentName: "{{.component}}"
+        source:
+          git:
+            url: https://github.com/securesign/rekor-monitor
+            revision: "{{.branch}}"
+            dockerfileUrl: Dockerfile.rh
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: ImageRepository 
+      metadata:
+        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.component}}"
+        labels:
+          appstudio.redhat.com/component: "{{.component}}{{.nameSuffix}}"
+      spec:
+        image:
+          name: rhtas-tenant/rekor-monitor
+          visibility: public
+        notifications:
+          - config:
+              url: https://bombino.api.redhat.com/v1/sbom/quay/push
+            event: repo_push
+            method: webhook
+            title: SBOM-event-to-Bombino

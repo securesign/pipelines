@@ -14,7 +14,6 @@ resources:
   - policy-controller/base
   - policy-controller-operator/base
   - rekor/base
-  - rekor-monitor/base
   - rekor-search/base
   - rhtas-console/base
   - segment-backup-job/base
