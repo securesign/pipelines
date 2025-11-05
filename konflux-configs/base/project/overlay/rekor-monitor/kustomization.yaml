@@ -7,5 +7,4 @@ resources:
 
 components:
   - ../../base/ec
-  - ../../base/monorepo
   - ../../base/release-plan
