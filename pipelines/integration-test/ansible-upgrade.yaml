@@ -176,7 +176,7 @@ spec:
                 molecule create --scenario-name $(params.scenario)
                 
                 ansible-galaxy collection install $(workspaces.work.path)/releases/redhat-artifact_signer-*.tar.gz --force
-                molecule verify --scenario-name $(params.scenario)
+                molecule converge --scenario-name $(params.scenario) && molecule verify --scenario-name $(params.scenario)
               computeResources:
                 limits:
                   cpu: 4
