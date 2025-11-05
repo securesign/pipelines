@@ -1,0 +1,30 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: 'true'
+        release.appstudio.openshift.io/standing-attribution: 'true'
+      name: "promote-to-candidate-{{.application}}{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: "component"
+        serviceAccountName: rhtas-build-bot
+        pipelineRef:
+          resolver: git
+          params:
+            - name: url
+              value: "https://github.com/securesign/pipelines"
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: "pipelines/promote-to-candidate.yaml"
