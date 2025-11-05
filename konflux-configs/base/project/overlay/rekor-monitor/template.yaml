@@ -4,7 +4,7 @@ metadata:
   name: rekor-monitor-template
   labels:
     build.rhtas.com/ec: registry-rhtas
-    build.rhtas.com/type: rekor-monitor
+    build.rhtas.com/type: component
 spec:
   project: rekor-monitor
   variables:
