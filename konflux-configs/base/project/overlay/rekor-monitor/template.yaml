@@ -41,7 +41,7 @@ spec:
           build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
           git-provider: github
           git-provider-url: https://github.com
-          build.appstudio.openshift.io/mintmaker-disabled: "{{.mintmakerDisabled}}"
+          mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
         name: "{{.component}}{{.nameSuffix}}"
       spec:
         application: "{{.application}}{{.nameSuffix}}"
