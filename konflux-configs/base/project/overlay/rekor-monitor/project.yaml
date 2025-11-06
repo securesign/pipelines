@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rekor-monitor
+spec:
+  displayName: "Rekor Monitor"
+  description: |
+    Rekor Monitor provides monitoring capabilities for Rekor transparency log.
