@@ -354,7 +354,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: add-support-for-fips-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -513,7 +513,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: add-support-for-fips-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-tas.yaml
               params:
