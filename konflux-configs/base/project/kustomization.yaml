@@ -6,3 +6,4 @@ resources:
   - overlay/rekor-monitor
   - overlay/rhtas-fbc
   - overlay/rhtas-operator
+  - overlay/tough
