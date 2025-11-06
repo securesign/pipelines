@@ -1,0 +1,125 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: install-operator-from-fbc-olm-v1
+spec:
+  params:
+    - name: eaasSpaceSecretRef
+      type: string
+      description: Name of a secret containing credentials for accessing an EaaS space.
+    - name: clusterName
+      type: string
+      description: The name of a ClusterTemplateInstance.
+    - name: fbcImage
+      description: Fbc image to be installed from
+    - name: namespace
+      default: "tas-operator"
+      description: Namespace to be used for installation
+    - name: operator-name
+      type: string
+      default: "rhtas-operator"
+      description: Name of installed operator
+    - name: operator-deployment-name
+      type: string
+      default: "rhtas-operator-controller-manager"
+      description: Namespace to be used for installation
+  volumes:
+    - name: credentials
+      emptyDir: { }
+  steps:
+    - name: get-kubeconfig
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: "$(params.eaasSpaceSecretRef)"
+        - name: clusterName
+          value: "$(params.clusterName)"
+        - name: credentials
+          value: credentials
+    - name: run-operator
+      image: registry.redhat.io/openshift4/ose-cli
+      env:
+        - name: KUBECONFIG
+          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+      volumeMounts:
+        - name: credentials
+          mountPath: /credentials
+      script: |
+        if ! oc get namespace "$(params.namespace)" > /dev/null 2>&1; then
+          oc new-project "$(params.namespace)"
+          echo "Project $(params.namespace) created."
+        else
+        echo "Project $(params.namespace) already exists."
+        fi
+        
+        oc create -f - <<EOF+
+        apiVersion: olm.operatorframework.io/v1
+        kind: ClusterCatalog
+        metadata:
+          labels:
+            olm.operatorframework.io/metadata.name: tas-test
+            tas: olm-test
+          name: tas-test
+        spec:
+          availabilityMode: Available
+          priority: -300
+          source:
+            image:
+              ref: $(params.fbcImage)
+            type: Image
+        EOF
+        sleep 2
+        oc wait --for=condition=Serving=true clustercatalog tas-test --timeout=3m
+        
+        oc create -f - <<EOF
+        ---
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: tas-installer
+          namespace: $(params.namespace)
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: tas-installer-binding
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+          - kind: ServiceAccount
+            name: tas-installer
+            namespace: $(params.namespace)
+        ---
+        apiVersion: olm.operatorframework.io/v1
+        kind: ClusterExtension
+        metadata:
+          name: rhtas-operator
+          namespace: $(params.namespace)
+        spec:
+          namespace: test
+          serviceAccount:
+            name: rhtas-operator-installer
+          source:
+            sourceType: Catalog
+            catalog:
+              packageName: $(params.operator-name)
+              selector:
+                matchLabels:
+                  tas: olm-test
+        EOF
+        
+        oc get pods -o yaml
+        oc get clustercatalog tas-test -o yaml
+        
+        sleep 2
+        oc --for=condition=Installed=true --timeout=2m clusterextension  rhtas-operator
