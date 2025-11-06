@@ -23,6 +23,11 @@ spec:
         default: "main"
       - name: OLMv1
         default: "false"
+      - name: FIPS_ENABLED
+        default: "false"
+      - name: KEYCLOAK_DISTRIBUTION
+        description: "Which Keycloak build to install rhsso or rhbk"
+        default: "rhsso"
     workspaces:
       - name: work
         description: Shared workspace for pipeline tasks
@@ -139,6 +144,8 @@ spec:
                   value: m5.large
                 - name: timeout
                   value: 60m
+                - name: fips
+                  value: "$(params.FIPS_ENABLED)"
                 - name: imageContentSources
                   value: |
                     - source: registry.redhat.io/rhtas/rhtas-operator-bundle
@@ -348,6 +355,9 @@ spec:
             - name: oidc-hostname
               type: string
               value: "$(steps.install-keycloak.results.oidc-hostname)"
+            - name: oidc-issuer-url
+              type: string
+              value: "$(steps.install-keycloak.results.oidc-issuer-url)"
             - name: fulcio-url
               type: string
               value: "$(steps.install-tas.results.fulcio-url)"
@@ -400,6 +410,8 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
+                - name: keycloak-distribution
+                  value: "$(params.KEYCLOAK_DISTRIBUTION)"
       - name: download-binaries
         workspaces:
           - name: work
@@ -458,10 +470,14 @@ spec:
               env:
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
+                - name: OIDC_ISSUER_URL
+                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
                 - name: KUBECONFIG
                   value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: CI
                   value: "true"
+                - name: FIPS_ENABLED
+                  value: "$(params.FIPS_ENABLED)"
               volumeMounts:
                 - name: credentials
                   mountPath: /credentials
@@ -473,12 +489,17 @@ spec:
                 mkdir -p $(workspaces.source-code.path)/dump/operator-e2e/
                 
                 export PATH="$PATH:$(workspaces.source-code.path)/binaries"
-                export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
                 openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
                 export SSL_CERT_FILE=/tmp/ssl.cert
                 go mod vendor
                 make generate
-                go test -p 1 ./test/e2e/... -tags=integration -timeout 30m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
+
+                TAGS="integration"
+                if [[ "$FIPS_ENABLED" == "true" ]]; then
+                  TAGS="fips,integration"
+                fi
+
+                go test -p 1 ./test/e2e/... -tags="$TAGS" -timeout 60m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
 
                 cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-e2e/ || echo "no test dump files found"
 
@@ -552,6 +573,8 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
+                - name: OIDC_ISSUER_URL
+                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
             - name: push-test-image
               image: quay.io/konflux-ci/buildah-task:latest@sha256:c711eeac025a5f829d5d7bb281d7e0df380969d1e37e5329d0cb7740ff0aa301
               results:
@@ -584,13 +607,14 @@ spec:
                   value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: TASNAMESPACE
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
+                - name: OIDC_ISSUER_URL
+                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
               workingDir: $(workspaces.source-code.path)/sigstore-e2e
               script: |
                 oc project $TASNAMESPACE
                 ./tas-env-variables.sh > .env
             - name: execute-tas-e2e
               image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
-              
               computeResources:
                 limits:
                   memory: 4Gi
