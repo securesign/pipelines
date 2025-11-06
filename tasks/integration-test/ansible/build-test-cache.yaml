@@ -38,7 +38,7 @@ spec:
     - name: sigstore_e2e_repo
   steps:
     - name: install-ansible-dependencies
-      image: "registry.redhat.io/ansible-automation-platform-25/ansible-dev-tools-rhel8@sha256:5cfbffa83dedf8ab03b0ca68f18f9c88876c50c53e22b7e3d6ef96ce293f7fb5"
+      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:e672dcffeb6824f4f5e2826e9b94a2c1aaa46e7dd0fc4bdb655f00ae94a0fc6a"
       workingDir: /cache
       volumeMounts:
         - name: cache
@@ -58,8 +58,8 @@ spec:
         mkdir -p /cache/ansible/{collections,roles} "$PIP_PATH"
         
         # Install Python dependencies
-        pip3 install --target="$PIP_PATH" --upgrade pip
-        pip3 install --target="$PIP_PATH" -r $(params.pythonRequirementsFile)
+        python3.11 -m pip install --upgrade pip --target="$PIP_PATH"
+        python3.11 -m pip install --target="$PIP_PATH" -r $(params.pythonRequirementsFile)
         
         ansible-galaxy install -r $(params.ansibleRequirementsFile)
         ansible-galaxy install -r $(params.moleculeRequirementsFile)

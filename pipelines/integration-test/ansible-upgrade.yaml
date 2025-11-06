@@ -1,0 +1,236 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: molecule-test-
+spec:
+  workspaces:
+    - name: work
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+  pipelineSpec:
+    params:
+      - name: SNAPSHOT
+    workspaces:
+      - name: work
+    tasks:
+      - name: parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/konflux-ci/tekton-integration-catalog
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/test-metadata/0.3/test-metadata.yaml
+        params:
+          - name: SNAPSHOT
+            value: $(params.SNAPSHOT)
+      - name: clone-source-code
+        runAfter:
+          - parse-metadata
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: $(tasks.parse-metadata.results.git-url)
+          - name: revision
+            value: $(tasks.parse-metadata.results.git-revision)
+          - name: subdirectory
+            value: "ansible"
+        workspaces:
+          - name: output
+            workspace: work
+      - name: prepare-molecule-tests
+        runAfter:
+          - clone-source-code
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: work
+          steps:
+            - name: extract-release-image-content
+              image: "gcr.io/go-containerregistry/crane"
+              args:
+                - export
+                - $(tasks.parse-metadata.results.container-image)
+                - $(workspaces.work.path)/image.tar
+            - name: prepare-tests
+              image: "quay.io/redhat-appstudio/konflux-test:stable"
+              script: |
+                #!/bin/sh
+                set -ex
+
+                # extract the release image content
+                tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
+
+                # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
+                find $(workspaces.work.path)/ansible/molecule -type f -name "converge.yml" \
+                -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
+      - name: run-upgrade-test
+        runAfter:
+          - prepare-molecule-tests
+        params:
+          - name: scenario
+            value: upgrade
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          params:
+            - name: scenario
+          workspaces:
+            - name: work
+          volumes:
+            - name: aws-creds
+              secret:
+                secretName: aws-ci-test
+            - name: dockerfile
+              secret:
+                secretName: ansible-registry-redhat-io-pull-secret
+            - name: aah
+              secret:
+                secretName: ansible-automation-hub-creds
+                items:
+                  - key: ansible.cfg
+                    path: ansible.cfg
+            - name: creds
+              emptyDir: {}
+          steps:
+            - name: extract-registry-credentials
+              image: "quay.io/redhat-appstudio/konflux-test:stable"
+              volumeMounts:
+                - name: dockerfile
+                  mountPath: /dockerfile
+                - name: creds
+                  mountPath: /creds
+              script: |
+                #!/bin/sh
+                set -ex
+                # extract registry.redhat.io credentials from the secret
+                # jq is missing in the ansible-dev-tools-rhel8 image
+                jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /creds/rhio-username
+                jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /creds/rhio-password
+            - name: run-test
+              image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:e672dcffeb6824f4f5e2826e9b94a2c1aaa46e7dd0fc4bdb655f00ae94a0fc6a"
+              volumeMounts:
+                - name: aws-creds
+                  mountPath: /aws-creds
+                - name: creds
+                  mountPath: /rhio-creds
+                - name: aah
+                  mountPath: /etc/ansible/ansible.cfg
+                  subPath: ansible.cfg
+              env:
+                - name: RUN_ID
+                  value: $(context.pipelineRun.name)
+                - name: SCENARIO_NAME
+                  value: "upgrade"
+                - name: AWS_DEFAULT_REGION
+                  value: "eu-north-1"
+                - name: AWS_KEY_NAME
+                  value: CI-TEST
+              workingDir: $(workspaces.work.path)/ansible
+              script: |
+                #!/bin/sh
+                set -ex
+                
+                mkdir -p ~/.ssh
+                chmod 700 ~/.ssh
+                touch ~/.ssh/known_hosts
+                chmod 600 ~/.ssh/known_hosts
+                
+                cp /aws-creds/private.pem ~/.ssh/
+                chmod 400 ~/.ssh/private.pem
+                eval $(ssh-agent -s); ssh-add ~/.ssh/private.pem
+                
+                set +x
+                export AWS_SECRET_ACCESS_KEY=$(cat /aws-creds/AWS_ACCESS_KEY)
+                export AWS_ACCESS_KEY_ID=$(cat /aws-creds/AWS_ACCESS_KEY_ID)
+                export TAS_SINGLE_NODE_REGISTRY_USERNAME=$(cat /rhio-creds/rhio-username)
+                export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /rhio-creds/rhio-password)
+                set -x
+                
+                python3.11 -m pip install --upgrade pip
+                python3.11 -m pip install -r $(workspaces.work.path)/ansible/testing-requirements.txt
+        
+                ansible-galaxy install -r  $(workspaces.work.path)/ansible/molecule/requirements.yml
+                
+                ansible-galaxy collection install redhat.artifact_signer
+                #create preinstalled deployment
+                molecule create --scenario-name $(params.scenario)
+                
+                ansible-galaxy collection install $(workspaces.work.path)/releases/redhat-artifact_signer-*.tar.gz --force
+                molecule converge --scenario-name $(params.scenario) && molecule verify --scenario-name $(params.scenario)
+              computeResources:
+                limits:
+                  cpu: 4
+                  memory: 8Gi
+                requests:
+                  cpu: "2.5"
+                  memory: 4Gi
+    finally:
+      - name: aws-cleanup
+        params:
+          - name: run-id
+            value: "$(context.pipelineRun.name)"
+        taskSpec:
+          params:
+            - name: run-id
+          volumes:
+            - name: aws-creds
+              secret:
+                secretName: aws-ci-test
+          steps:
+            - name: terminate-instances
+              volumeMounts:
+                - name: aws-creds
+                  mountPath: /creds
+              image: amazon/aws-cli:latest
+              env:
+                - name: AWS_DEFAULT_REGION
+                  value: "eu-north-1"
+              script: |
+                #!/bin/bash
+                set -eu
+                
+                set +x
+                export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
+                export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
+                set -x
+                
+                # Check for credentials before proceeding (crucial step)
+                if [ -z "${AWS_ACCESS_KEY_ID}" ]; then
+                  echo "ERROR: AWS_ACCESS_KEY_ID environment variable is missing." >&2
+                  exit 1
+                fi
+                
+                INSTANCE_LIST=$(
+                  aws ec2 describe-instances \
+                  --filters "Name=tag:Name,Values=CI-$(params.run-id)*" "Name=instance-state-name,Values=running,pending" \
+                  --query 'Reservations[].Instances[].InstanceId' \
+                  --output text
+                )
+                echo "Instance IDs received for termination: ${INSTANCE_LIST} in ${AWS_DEFAULT_REGION}..."
+                
+                aws ec2 terminate-instances \
+                  --instance-ids ${INSTANCE_LIST} \
+                  --region ${AWS_DEFAULT_REGION} \
+                  --output text
+                
+                echo "Termination request sent for instance ${INSTANCE_LIST}."
