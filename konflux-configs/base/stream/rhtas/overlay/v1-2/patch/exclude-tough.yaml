@@ -1,5 +1,5 @@
 apiVersion: projctl.konflux.dev/v1beta1
 kind: ProjectDevelopmentStream
 metadata:
-  name: rekor-monitor
+  name: tough
 $patch: delete

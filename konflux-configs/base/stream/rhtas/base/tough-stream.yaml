@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tough
+spec:
+  project: tough
+  template:
+    name: tough-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "develop"
+      - name: nameSuffix
+        value: ""

@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tough
+spec:
+  displayName: Tough
+  description: |
+    Tough provides TUF (The Update Framework) implementation with tuf-tool and tuffer components.
