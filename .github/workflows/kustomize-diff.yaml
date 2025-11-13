@@ -107,16 +107,22 @@ jobs:
           if [ -s /tmp/dyff-output.txt ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
             
-            # Extract summary from dyff's GitHub output
-            # dyff shows things like "one document removed:", "one document added:", etc.
-            DOCS_ADDED=$(grep -c "document added:" /tmp/dyff-output.txt 2>/dev/null || true)
-            DOCS_REMOVED=$(grep -c "document removed:" /tmp/dyff-output.txt 2>/dev/null || true)
-            DOCS_MODIFIED=$(grep -c "± value change" /tmp/dyff-output.txt 2>/dev/null || true)
+            # Count documents by type:
+            # - Added: lines containing "one document added:" or "documents added:"
+            # - Removed: lines containing "one document removed:" or "documents removed:"
+            # - Modified: lines starting with @@ (which mark document sections) minus added/removed
             
-            # Default to 0 if empty and ensure clean integers
-            DOCS_ADDED=${DOCS_ADDED:-0}
-            DOCS_REMOVED=${DOCS_REMOVED:-0}
-            DOCS_MODIFIED=${DOCS_MODIFIED:-0}
+            DOCS_ADDED=$(grep -c "document.*added:" /tmp/dyff-output.txt 2>/dev/null || echo 0)
+            DOCS_REMOVED=$(grep -c "document.*removed:" /tmp/dyff-output.txt 2>/dev/null || echo 0)
+            
+            # Count total document sections (lines starting with @@)
+            TOTAL_SECTIONS=$(grep -c "^@@" /tmp/dyff-output.txt 2>/dev/null || echo 0)
+            
+            # Modified documents = total sections - added - removed
+            DOCS_MODIFIED=$((TOTAL_SECTIONS - DOCS_ADDED - DOCS_REMOVED))
+            
+            # Ensure no negative values
+            [ $DOCS_MODIFIED -lt 0 ] && DOCS_MODIFIED=0
             
             {
               echo "docs_added=$DOCS_ADDED"
@@ -137,10 +143,10 @@ jobs:
       
       - name: Create PR comment
         run: |
-          # Collect data from previous steps
-          ADDED="${{ steps.diff.outputs.docs_added }}"
-          REMOVED="${{ steps.diff.outputs.docs_removed }}"
-          MODIFIED="${{ steps.diff.outputs.docs_modified }}"
+          # Collect data from previous steps (default to 0 if not set)
+          ADDED="${{ steps.diff.outputs.docs_added || '0' }}"
+          REMOVED="${{ steps.diff.outputs.docs_removed || '0' }}"
+          MODIFIED="${{ steps.diff.outputs.docs_modified || '0' }}"
           TOTAL=$((ADDED + REMOVED + MODIFIED))
           
           # Collect error information
@@ -158,7 +164,8 @@ jobs:
           DIFF_CONTENT=""
           if [ -f /tmp/dyff-output.txt ] && [ -s /tmp/dyff-output.txt ]; then
             DIFF_CONTENT=$(head -n ${DIFF_TRUNCATE_LINES} /tmp/dyff-output.txt)
-            if [ $(wc -l < /tmp/dyff-output.txt) -gt ${DIFF_TRUNCATE_LINES} ]; then
+            LINES=$(wc -l < /tmp/dyff-output.txt)
+            if (( LINES > DIFF_TRUNCATE_LINES )); then
               DIFF_CONTENT="${DIFF_CONTENT}"$'\n'"... (diff truncated, showing first ${DIFF_TRUNCATE_LINES} lines)"
             fi
           fi
