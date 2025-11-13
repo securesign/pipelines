@@ -364,8 +364,6 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
-                - name: branch
-                  value: $(params.branch)
       - name: download-binaries
         workspaces:
           - name: work
@@ -520,8 +518,6 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
-                - name: branch
-                  value: $(params.branch)
 
             - name: push-test-image
               image: quay.io/konflux-ci/buildah-task:latest@sha256:c711eeac025a5f829d5d7bb281d7e0df380969d1e37e5329d0cb7740ff0aa301
