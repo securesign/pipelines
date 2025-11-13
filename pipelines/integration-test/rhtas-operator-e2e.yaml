@@ -375,7 +375,7 @@ spec:
             - name: work
           steps:
             - name: get-tuftool
-              image: registry.redhat.io/rhtas/tuftool-rhel9:1.3.0
+              image: quay.io/securesign/cli-tuftool@sha256:54d171b8c1657d5c441215682c24f4e085375c8ce9e20b9a794b269d88d3fd64"
               script: |
                 mkdir -p $(workspaces.work.path)/binaries
                 cp /usr/bin/tuftool $(workspaces.work.path)/binaries/
