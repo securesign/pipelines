@@ -354,7 +354,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: $(params.branch)
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -457,7 +457,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: $(params.branch)
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
