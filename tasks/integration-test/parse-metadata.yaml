@@ -49,9 +49,21 @@ spec:
         COMPONENT_NAME="${COMPONENT_NAME:-rhtas-operator-bundle}"
         
         # Derive additional environment variables from SNAPSHOT
+        # First try exact match, then try pattern match for versioned components
         IMAGE=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .containerImage' <<< "${SNAPSHOT}")
+        if [ "$IMAGE" = "null" ] || [ -z "$IMAGE" ]; then
+          IMAGE=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name | startswith($component_name)) | .containerImage' <<< "${SNAPSHOT}")
+        fi
+        
         GIT_URL=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.url' <<< "${SNAPSHOT}")
+        if [ "$GIT_URL" = "null" ] || [ -z "$GIT_URL" ]; then
+          GIT_URL=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name | startswith($component_name)) | .source.git.url' <<< "${SNAPSHOT}")
+        fi
+        
         GIT_REVISION=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name == $component_name) | .source.git.revision' <<< "${SNAPSHOT}")
+        if [ "$GIT_REVISION" = "null" ] || [ -z "$GIT_REVISION" ]; then
+          GIT_REVISION=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name | startswith($component_name)) | .source.git.revision' <<< "${SNAPSHOT}")
+        fi
 
   
         if [[ "$COMPONENT_NAME" =~ ^rhtas-operator.* ]]; then
