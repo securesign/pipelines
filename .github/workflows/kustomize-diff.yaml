@@ -112,11 +112,16 @@ jobs:
             # - Removed: lines containing "one document removed:" or "documents removed:"
             # - Modified: lines starting with @@ (which mark document sections) minus added/removed
             
-            DOCS_ADDED=$(grep -c "document.*added:" /tmp/dyff-output.txt 2>/dev/null || echo 0)
-            DOCS_REMOVED=$(grep -c "document.*removed:" /tmp/dyff-output.txt 2>/dev/null || echo 0)
+            DOCS_ADDED=$(grep -c "document.*added:" /tmp/dyff-output.txt 2>/dev/null || true)
+            DOCS_REMOVED=$(grep -c "document.*removed:" /tmp/dyff-output.txt 2>/dev/null || true)
             
             # Count total document sections (lines starting with @@)
-            TOTAL_SECTIONS=$(grep -c "^@@" /tmp/dyff-output.txt 2>/dev/null || echo 0)
+            TOTAL_SECTIONS=$(grep -c "^@@" /tmp/dyff-output.txt 2>/dev/null || true)
+            
+            # grep -c outputs 0 when no matches, but exits with status 1, so ensure we have valid numbers
+            DOCS_ADDED=${DOCS_ADDED:-0}
+            DOCS_REMOVED=${DOCS_REMOVED:-0}
+            TOTAL_SECTIONS=${TOTAL_SECTIONS:-0}
             
             # Modified documents = total sections - added - removed
             DOCS_MODIFIED=$((TOTAL_SECTIONS - DOCS_ADDED - DOCS_REMOVED))
