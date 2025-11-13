@@ -19,6 +19,8 @@ spec:
         default: "4.19"
       - name: TAS_DEPLOY_NAMESPACE
         default: tas-e2e
+      - name: OLMv1
+        default: "false"
     workspaces:
       - name: work
     tasks:
@@ -281,18 +283,51 @@ spec:
             value: "$(tasks.parse-metadata.results.image)"
         # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
         when:
+          - input: $(params.OLMv1)
+            operator: notin
+            values: ["true"]
           - input: "$(tasks.parse-metadata.results.component)"
             operator: in
             values: [
-              "fbc-v4-19", "fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15",
+              "fbc-v4-20", "fbc-v4-19", "fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15",
               "fbc-v4-19-v1-2", "fbc-v4-18-v1-2", "fbc-v4-17-v1-2", "fbc-v4-16-v1-2", "fbc-v4-15-v1-2",
               "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1"]
+      - name: install-operator-from-fbc-olmv1
+        timeout: "0h5m0s"
+        runAfter:
+          - provision-cluster
+          - parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/install-operator-from-fbc.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: fbcImage
+            value: "$(tasks.parse-metadata.results.image)"
+        # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
+        when:
+          - input: "$(params.OLMv1)"
+            operator: in
+            values: ["true"]
+          - input: "$(tasks.parse-metadata.results.component)"
+            operator: in
+            values: ["fbc-v4-20"]
       - name: prepare-tests
         runAfter:
           # run after either one
           - install-operator-from-image
           - install-operator-from-bundle
           - install-operator-from-fbc
+          - install-operator-from-fbc-olmv1
           - clone-operator-source-code
         workspaces:
           - name: source-code

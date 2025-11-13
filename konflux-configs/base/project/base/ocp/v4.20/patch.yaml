@@ -77,3 +77,34 @@
             value: pipelines/integration-test/operator-upgrade.yaml
         resolver: git
         resourceKind: pipelinerun
+
+# IntegrationTestScenario OLMv1
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "{{.application}}{{.nameSuffix}}-v4-20-e2e-olmv1"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-20"
+      params:
+        - name: OCP_VERSION
+          value: "4.20"
+        - name: OLMv1
+          value: "true"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
