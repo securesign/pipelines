@@ -12,6 +12,9 @@
       contexts:
         - description: runs the integration test for a group Snapshot
           name: group
+      params:
+        - name: branch
+          value: "{{.branch}}"
       resolverRef:
         params:
           - name: url
