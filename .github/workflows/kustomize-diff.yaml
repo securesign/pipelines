@@ -144,10 +144,10 @@ jobs:
       - name: Create PR comment
         run: |
           # Collect data from previous steps (default to 0 if not set)
-          ADDED="${{ steps.diff.outputs.docs_added || '0' }}"
-          REMOVED="${{ steps.diff.outputs.docs_removed || '0' }}"
-          MODIFIED="${{ steps.diff.outputs.docs_modified || '0' }}"
-          TOTAL=$((ADDED + REMOVED + MODIFIED))
+          ADDED="${{ steps.diff.outputs.docs_added }}"
+          REMOVED="${{ steps.diff.outputs.docs_removed }}"
+          MODIFIED="${{ steps.diff.outputs.docs_modified }}"
+          TOTAL=$(( ${ADDED:-0} + ${REMOVED:-0} + ${MODIFIED:-0} ))
           
           # Collect error information
           ERROR_MESSAGE=""
