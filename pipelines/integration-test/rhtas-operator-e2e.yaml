@@ -307,7 +307,13 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
+        params:
+          - name: branch
+            value: $(params.branch)
         taskSpec:
+          params:
+            - name: branch
+              description: Branch name for git operations
           results:
             - name: oidc-hostname
               type: string
@@ -354,7 +360,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: "$(params.branch)"
+                    value: $(params.branch)
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -364,8 +370,6 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
-                - name: branch
-                  value: $(params.branch)
       - name: download-binaries
         workspaces:
           - name: work
@@ -375,7 +379,7 @@ spec:
             - name: work
           steps:
             - name: get-tuftool
-              image: quay.io/securesign/cli-tuftool@sha256:54d171b8c1657d5c441215682c24f4e085375c8ce9e20b9a794b269d88d3fd64"
+              image: quay.io/securesign/cli-tuftool@sha256:54d171b8c1657d5c441215682c24f4e085375c8ce9e20b9a794b269d88d3fd64
               script: |
                 mkdir -p $(workspaces.work.path)/binaries
                 cp /usr/bin/tuftool $(workspaces.work.path)/binaries/
@@ -520,8 +524,6 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
-                - name: branch
-                  value: $(params.branch)
 
             - name: push-test-image
               image: quay.io/konflux-ci/buildah-task:latest@sha256:c711eeac025a5f829d5d7bb281d7e0df380969d1e37e5329d0cb7740ff0aa301
