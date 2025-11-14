@@ -23,6 +23,7 @@ spec:
         default: "main"
     workspaces:
       - name: work
+        description: Shared workspace for pipeline tasks
     tasks:
       - name: parse-metadata
         taskRef:
@@ -61,25 +62,25 @@ spec:
         workspaces:
           - name: output
             workspace: work
-       - name: clone-e2e-test-source-code
-         runAfter:
-           - parse-metadata
-         taskRef:
-           params:
-             - name: name
-               value: git-clone
-             - name: bundle
-               value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
-             - name: kind
-               value: task
-           resolver: bundles
-         params:
-           - name: url
-             value: https://github.com/securesign/sigstore-e2e
-           - name: revision
-             value: $(tasks.parse-metadata.results.tas-e2e-version)
-           - name: subdirectory
-             value: "sigstore-e2e"
+      - name: clone-e2e-test-source-code
+        runAfter:
+          - parse-metadata
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: https://github.com/securesign/sigstore-e2e
+          - name: revision
+            value: $(tasks.parse-metadata.results.tas-e2e-version)
+          - name: subdirectory
+            value: "sigstore-e2e"
         workspaces:
           - name: output
             workspace: work
