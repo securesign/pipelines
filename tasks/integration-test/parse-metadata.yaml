@@ -80,14 +80,14 @@ spec:
           OPERATOR_REVISION="main"
         fi
 
-    # Derive TAS E2E version from application name
-    if [[ "$APPLICATION_NAME" =~ operator-v([0-9]+)-([0-9]+) ]]; then
-      MAJOR_VERSION="${BASH_REMATCH[1]}"
-      MINOR_VERSION="${BASH_REMATCH[2]}"
-      TAS_E2E_VERSION="release-${MAJOR_VERSION}.${MINOR_VERSION}"
-    else
-      TAS_E2E_VERSION="main"
-    fi
+        # Derive TAS E2E version from application name
+        if [[ "$APPLICATION_NAME" =~ operator-v([0-9]+)-([0-9]+) ]]; then
+          MAJOR_VERSION="${BASH_REMATCH[1]}"
+          MINOR_VERSION="${BASH_REMATCH[2]}"
+          TAS_E2E_VERSION="release-${MAJOR_VERSION}.${MINOR_VERSION}"
+        else
+          TAS_E2E_VERSION="main"
+        fi
 
         # Log declared environment variables
         echo "Snapshot metadata:"
