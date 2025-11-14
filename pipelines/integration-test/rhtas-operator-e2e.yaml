@@ -5,7 +5,7 @@ metadata:
 spec:
   params:
     - name: branch
-      value: "$(params.branch)"
+      value: $(params.branch)
   workspaces:
     - name: work
       volumeClaimTemplate:
