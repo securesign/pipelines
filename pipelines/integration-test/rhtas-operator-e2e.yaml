@@ -61,6 +61,26 @@ spec:
         workspaces:
           - name: output
             workspace: work
+      - name: log-operator-clone-info
+        runAfter:
+          - clone-operator-source-code
+        taskSpec:
+          workspaces:
+            - name: source-code
+          steps:
+            - name: show-clone-info
+              image: registry.redhat.io/ubi9/git-core
+              workingDir: $(workspaces.source-code.path)/operator
+              script: |
+                echo "=== OPERATOR SOURCE CLONE INFO ==="
+                echo "Repository: $(git config --get remote.origin.url)"
+                echo "Current HEAD: $(git rev-parse HEAD)"
+                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD')"
+                echo "Last commit: $(git log -1 --oneline)"
+                echo "==============================="
+        workspaces:
+          - name: source-code
+            workspace: work
       - name: clone-e2e-test-source-code
         runAfter:
           - parse-metadata
@@ -82,6 +102,32 @@ spec:
             value: "sigstore-e2e"
         workspaces:
           - name: output
+            workspace: work
+      - name: log-e2e-clone-info
+        runAfter:
+          - clone-e2e-test-source-code
+        taskSpec:
+          workspaces:
+            - name: source-code
+          steps:
+            - name: show-clone-info
+              image: registry.redhat.io/ubi9/git-core
+              workingDir: $(workspaces.source-code.path)/sigstore-e2e
+              script: |
+                echo "=== E2E TESTS CLONE INFO ==="
+                echo "Repository: $(git config --get remote.origin.url)"
+                echo "Current HEAD: $(git rev-parse HEAD)"
+                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD')"
+                echo "Last commit: $(git log -1 --oneline)"
+                echo "Branch requested: $(params.branch)"
+                echo "============================"
+          params:
+            - name: branch
+        params:
+          - name: branch
+            value: $(params.branch)
+        workspaces:
+          - name: source-code
             workspace: work
       - name: provision-eaas-space
         taskRef:
@@ -211,7 +257,7 @@ spec:
       - name: install-operator-from-bundle
         runAfter:
           - provision-cluster
-          - parse-metadata
+          - log-operator-clone-info
         taskRef:
           resolver: git
           params:
@@ -238,8 +284,7 @@ spec:
       - name: install-operator-from-image
         runAfter:
           - provision-cluster
-          - parse-metadata
-          - clone-operator-source-code
+          - log-operator-clone-info
         taskRef:
           resolver: git
           params:
@@ -305,7 +350,7 @@ spec:
           - install-operator-from-image
           - install-operator-from-bundle
           - install-operator-from-fbc
-          - clone-operator-source-code
+          - log-operator-clone-info
         workspaces:
           - name: source-code
             workspace: work
@@ -478,7 +523,7 @@ spec:
       - name: run-tas-e2e
         runAfter:
           - prepare-tests
-          - clone-e2e-test-source-code
+          - log-e2e-clone-info
         workspaces:
           - name: source-code
             workspace: work
