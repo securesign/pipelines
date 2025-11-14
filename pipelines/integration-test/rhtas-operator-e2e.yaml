@@ -62,6 +62,8 @@ spec:
           - name: output
             workspace: work
       - name: clone-e2e-test-source-code
+        runAfter:
+          - parse-metadata
         taskRef:
           params:
             - name: name
