@@ -4,8 +4,6 @@ metadata:
   generateName: operator-e2e-
 spec:
   params:
-    - name: SNAPSHOT
-      value: "$(params.SNAPSHOT)"
     - name: branch
       value: "$(params.branch)"
   workspaces:
