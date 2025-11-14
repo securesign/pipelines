@@ -395,7 +395,13 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
+        params:
+          - name: branch
+            value: $(params.branch)
         taskSpec:
+          params:
+            - name: branch
+              description: Branch name for git operations
           results:
             - name: TEST_OUTPUT
               description: "Full JSON summary of test results"
@@ -476,7 +482,13 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
+        params:
+          - name: branch
+            value: $(params.branch)
         taskSpec:
+          params:
+            - name: branch
+              description: Branch name for git operations
           results:
             - name: TEST_OUTPUT
               description: "Full JSON summary of test results"
