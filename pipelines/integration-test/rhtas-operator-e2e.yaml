@@ -473,8 +473,6 @@ spec:
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
-                - name: branch
-                  value: $(params.branch)
       - name: run-tas-e2e
         runAfter:
           - prepare-tests
@@ -627,8 +625,6 @@ spec:
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
-                - name: branch
-                  value: $(params.branch)
     finally:
       - name: secure-push-test-dump
         workspaces:
