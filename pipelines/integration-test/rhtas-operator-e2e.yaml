@@ -23,6 +23,7 @@ spec:
         default: "main"
     workspaces:
       - name: work
+        description: Shared workspace for pipeline tasks
     tasks:
       - name: parse-metadata
         taskRef:
@@ -31,14 +32,12 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
-          - name: branch
-            value: $(params.branch)
       - name: clone-operator-source-code
         runAfter:
           - parse-metadata
@@ -62,6 +61,8 @@ spec:
           - name: output
             workspace: work
       - name: clone-e2e-test-source-code
+        runAfter:
+          - parse-metadata
         taskRef:
           params:
             - name: name
@@ -75,7 +76,7 @@ spec:
           - name: url
             value: https://github.com/securesign/sigstore-e2e
           - name: revision
-            value: $(params.branch)
+            value: $(tasks.parse-metadata.results.tas-e2e-version)
           - name: subdirectory
             value: "sigstore-e2e"
         workspaces:
@@ -216,7 +217,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
@@ -244,7 +245,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-image.yaml
         params:
@@ -277,7 +278,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
@@ -360,7 +361,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -395,7 +396,13 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
+        params:
+          - name: branch
+            value: $(params.branch)
         taskSpec:
+          params:
+            - name: branch
+              description: Branch name for git operations
           results:
             - name: TEST_OUTPUT
               description: "Full JSON summary of test results"
@@ -461,14 +468,12 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
-                - name: branch
-                  value: $(params.branch)
       - name: run-tas-e2e
         runAfter:
           - prepare-tests
@@ -476,7 +481,13 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
+        params:
+          - name: branch
+            value: $(params.branch)
         taskSpec:
+          params:
+            - name: branch
+              description: Branch name for git operations
           results:
             - name: TEST_OUTPUT
               description: "Full JSON summary of test results"
@@ -609,14 +620,12 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
-                - name: branch
-                  value: $(params.branch)
     finally:
       - name: secure-push-test-dump
         workspaces:
