@@ -69,14 +69,16 @@ spec:
             - name: source-code
           steps:
             - name: show-clone-info
-              image: registry.redhat.io/ubi9/git-core
+              image: registry.redhat.io/openshift4/ose-cli
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 echo "=== OPERATOR SOURCE CLONE INFO ==="
-                echo "Repository: $(git config --get remote.origin.url)"
-                echo "Current HEAD: $(git rev-parse HEAD)"
-                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD')"
-                echo "Last commit: $(git log -1 --oneline)"
+                echo "Working directory: $(pwd)"
+                echo "Repository: $(git config --get remote.origin.url 2>/dev/null || echo 'git config failed')"
+                echo "Current HEAD: $(git rev-parse HEAD 2>/dev/null || echo 'git rev-parse failed')"
+                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD or git describe failed')"
+                echo "Last commit: $(git log -1 --oneline 2>/dev/null || echo 'git log failed')"
+                echo "Git status: $(git status --porcelain 2>/dev/null || echo 'git status failed')"
                 echo "==============================="
         workspaces:
           - name: source-code
@@ -111,15 +113,17 @@ spec:
             - name: source-code
           steps:
             - name: show-clone-info
-              image: registry.redhat.io/ubi9/git-core
+              image: registry.redhat.io/openshift4/ose-cli
               workingDir: $(workspaces.source-code.path)/sigstore-e2e
               script: |
                 echo "=== E2E TESTS CLONE INFO ==="
-                echo "Repository: $(git config --get remote.origin.url)"
-                echo "Current HEAD: $(git rev-parse HEAD)"
-                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD')"
-                echo "Last commit: $(git log -1 --oneline)"
+                echo "Working directory: $(pwd)"
                 echo "Branch requested: $(params.branch)"
+                echo "Repository: $(git config --get remote.origin.url 2>/dev/null || echo 'git config failed')"
+                echo "Current HEAD: $(git rev-parse HEAD 2>/dev/null || echo 'git rev-parse failed')"
+                echo "Current branch/tag: $(git describe --all --exact-match HEAD 2>/dev/null || echo 'detached HEAD or git describe failed')"
+                echo "Last commit: $(git log -1 --oneline 2>/dev/null || echo 'git log failed')"
+                echo "Git status: $(git status --porcelain 2>/dev/null || echo 'git status failed')"
                 echo "============================"
           params:
             - name: branch
