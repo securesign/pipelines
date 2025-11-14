@@ -32,7 +32,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: ppinkas/branch-parameter-propagation
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
