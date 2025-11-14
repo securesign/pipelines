@@ -3,9 +3,6 @@ kind: PipelineRun
 metadata:
   generateName: operator-e2e-
 spec:
-  params:
-    - name: branch
-      value: $(params.branch)
   workspaces:
     - name: work
       volumeClaimTemplate:
@@ -34,7 +31,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
@@ -219,7 +216,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
@@ -247,7 +244,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-image.yaml
         params:
@@ -280,7 +277,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
@@ -363,7 +360,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -470,7 +467,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
@@ -622,7 +619,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
