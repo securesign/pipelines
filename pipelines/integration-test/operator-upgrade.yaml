@@ -20,8 +20,6 @@ spec:
         default: "4.19"
       - name: TAS_DEPLOY_NAMESPACE
         default: "tas-e2e"
-      - name: branch
-        default: main
     workspaces:
       - name: work
     tasks:
@@ -32,14 +30,12 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: $(params.branch)
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
-          - name: branch
-            value: $(params.branch)
       - name: clone-operator-source-code
         runAfter:
           - parse-metadata
@@ -243,7 +239,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -253,8 +249,6 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
-                - name: branch
-                  value: $(params.branch)
       - name: run-operator-upgrade
         runAfter:
           - prepare-tests
@@ -332,11 +326,9 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: $(params.branch)
+                    value: main
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
-                - name: branch
-                  value: $(params.branch)
