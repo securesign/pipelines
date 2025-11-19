@@ -25,6 +25,12 @@ spec:
     - name: dockerfile
       secret:
         secretName: ansible-registry-redhat-io-pull-secret
+    - name: aah
+      secret:
+        secretName: ansible-automation-hub-creds
+        items:
+          - key: ansible.cfg
+            path: ansible.cfg
     - name: work
       emptyDir: {}
     - name: cache
@@ -64,6 +70,9 @@ spec:
           mountPath: /work
         - name: cache
           mountPath: /cache
+        - name: aah
+          mountPath: /etc/ansible/ansible.cfg
+          subPath: ansible.cfg
       env:
         - name: RUN_ID
           value: $(params.run-id)
