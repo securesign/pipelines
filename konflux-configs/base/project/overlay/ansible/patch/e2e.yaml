@@ -12,6 +12,9 @@
       contexts:
         - description: runs molecule and go-e2e test suite on ansible collection
           name: application
+      params:
+        - name: releaseBranch
+          value: "{{.branch}}"
       resolverRef:
         params:
           - name: url
