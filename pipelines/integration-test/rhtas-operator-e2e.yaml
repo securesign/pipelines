@@ -229,8 +229,6 @@ spec:
             value: "$(tasks.provision-cluster.results.clusterName)"
           - name: bundleImage
             value: "$(tasks.parse-metadata.results.image)"
-          - name: branch
-            value: $(params.branch)
         # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
         when:
           - input: "$(tasks.parse-metadata.results.component)"
@@ -259,8 +257,6 @@ spec:
             value: "$(tasks.parse-metadata.results.image)"
           - name: resourcesPath
             value: "$(workspaces.source-code.path)/operator/config/env/openshift"
-          - name: branch
-            value: $(params.branch)
         workspaces:
             - name: source-code
               workspace: work
@@ -290,8 +286,6 @@ spec:
             value: "$(tasks.provision-cluster.results.clusterName)"
           - name: fbcImage
             value: "$(tasks.parse-metadata.results.image)"
-          - name: branch
-            value: $(params.branch)
         # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
         when:
           - input: $(params.OLMv1)
