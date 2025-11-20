@@ -16,6 +16,8 @@ spec:
   pipelineSpec:
     params:
       - name: SNAPSHOT
+      - name: releaseBranch
+        default: "main"
       - name: molecule_scenarios
         default:
           - default
@@ -77,7 +79,7 @@ spec:
           - name: url
             value: https://github.com/securesign/sigstore-e2e
           - name: revision
-            value: main
+            value: $(params.releaseBranch)
           - name: subdirectory
             value: "sigstore-e2e"
         workspaces:
