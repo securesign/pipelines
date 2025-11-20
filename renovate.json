@@ -5,7 +5,9 @@
     ],
     "tekton": {
       "includePaths": [
-        "pipelines/**"
+        "pipelines/**",
+        "tasks/**",
+        "stepactions/**"
       ]
     }
   }
