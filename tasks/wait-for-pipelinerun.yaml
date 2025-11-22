@@ -15,7 +15,7 @@ spec:
       name: ARTIFACT_DIGEST
   steps:
     - name: wait-for-pipelinerun
-      image: quay.io/konflux-ci/konflux-test:latest@sha256:d596724343a31c201a5c2e79f233f9ef78ac65726ae4ed5ffa41d76b3dac630f
+      image: quay.io/konflux-ci/konflux-test:latest@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
       env:
       - name: SELECTOR
         value: $(params.selector)
