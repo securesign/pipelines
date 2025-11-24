@@ -199,6 +199,7 @@ spec:
         - "org.opencontainers.image.created=$SOURCE_DATE_EPOCH"
         - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
         - "url=https://catalog.redhat.com/en/software/container-stacks/detail/6604180e80e2fa3e4947d1d5#overview"
+        - "distribution-scope=public"
     - name: source-date-epoch
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     runAfter:
