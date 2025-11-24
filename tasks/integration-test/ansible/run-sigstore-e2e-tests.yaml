@@ -110,7 +110,7 @@ spec:
         cp "${temp_dir}/${DOMAIN}.pem" "/etc/pki/ca-trust/source/anchors/"
         update-ca-trust extract
         
-        export OIDC_TOKEN="$(curl -s -X POST http://${OIDC_HOST}:5556/dex/token \
+        export OIDC_TOKEN="$(curl -s -X POST https://${OIDC_HOST}:5556/dex/token -k \
         -H "Authorization: Basic ${OIDC_AUTH_TOKEN}" \
         -H 'Content-Type: application/x-www-form-urlencoded' \
         --data-urlencode 'grant_type=password' \
@@ -124,7 +124,7 @@ spec:
         export REKOR_UI_URL="https://${REKOR_SEARCH_HOST}"
         export TUF_URL="https://${TUF_HOST}"
         export TSA_URL="https://${TSA_HOST}/api/v1/timestamp"
-        export OIDC_ISSUER_URL="http://${OIDC_HOST}:5556/dex"
+        export OIDC_ISSUER_URL="https://${OIDC_HOST}:5556/dex"
         
         echo "Run tests"
         cd /work/sigstore-e2e
