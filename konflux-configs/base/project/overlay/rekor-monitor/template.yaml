@@ -19,10 +19,10 @@ spec:
     - name: application
       description: The application name
       defaultValue: "rekor-monitor"
-    - name: rekor-monitor-component
+    - name: rekorMonitorComponent
       description: The rekor-monitor component name
       defaultValue: "rekor-monitor"
-    - name: ctlog-monitor-component
+    - name: ctlogMonitorComponent
       description: The ctlog-monitor component name
       defaultValue: "ctlog-monitor"
     - name: mintmakerDisabled
@@ -45,10 +45,10 @@ spec:
           git-provider: github
           git-provider-url: https://github.com
           mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-        name: "{{.rekor-monitor-component}}{{.nameSuffix}}"
+        name: "{{.rekorMonitorComponent}}{{.nameSuffix}}"
       spec:
         application: "{{.application}}{{.nameSuffix}}"
-        componentName: "{{.rekor-monitor-component}}"
+        componentName: "{{.rekorMonitorComponent}}"
         source:
           git:
             url: https://github.com/securesign/rekor-monitor
@@ -62,10 +62,10 @@ spec:
           git-provider: github
           git-provider-url: https://github.com
           mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-        name: "{{.ctlog-monitor-component}}{{.nameSuffix}}"
+        name: "{{.ctlogMonitorComponent}}{{.nameSuffix}}"
       spec:
         application: "{{.application}}{{.nameSuffix}}"
-        componentName: "{{.ctlog-monitor-component}}"
+        componentName: "{{.ctlogMonitorComponent}}"
         source:
           git:
             url: https://github.com/securesign/rekor-monitor
@@ -74,9 +74,9 @@ spec:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: ImageRepository 
       metadata:
-        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.rekor-monitor-component}}"
+        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.rekorMonitorComponent}}"
         labels:
-          appstudio.redhat.com/component: "{{.rekor-monitor-component}}{{.nameSuffix}}"
+          appstudio.redhat.com/component: "{{.rekorMonitorComponent}}{{.nameSuffix}}"
       spec:
         image:
           name: rhtas-tenant/rekor-monitor
@@ -90,9 +90,9 @@ spec:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: ImageRepository 
       metadata:
-        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.ctlog-monitor-component}}"
+        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.ctlogMonitorComponent}}"
         labels:
-          appstudio.redhat.com/component: "{{.ctlog-monitor-component}}{{.nameSuffix}}"
+          appstudio.redhat.com/component: "{{.ctlogMonitorComponent}}{{.nameSuffix}}"
       spec:
         image:
           name: rhtas-tenant/ctlog-monitor
