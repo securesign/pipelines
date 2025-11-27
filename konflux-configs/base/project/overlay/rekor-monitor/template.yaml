@@ -19,9 +19,12 @@ spec:
     - name: application
       description: The application name
       defaultValue: "rekor-monitor"
-    - name: component
-      description: The component name
+    - name: rekor-monitor-component
+      description: The rekor-monitor component name
       defaultValue: "rekor-monitor"
+    - name: ctlog-monitor-component
+      description: The ctlog-monitor component name
+      defaultValue: "ctlog-monitor"
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
@@ -33,7 +36,7 @@ spec:
           application.thumbnail: "5"
         name: "{{.application}}{{.nameSuffix}}"
       spec:
-        displayName: "{{.component}} ({{.version}})"
+        displayName: "{{.application}} ({{.version}})"
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Component
       metadata:
@@ -42,24 +45,57 @@ spec:
           git-provider: github
           git-provider-url: https://github.com
           mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-        name: "{{.component}}{{.nameSuffix}}"
+        name: "{{.rekor-monitor-component}}{{.nameSuffix}}"
       spec:
         application: "{{.application}}{{.nameSuffix}}"
-        componentName: "{{.component}}"
+        componentName: "{{.rekor-monitor-component}}"
         source:
           git:
             url: https://github.com/securesign/rekor-monitor
             revision: "{{.branch}}"
-            dockerfileUrl: Dockerfile.rh
+            dockerfileUrl: Dockerfile.rekor-monitor.rh
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Component
+      metadata:
+        annotations:
+          build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+          git-provider: github
+          git-provider-url: https://github.com
+          mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+        name: "{{.ctlog-monitor-component}}{{.nameSuffix}}"
+      spec:
+        application: "{{.application}}{{.nameSuffix}}"
+        componentName: "{{.ctlog-monitor-component}}"
+        source:
+          git:
+            url: https://github.com/securesign/rekor-monitor
+            revision: "{{.branch}}"
+            dockerfileUrl: Dockerfile.ctlog-monitor.rh
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: ImageRepository 
       metadata:
-        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.component}}"
+        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.rekor-monitor-component}}"
         labels:
-          appstudio.redhat.com/component: "{{.component}}{{.nameSuffix}}"
+          appstudio.redhat.com/component: "{{.rekor-monitor-component}}{{.nameSuffix}}"
       spec:
         image:
           name: rhtas-tenant/rekor-monitor
+          visibility: public
+        notifications:
+          - config:
+              url: https://bombino.api.redhat.com/v1/sbom/quay/push
+            event: repo_push
+            method: webhook
+            title: SBOM-event-to-Bombino
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: ImageRepository 
+      metadata:
+        name: "imagerepository-for-{{.application}}{{.nameSuffix}}-{{.ctlog-monitor-component}}"
+        labels:
+          appstudio.redhat.com/component: "{{.ctlog-monitor-component}}{{.nameSuffix}}"
+      spec:
+        image:
+          name: rhtas-tenant/ctlog-monitor
           visibility: public
         notifications:
           - config:

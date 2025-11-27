@@ -5,4 +5,4 @@ metadata:
 spec:
   displayName: "Rekor Monitor"
   description: |
-    Rekor Monitor provides monitoring capabilities for Rekor transparency log.
+    Rekor Monitor provides monitoring capabilities for the Rekor and Certificate transparency logs.
