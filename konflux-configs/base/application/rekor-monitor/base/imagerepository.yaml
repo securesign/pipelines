@@ -1,0 +1,39 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: rekor-monitor
+  labels:
+    appstudio.redhat.com/component: rekor-monitor
+spec:
+  image:
+    name: rhtas-tenant/rekor-monitor
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  name: ctlog-monitor
+  labels:
+    appstudio.redhat.com/component: ctlog-monitor
+spec:
+  image:
+    name: rhtas-tenant/ctlog-monitor
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
