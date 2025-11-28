@@ -8,7 +8,7 @@ spec:
       description: The JSON string of the Snapshot under test
   steps:
     - name: test-snapshot-component
-      image: quay.io/konflux-ci/konflux-test:stable
+      image: quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
       workingDir: /workspace
       env:
         - name: SNAPSHOT
