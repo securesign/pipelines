@@ -1,7 +1,7 @@
 
 ARG ENVIRONMENT="prod"
 
-FROM quay.io/konflux-ci/konflux-test:latest AS builder
+FROM quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c AS builder
 
 ARG ENVIRONMENT
 

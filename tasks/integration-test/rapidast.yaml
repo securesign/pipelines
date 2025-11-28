@@ -87,7 +87,7 @@ spec:
         rapidast.py --config rapidast-config.yaml
         
     - name: resolve-results
-      image: quay.io/konflux-ci/konflux-test:latest
+      image: quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
       volumeMounts:
         - name: shared
           mountPath: /shared
