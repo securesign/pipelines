@@ -1,0 +1,582 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-certificate-transparency-go-certificate-transparency-go
+  labels:
+    appstudio.redhat.com/component: certificate-transparency-go
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'certificate-transparency-go/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'certificate-transparency-go/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/certificate-transparency-go/certificate-transparency-go
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-fulcio-fulcio-server
+  labels:
+    appstudio.redhat.com/component: fulcio-server
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'fulcio/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'fulcio/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/fulcio/fulcio-server
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'konflux/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'konflux/base/imagerepository.yaml'
+  name: konflux-configuration-as-code
+  labels:
+    appstudio.redhat.com/application: konflux
+    appstudio.redhat.com/component: configuration-as-code
+spec:
+  image:
+    name: rhtas-tenant/configuration-as-code
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: model-transparency
+  labels:
+    appstudio.redhat.com/component: model-transparency
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'model-transparency/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'model-transparency/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/model-transparency
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: model-validation-operator
+  labels:
+    appstudio.redhat.com/component: model-validation-operator
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'model-validation-operator/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'model-validation-operator/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/model-validation-operator
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: model-validation-operator-bundle
+  labels:
+    appstudio.redhat.com/component: model-validation-operator-bundle
+  annotations:
+    config.kubernetes.io/index: '1'
+    config.kubernetes.io/path: 'model-validation-operator/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '1'
+    internal.config.kubernetes.io/path: 'model-validation-operator/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/model-validation-operator-bundle
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+  name: konflux-docker-build
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build
+spec:
+  image:
+    name: rhtas-tenant/docker-build
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+    config.kubernetes.io/index: '1'
+    config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '1'
+    internal.config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+  name: konflux-docker-build-oci-ta
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-oci-ta
+spec:
+  image:
+    name: rhtas-tenant/docker-build-oci-ta
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+    config.kubernetes.io/index: '2'
+    config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '2'
+    internal.config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+  name: konflux-docker-build-multi-platform-oci-ta
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-multi-platform-oci-ta
+spec:
+  image:
+    name: rhtas-tenant/docker-build-multi-platform-oci-ta
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+    config.kubernetes.io/index: '3'
+    config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '3'
+    internal.config.kubernetes.io/path: 'pipelines/base/imagerepository.yaml'
+  name: konflux-fbc-builder
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: fbc-builder
+spec:
+  image:
+    name: rhtas-tenant/fbc-builder
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-policy-controller-policy-controller
+  labels:
+    appstudio.redhat.com/component: policy-controller
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'policy-controller/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'policy-controller/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/policy-controller
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: policy-controller-operator
+  labels:
+    appstudio.redhat.com/component: policy-controller-operator
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'policy-controller-operator/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'policy-controller-operator/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/policy-controller-operator
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: policy-controller-operator-bundle
+  labels:
+    appstudio.redhat.com/component: policy-controller-operator-bundle
+  annotations:
+    config.kubernetes.io/index: '1'
+    config.kubernetes.io/path: 'policy-controller-operator/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '1'
+    internal.config.kubernetes.io/path: 'policy-controller-operator/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/policy-controller-operator-bundle
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-rekor-backfill-redis
+  labels:
+    appstudio.redhat.com/component: backfill-redis
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'rekor/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'rekor/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/backfill-redis
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-rekor-rekor-server
+  labels:
+    appstudio.redhat.com/component: rekor-server
+  annotations:
+    config.kubernetes.io/index: '2'
+    config.kubernetes.io/path: 'rekor/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '2'
+    internal.config.kubernetes.io/path: 'rekor/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/rekor-server
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-rekor-search-rekor-search
+  labels:
+    appstudio.redhat.com/component: rekor-search
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'rekor-search/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'rekor-search/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/rekor-search
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: rhtas-console
+  labels:
+    appstudio.redhat.com/component: rhtas-console
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'rhtas-console/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'rhtas-console/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/rhtas-console
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: rhtas-console-ui
+  labels:
+    appstudio.redhat.com/component: rhtas-console-ui
+  annotations:
+    config.kubernetes.io/index: '1'
+    config.kubernetes.io/path: 'rhtas-console/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '1'
+    internal.config.kubernetes.io/path: 'rhtas-console/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/rhtas-console-ui
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-segment-backup-job-segment-backup-job
+  labels:
+    appstudio.redhat.com/component: segment-backup-job
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'segment-backup-job/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'segment-backup-job/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/segment-backup-job/segment-backup-job
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-timestamp-authority-timestamp-authority
+  labels:
+    appstudio.redhat.com/component: timestamp-authority
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'timestamp-authority/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'timestamp-authority/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/timestamp-authority/timestamp-authority
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-createtree
+  labels:
+    appstudio.redhat.com/component: createtree
+  annotations:
+    config.kubernetes.io/index: '0'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '0'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/createtree
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-database
+  labels:
+    appstudio.redhat.com/component: database
+  annotations:
+    config.kubernetes.io/index: '1'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '1'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/database
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-logserver
+  labels:
+    appstudio.redhat.com/component: logserver
+  annotations:
+    config.kubernetes.io/index: '2'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '2'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/logserver
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-logsigner
+  labels:
+    appstudio.redhat.com/component: logsigner
+  annotations:
+    config.kubernetes.io/index: '3'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '3'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/logsigner
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-redis
+  labels:
+    appstudio.redhat.com/component: redis
+  annotations:
+    config.kubernetes.io/index: '4'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '4'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/redis
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: imagerepository-for-trillian-updatetree
+  labels:
+    appstudio.redhat.com/component: updatetree
+  annotations:
+    config.kubernetes.io/index: '5'
+    config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+    internal.config.kubernetes.io/index: '5'
+    internal.config.kubernetes.io/path: 'trillian/base/imagerepository.yaml'
+spec:
+  image:
+    name: rhtas-tenant/trillian/updatetree
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
