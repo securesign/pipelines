@@ -51,6 +51,39 @@
         resolver: git
         resourceKind: pipelinerun
 
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "{{.application}}{{.nameSuffix}}-v4-17-e2e-fips"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-17 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-17"
+      params:
+        - name: OCP_VERSION
+          value: "4.17"
+        - name: FIPS_ENABLED
+          value: "true"
+        - name: KEYCLOAK_DISTRIBUTION
+          value: "rhbk"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipeline
+
 # IntegrationTestScenario Upgrade
 - op: add
   path: /spec/resources/-
