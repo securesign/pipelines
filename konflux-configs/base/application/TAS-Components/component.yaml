@@ -1,0 +1,491 @@
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'certificate-transparency-go/base/component.yaml'
+    internal.config.kubernetes.io/path: 'certificate-transparency-go/base/component.yaml'
+  name: certificate-transparency-go
+spec:
+  componentName: certificate-transparency-go
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/certificate-transparency-go
+      revision: main
+      dockerfileUrl: Dockerfile.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'fulcio/base/component.yaml'
+    internal.config.kubernetes.io/path: 'fulcio/base/component.yaml'
+  name: fulcio-server
+spec:
+  componentName: fulcio-server
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/fulcio
+      revision: main
+      dockerfileUrl: Dockerfile.fulcio-server.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'konflux/base/component.yaml'
+    internal.config.kubernetes.io/path: 'konflux/base/component.yaml'
+  name: configuration-as-code
+spec:
+  application: konflux
+  componentName: configuration-as-code
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: main
+      context: konflux-configs
+      dockerfileUrl: Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'model-transparency/base/component.yaml'
+    internal.config.kubernetes.io/path: 'model-transparency/base/component.yaml'
+  name: model-transparency
+spec:
+  componentName: model-transparency
+  source:
+    git:
+      url: https://github.com/securesign/model-transparency
+      revision: main
+      dockerfileUrl: Dockerfile.model-transparency.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'model-validation-operator/base/component.yaml'
+    internal.config.kubernetes.io/path: 'model-validation-operator/base/component.yaml'
+  name: model-validation-operator
+spec:
+  componentName: model-validation-operator
+  source:
+    git:
+      url: https://github.com/securesign/model-validation-operator
+      revision: main
+      dockerfileUrl: Dockerfile.model-validation.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'model-validation-operator/base/component.yaml'
+    internal.config.kubernetes.io/path: 'model-validation-operator/base/component.yaml'
+  name: model-validation-operator-bundle
+spec:
+  componentName: model-validation-operator-bundle
+  source:
+    git:
+      url: https://github.com/securesign/model-validation-operator
+      revision: main
+      dockerfileUrl: bundle.Dockerfile.model-validation.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/2","configuration-time":"Thu, 21 Nov 2024 16:50:06 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'pipelines/base/component.yaml'
+    internal.config.kubernetes.io/path: 'pipelines/base/component.yaml'
+  name: docker-build
+spec:
+  application: pipelines
+  componentName: docker-build
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      dockerfileUrl: pipeline-tests/Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/3","configuration-time":"Thu, 21 Nov 2024 16:52:24 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'pipelines/base/component.yaml'
+    internal.config.kubernetes.io/path: 'pipelines/base/component.yaml'
+  name: docker-build-oci-ta
+spec:
+  application: pipelines
+  componentName: docker-build-oci-ta
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      dockerfileUrl: pipeline-tests/Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-multi-platform-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/19","configuration-time":"Tue, 26 Nov 2024 12:46:01 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'pipelines/base/component.yaml'
+    internal.config.kubernetes.io/path: 'pipelines/base/component.yaml'
+  name: docker-build-multi-platform-oci-ta
+spec:
+  application: pipelines
+  componentName: docker-build-multi-platform-oci-ta
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      dockerfileUrl: pipeline-tests/Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/25","configuration-time":"Thu, 05 Dec 2024 09:27:59 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'pipelines/base/component.yaml'
+    internal.config.kubernetes.io/path: 'pipelines/base/component.yaml'
+  name: fbc-builder
+spec:
+  application: pipelines
+  componentName: fbc-builder
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: pipeline-tests/fbc
+      dockerfileUrl: pipeline-tests/fbc/catalog.Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'policy-controller/base/component.yaml'
+    internal.config.kubernetes.io/path: 'policy-controller/base/component.yaml'
+  name: policy-controller
+spec:
+  componentName: policy-controller
+  source:
+    git:
+      url: https://github.com/securesign/policy-controller
+      revision: main
+      dockerfileUrl: Dockerfile.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'policy-controller-operator/base/component.yaml'
+    internal.config.kubernetes.io/path: 'policy-controller-operator/base/component.yaml'
+  name: policy-controller-operator
+spec:
+  componentName: policy-controller-operator
+  source:
+    git:
+      url: https://github.com/securesign/policy-controller-operator
+      revision: main
+      dockerfileUrl: Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'policy-controller-operator/base/component.yaml'
+    internal.config.kubernetes.io/path: 'policy-controller-operator/base/component.yaml'
+  name: policy-controller-operator-bundle
+spec:
+  componentName: policy-controller-operator-bundle
+  source:
+    git:
+      url: https://github.com/securesign/policy-controller-operator
+      revision: main
+      dockerfileUrl: bundle.Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rekor/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rekor/base/component.yaml'
+  name: backfill-redis
+spec:
+  componentName: backfill-redis
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/rekor
+      revision: main
+      dockerfileUrl: Dockerfile.backfill-redis.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rekor/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rekor/base/component.yaml'
+  name: rekor-server
+spec:
+  componentName: rekor-server
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/rekor
+      revision: main
+      dockerfileUrl: Dockerfile.rekor-server.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rekor-search/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rekor-search/base/component.yaml'
+  name: rekor-search
+spec:
+  componentName: rekor-search
+  source:
+    git:
+      url: https://github.com/securesign/rekor-search-ui
+      revision: main
+      dockerfileUrl: Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rhtas-console/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rhtas-console/base/component.yaml'
+  name: rhtas-console
+spec:
+  componentName: rhtas-console
+  source:
+    git:
+      url: https://github.com/securesign/rhtas-console
+      revision: main
+      dockerfileUrl: Dockerfile.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rhtas-console/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rhtas-console/base/component.yaml'
+  name: rhtas-console-ui
+spec:
+  componentName: rhtas-console-ui
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/rhtas-console-ui/
+      revision: main
+      dockerfileUrl: Dockerfile
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'segment-backup-job/base/component.yaml'
+    internal.config.kubernetes.io/path: 'segment-backup-job/base/component.yaml'
+  name: segment-backup-job
+spec:
+  componentName: segment-backup-job
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/segment-backup-job
+      revision: main
+      dockerfileUrl: Dockerfile.segment-backup-job.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'timestamp-authority/base/component.yaml'
+    internal.config.kubernetes.io/path: 'timestamp-authority/base/component.yaml'
+  name: timestamp-authority
+spec:
+  componentName: timestamp-authority
+  source:
+    git:
+      url: https://github.com/securesign/timestamp-authority.git
+      revision: main
+      dockerfileUrl: Dockerfile.tsa.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: createtree
+spec:
+  componentName: createtree
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.createtree.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: database
+spec:
+  componentName: database
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.database.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: logserver
+spec:
+  componentName: logserver
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.logserver.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: logsigner
+spec:
+  componentName: logsigner
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.logsigner.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: redis
+spec:
+  componentName: redis
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.redis.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    config.kubernetes.io/path: 'trillian/base/component.yaml'
+    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+  name: updatetree
+spec:
+  componentName: updatetree
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/trillian
+      revision: main
+      dockerfileUrl: Dockerfile.updatetree.rh
