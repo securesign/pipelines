@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "redis{{.nameSuffix}}"
+      name: "fulcio-server{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "redis"
+      componentName: "fulcio-server"
       source:
         git:
-          url: https://github.com/securesign/trillian
-          revision: main
-          dockerfileUrl: Dockerfile.redis.rh
+          url: https://github.com/securesign/fulcio
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.fulcio-server.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-redis"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-fulcio-server"
       labels:
-        appstudio.redhat.com/component: "redis{{.nameSuffix}}"
+        appstudio.redhat.com/component: "fulcio-server{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/redis
+        name: rhtas-tenant/fulcio-server
         visibility: public
       notifications:
         - config:

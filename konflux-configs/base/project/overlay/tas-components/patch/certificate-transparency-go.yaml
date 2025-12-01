@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "segment-backup{{.nameSuffix}}"
+      name: "certificate-transparency-go{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "segment-backup"
+      componentName: "certificate-transparency-go"
       source:
         git:
-          url: https://github.com/securesign/segment-backup-job
-          revision: main
-          dockerfileUrl: Dockerfile.segment-backup-job.rh
+          url: https://github.com/securesign/certificate-transparency-go
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-segment-backup"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-certificate-transparency-go"
       labels:
-        appstudio.redhat.com/component: "segment-backup{{.nameSuffix}}"
+        appstudio.redhat.com/component: "certificate-transparency-go{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/segment-backup
+        name: rhtas-tenant/certificate-transparency-go
         visibility: public
       notifications:
         - config:

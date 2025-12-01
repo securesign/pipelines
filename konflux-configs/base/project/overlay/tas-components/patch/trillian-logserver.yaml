@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "rekor-search{{.nameSuffix}}"
+      name: "logserver{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "rekor-search"
+      componentName: "logserver"
       source:
         git:
-          url: https://github.com/securesign/rekor-search-ui
-          revision: main
-          dockerfileUrl: Dockerfile
+          url: https://github.com/securesign/trillian
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.logserver.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-rekor-search"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-logserver"
       labels:
-        appstudio.redhat.com/component: "rekor-search{{.nameSuffix}}"
+        appstudio.redhat.com/component: "logserver{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/rekor-search
+        name: rhtas-tenant/logserver
         visibility: public
       notifications:
         - config:

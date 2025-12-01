@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "logserver{{.nameSuffix}}"
+      name: "redis{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "logserver"
+      componentName: "redis"
       source:
         git:
           url: https://github.com/securesign/trillian
-          revision: main
-          dockerfileUrl: Dockerfile.logserver.rh
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.redis.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-logserver"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-redis"
       labels:
-        appstudio.redhat.com/component: "logserver{{.nameSuffix}}"
+        appstudio.redhat.com/component: "redis{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/logserver
+        name: rhtas-tenant/redis
         visibility: public
       notifications:
         - config:

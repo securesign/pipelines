@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "rekor-server{{.nameSuffix}}"
+      name: "createtree{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "rekor-server"
+      componentName: "createtree"
       source:
         git:
-          url: https://github.com/securesign/rekor
-          revision: main
-          dockerfileUrl: Dockerfile.rekor-server.rh
+          url: https://github.com/securesign/trillian
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.createtree.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-rekor-server"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-createtree"
       labels:
-        appstudio.redhat.com/component: "rekor-server{{.nameSuffix}}"
+        appstudio.redhat.com/component: "createtree{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/rekor-server
+        name: rhtas-tenant/createtree
         visibility: public
       notifications:
         - config:
