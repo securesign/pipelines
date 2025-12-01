@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - project.yaml
+  - template.yaml
+
+components:
+  - ../../base/ec
+  - ../../base/release-plan
+
+patches:
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-database.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/certificate-transparency-go.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/fulcio-server.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-search.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-server.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/timestamp-authority.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-createtree.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-logserver.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-logsigner.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-redis.yaml
