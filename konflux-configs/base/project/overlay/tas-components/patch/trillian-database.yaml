@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "createtree{{.nameSuffix}}"
+      name: "database{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "createtree"
+      componentName: "database"
       source:
         git:
           url: https://github.com/securesign/trillian
-          revision: main
-          dockerfileUrl: Dockerfile.createtree.rh
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.database.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-createtree"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-database"
       labels:
-        appstudio.redhat.com/component: "createtree{{.nameSuffix}}"
+        appstudio.redhat.com/component: "database{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/createtree
+        name: rhtas-tenant/database
         visibility: public
       notifications:
         - config:

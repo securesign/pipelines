@@ -16,7 +16,7 @@
       source:
         git:
           url: https://github.com/securesign/timestamp-authority.git
-          revision: main
+          revision: "{{.revision}}"
           dockerfileUrl: Dockerfile.tsa.rh
 - op: add
   path: /spec/resources/-

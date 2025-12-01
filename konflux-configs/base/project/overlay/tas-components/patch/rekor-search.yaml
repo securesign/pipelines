@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "fulcio-server{{.nameSuffix}}"
+      name: "rekor-search{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "fulcio-server"
+      componentName: "rekor-search"
       source:
         git:
-          url: https://github.com/securesign/fulcio
-          revision: main
-          dockerfileUrl: Dockerfile.fulcio-server.rh
+          url: https://github.com/securesign/rekor-search-ui
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-fulcio-server"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-rekor-search"
       labels:
-        appstudio.redhat.com/component: "fulcio-server{{.nameSuffix}}"
+        appstudio.redhat.com/component: "rekor-search{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/fulcio-server
+        name: rhtas-tenant/rekor-search
         visibility: public
       notifications:
         - config:

@@ -30,4 +30,4 @@ spec:
           application.thumbnail: "5"
         name: "{{.application}}{{.nameSuffix}}"
       spec:
-        displayName: "{{.operator}} ({{.version}})"
+        displayName: "{{.application}} ({{.version}})"

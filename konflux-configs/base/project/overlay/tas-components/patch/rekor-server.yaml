@@ -9,27 +9,27 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "rekor-monitor{{.nameSuffix}}"
+      name: "rekor-server{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "rekor-monitor"
+      componentName: "rekor-server"
       source:
         git:
-          url: https://github.com/securesign/trillian
-          revision: main
-          dockerfileUrl: Dockerfile.rekor-monitor.rh
+          url: https://github.com/securesign/rekor
+          revision: "{{.revision}}"
+          dockerfileUrl: Dockerfile.rekor-server.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-rekor-monitor"
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-rekor-server"
       labels:
-        appstudio.redhat.com/component: "rekor-monitor{{.nameSuffix}}"
+        appstudio.redhat.com/component: "rekor-server{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/rekor-monitor
+        name: rhtas-tenant/rekor-server
         visibility: public
       notifications:
         - config:
