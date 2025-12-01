@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - project.yaml
+  - template.yaml
+
+components:
+  - ../../base/ec
+  - ../../base/release-plan
+
+patches:
+  - target:
+      name: trillian-database-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-database.yaml
+  - target:
+      name: certificate-transparency-go-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/certificate-transparency-go.yaml
+  - target:
+      name: fulcio-server-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/fulcio-server.yaml
+  - target:
+      name: rekor-monitor-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-monitor.yaml
+  - target:
+      name: rekor-search-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-search.yaml
+  - target:
+      name: rekor-server-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-server.yaml
+  - target:
+      name: timestamp-authority-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/timestamp-authority.yaml
+  - target:
+      name: trillian-createtree-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-createtree.yaml
+  - target:
+      name: trillian-logserver-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-logserver.yaml
+  - target:
+      name: trillian-logsigner-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-logsigner.yaml
+  - target:
+      name: trillian-redis-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/trillian-redis.yaml

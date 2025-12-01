@@ -1,0 +1,39 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "segment-backup{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "segment-backup"
+      source:
+        git:
+          url: https://github.com/securesign/segment-backup-job
+          revision: main
+          dockerfileUrl: Dockerfile.segment-backup-job.rh
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository 
+    metadata:
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-segment-backup"
+      labels:
+        appstudio.redhat.com/component: "segment-backup{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/segment-backup
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino

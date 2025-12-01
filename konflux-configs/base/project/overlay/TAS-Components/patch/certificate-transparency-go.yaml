@@ -1,0 +1,39 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "certificate-transparency-go{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "certificate-transparency-go"
+      source:
+        git:
+          url: https://github.com/securesign/certificate-transparency-go
+          revision: main
+          dockerfileUrl: Dockerfile.rh
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository 
+    metadata:
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-certificate-transparency-go"
+      labels:
+        appstudio.redhat.com/component: "certificate-transparency-go{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/certificate-transparency-go
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
