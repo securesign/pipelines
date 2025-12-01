@@ -25,6 +25,25 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
+    config.kubernetes.io/path: 'rekor-monitor/base/component.yaml'
+    internal.config.kubernetes.io/path: 'rekor-monitor/base/component.yaml'
+  name: 
+spec:
+  componentName: fulcio-server
+  source:
+    git:
+      context: ./
+      url: https://github.com/securesign/fulcio
+      revision: main
+      dockerfileUrl: Dockerfile.fulcio-server.rh
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
     config.kubernetes.io/path: 'fulcio/base/component.yaml'
     internal.config.kubernetes.io/path: 'fulcio/base/component.yaml'
   name: fulcio-server
