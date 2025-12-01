@@ -1,6 +1,6 @@
 apiVersion: appstudio.redhat.com/v1alpha1
 kind: Application
 metadata:
-  name: TAS-Components
+  name: tas-components
 spec:
-  displayName: TAS-Components (main)
+  displayName: tas-components (main)
