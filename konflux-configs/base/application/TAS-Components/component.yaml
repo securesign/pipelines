@@ -225,21 +225,3 @@ spec:
       revision: main
       dockerfileUrl: Dockerfile.redis.rh
 ---
-apiVersion: appstudio.redhat.com/v1alpha1
-kind: Component
-metadata:
-  annotations:
-    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
-    git-provider: github
-    git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
-  name: updatetree
-spec:
-  componentName: updatetree
-  source:
-    git:
-      context: ./
-      url: https://github.com/securesign/trillian
-      revision: main
-      dockerfileUrl: Dockerfile.updatetree.rh
