@@ -16,7 +16,7 @@
       source:
         git:
           url: https://github.com/securesign/fulcio
-          revision: "{{.revision}}"
+          revision: "{{.branch}}"
           dockerfileUrl: Dockerfile.fulcio-server.rh
 - op: add
   path: /spec/resources/-

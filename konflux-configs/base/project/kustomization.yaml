@@ -5,4 +5,5 @@ resources:
   - overlay/ansible
   - overlay/rhtas-fbc
   - overlay/rhtas-operator
+  - overlay/tas-components
   - overlay/tough
