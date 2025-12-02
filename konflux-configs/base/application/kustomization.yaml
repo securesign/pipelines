@@ -12,4 +12,3 @@ resources:
   - policy-controller/base
   - policy-controller-operator/base
   - rhtas-console/base
-  - tas-components/base

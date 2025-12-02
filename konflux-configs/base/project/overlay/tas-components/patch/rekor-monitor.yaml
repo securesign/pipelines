@@ -15,8 +15,8 @@
       componentName: "rekor-monitor"
       source:
         git:
-          url: https://github.com/securesign/trillian
-          revision: "{{.revision}}"
+          url: https://github.com/securesign/rekor-monitor
+          revision: "{{.branch}}"
           dockerfileUrl: Dockerfile.rekor-monitor.rh
 - op: add
   path: /spec/resources/-

@@ -16,7 +16,7 @@
       source:
         git:
           url: https://github.com/securesign/segment-backup-job
-          revision: "{{.revision}}"
+          revision: "{{.branch}}"
           dockerfileUrl: Dockerfile.segment-backup-job.rh
 - op: add
   path: /spec/resources/-

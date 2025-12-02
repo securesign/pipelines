@@ -11,46 +11,50 @@ components:
 
 patches:
   - target:
-      name: trillian-database-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-database.yaml
   - target:
-      name: certificate-transparency-go-template
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/segment-backup.yaml
+  - target:
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/certificate-transparency-go.yaml
   - target:
-      name: fulcio-server-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/fulcio-server.yaml
   - target:
-      name: rekor-monitor-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/rekor-monitor.yaml
   - target:
-      name: rekor-search-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/rekor-search.yaml
   - target:
-      name: rekor-server-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/rekor-server.yaml
   - target:
-      name: timestamp-authority-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/timestamp-authority.yaml
   - target:
-      name: trillian-createtree-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-createtree.yaml
   - target:
-      name: trillian-logserver-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-logserver.yaml
   - target:
-      name: trillian-logsigner-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-logsigner.yaml
   - target:
-      name: trillian-redis-template
+      name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-redis.yaml
