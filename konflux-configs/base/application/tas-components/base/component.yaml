@@ -6,8 +6,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'certificate-transparency-go/base/component.yaml'
-    internal.config.kubernetes.io/path: 'certificate-transparency-go/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: certificate-transparency-go
 spec:
   componentName: certificate-transparency-go
@@ -25,17 +25,17 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'rekor-monitor/base/component.yaml'
-    internal.config.kubernetes.io/path: 'rekor-monitor/base/component.yaml'
-  name: 
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
+  name: rekor-monitor
 spec:
-  componentName: fulcio-server
+  componentName: rekor-monitor
   source:
     git:
       context: ./
-      url: https://github.com/securesign/fulcio
+      url: https://github.com/securesign/rekor-monitor
       revision: main
-      dockerfileUrl: Dockerfile.fulcio-server.rh
+      dockerfileUrl: Dockerfile.rekor-monitor.rh
 ---
 apiVersion: appstudio.redhat.com/v1alpha1
 kind: Component
@@ -44,8 +44,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'fulcio/base/component.yaml'
-    internal.config.kubernetes.io/path: 'fulcio/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: fulcio-server
 spec:
   componentName: fulcio-server
@@ -63,8 +63,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'rekor/base/component.yaml'
-    internal.config.kubernetes.io/path: 'rekor/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: backfill-redis
 spec:
   componentName: backfill-redis
@@ -82,8 +82,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'rekor/base/component.yaml'
-    internal.config.kubernetes.io/path: 'rekor/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: rekor-server
 spec:
   componentName: rekor-server
@@ -101,8 +101,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'rekor-search/base/component.yaml'
-    internal.config.kubernetes.io/path: 'rekor-search/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: rekor-search
 spec:
   componentName: rekor-search
@@ -119,8 +119,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'segment-backup-job/base/component.yaml'
-    internal.config.kubernetes.io/path: 'segment-backup-job/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: segment-backup-job
 spec:
   componentName: segment-backup-job
@@ -138,8 +138,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'timestamp-authority/base/component.yaml'
-    internal.config.kubernetes.io/path: 'timestamp-authority/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: timestamp-authority
 spec:
   componentName: timestamp-authority
@@ -156,8 +156,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: createtree
 spec:
   componentName: createtree
@@ -175,8 +175,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: database
 spec:
   componentName: database
@@ -194,8 +194,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: logserver
 spec:
   componentName: logserver
@@ -213,8 +213,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: logsigner
 spec:
   componentName: logsigner
@@ -232,8 +232,8 @@ metadata:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     git-provider: github
     git-provider-url: https://github.com
-    config.kubernetes.io/path: 'trillian/base/component.yaml'
-    internal.config.kubernetes.io/path: 'trillian/base/component.yaml'
+    config.kubernetes.io/path: 'tas-components/base/component.yaml'
+    internal.config.kubernetes.io/path: 'tas-components/base/component.yaml'
   name: redis
 spec:
   componentName: redis
