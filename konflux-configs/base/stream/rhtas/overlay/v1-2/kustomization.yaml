@@ -18,5 +18,4 @@ patches:
   - path: patch/mintmaker.yaml
     target:
       kind: ProjectDevelopmentStream
-  - path: patch/exclude-rekor-monitor.yaml
   - path: patch/exclude-tough.yaml
