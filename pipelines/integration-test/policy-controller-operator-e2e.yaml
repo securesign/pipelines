@@ -3,9 +3,6 @@ kind: PipelineRun
 metadata:
   generateName: policy-controller-operator-e2e-
 spec:
-  description: |
-    An integration test which provisions an ephemeral Hypershift cluster, deploys the policy controller operator
-    from a Konflux snapshot and run the e2e test suite.
   workspaces:
     - name: work
       volumeClaimTemplate:
