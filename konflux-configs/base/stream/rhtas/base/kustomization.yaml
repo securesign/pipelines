@@ -7,3 +7,4 @@ resources:
   - rekor-monitor-stream.yaml
   - rhtas-operator-stream.yaml
   - tough-stream.yaml
+  - tas-tools-stream.yaml
