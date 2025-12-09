@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tas-components
+spec:
+  displayName: "tas-components"
+  description: |
+    Dependencies of the TAS Operator
