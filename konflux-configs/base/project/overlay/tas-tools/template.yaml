@@ -1,0 +1,33 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  name: tas-tools-template
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+spec:
+  project: tas-tools
+  variables:
+    - name: version
+      description: A version number for a new development stream
+    - name: branch
+      description: Git branch
+      defaultValue: "main"
+    - name: nameSuffix
+      description: A suffix which will be added to K8s resource name
+      defaultValue: "-{{hyphenize .version}}"
+    - name: application
+      description: The application name
+      defaultValue: "tas-tools"
+    - name: mintmakerDisabled
+      description: Whether to disable mintmaker annotation on the Component
+      defaultValue: "false"
+  resources:
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Application
+      metadata:
+        annotations:
+          application.thumbnail: "5"
+        name: "{{.application}}{{.nameSuffix}}"
+      spec:
+        displayName: "{{.application}} ({{.version}})"

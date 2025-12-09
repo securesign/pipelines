@@ -1,0 +1,20 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "rekor-cli{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "fetch-tsa-certs"
+      source:
+        git:
+          url: https://github.com/securesign/timestamp-authority
+          revision: "{{.branch}}"
+          dockerfileUrl: Dockerfile.fetch_tsa_certs.rh
