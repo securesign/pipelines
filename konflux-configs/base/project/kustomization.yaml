@@ -6,4 +6,5 @@ resources:
   - overlay/rhtas-fbc
   - overlay/rhtas-operator
   - overlay/tas-components
+  - overlay/tas-tools
   - overlay/tough

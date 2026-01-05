@@ -9,7 +9,7 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "rekor-cli{{.nameSuffix}}"
+      name: "gitsign{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "gitsign"

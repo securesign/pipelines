@@ -6,6 +6,7 @@ nameSuffix: -v1-2
 resources:
   - rhtas-operator-stream.yaml
   - tas-components-stream.yaml
+  - tas-tools-stream
 
 configurations:
   - kustomizeconfig.yaml
