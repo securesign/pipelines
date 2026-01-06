@@ -3,3 +3,6 @@ kind: Kustomization
 
 resources:
   - rhtas/overlay
+  - ../template/v1-2
+  - ../template/v1-3
+  - ../template/main

@@ -3,23 +3,3 @@ kind: Kustomization
 
 resources:
   - project.yaml
-  - template.yaml
-
-components:
-  - ../../base/ec
-  - ../../base/monorepo
-  - ../../base/release-plan
-
-patches:
-  - target:
-      name: operator-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/manager.yaml
-  - target:
-      name: operator-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/bundle.yaml
-  - target:
-      name: operator-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/e2e.yaml
