@@ -1,0 +1,7 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-components
+spec:
+  template:
+    name: tas-components-v1-3-template

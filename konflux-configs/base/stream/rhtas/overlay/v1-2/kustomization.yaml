@@ -19,3 +19,7 @@ patches:
     target:
       kind: ProjectDevelopmentStream
   - path: patch/exclude-tough.yaml
+  - path: patch/ansible-template-ref.yaml
+  - path: patch/operator-template-ref.yaml
+  - path: patch/tas-components-template-ref.yaml
+  - path: patch/tas-tools-template-ref.yaml

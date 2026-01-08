@@ -1,0 +1,7 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-tools
+spec:
+  template:
+    name: tas-tools-v1-2-template

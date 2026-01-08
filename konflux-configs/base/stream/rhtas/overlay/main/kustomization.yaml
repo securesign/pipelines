@@ -9,3 +9,9 @@ components:
 configurations:
   - kustomizeconfig.yaml
 
+patches:
+  - path: patch/ansible-template-ref.yaml
+  - path: patch/operator-template-ref.yaml
+  - path: patch/tas-components-template-ref.yaml
+  - path: patch/tas-tools-template-ref.yaml
+

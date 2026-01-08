@@ -3,18 +3,3 @@ kind: Kustomization
 
 resources:
   - project.yaml
-  - template.yaml
-
-components:
-  - ../../base/release-plan
-  - ../../base/ec
-
-patches:
-  - target:
-      name: ansible-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/collection.yaml
-  - target:
-      name: ansible-template
-      kind: ProjectDevelopmentStreamTemplate
-    path: patch/e2e.yaml

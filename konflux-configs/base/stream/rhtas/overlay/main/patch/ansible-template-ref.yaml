@@ -1,0 +1,7 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: ansible
+spec:
+  template:
+    name: ansible-main-template
