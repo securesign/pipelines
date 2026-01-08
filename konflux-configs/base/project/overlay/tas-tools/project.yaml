@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tas-tools
+spec:
+  displayName: "tas-tools"
+  description: |
+    Tooling used with the the TAS Operator
