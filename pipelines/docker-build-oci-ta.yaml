@@ -559,7 +559,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'c96409257daa43e5bfb36eed71e2f5421e9e651f'
+        value: 'c84b32b14d839e41a8159ba5355cc360214562ac'
       - name: pathInRepo
         value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
