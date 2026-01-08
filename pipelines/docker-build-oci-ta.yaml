@@ -86,7 +86,7 @@ spec:
   - description: The Go base image used to run the unit tests
     name: go_base_image
     type: string
-    default: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+    default: registry.redhat.io/ubi9/go-toolset:9.7@sha256:838025097bf0f160ce0d764e80e4d5692df7096abec2c73e2fed26a1976c4f70
   - name: buildah-format
     default: docker
     type: string
@@ -559,7 +559,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'c96409257daa43e5bfb36eed71e2f5421e9e651f'
+        value: 'c84b32b14d839e41a8159ba5355cc360214562ac'
       - name: pathInRepo
         value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
