@@ -57,6 +57,11 @@ spec:
         - name: credentials
           mountPath: /credentials
       script: |
+        #!/bin/bash
+        set -ex
+
+        oc new-project "$(params.namespace)" || true
+        
         oc create -f - <<EOF
         apiVersion: operators.coreos.com/v1alpha1
         kind: CatalogSource

@@ -17,12 +17,8 @@ spec:
       - name: SNAPSHOT
       - name: OCP_VERSION
         default: "4.19"
-      - name: TAS_DEPLOY_NAMESPACE
-        default: tas-e2e
-      - name: branch
+      - name: releaseBranch
         default: "main"
-      - name: OLMv1
-        default: "false"
       - name: FIPS_ENABLED
         default: "false"
       - name: KEYCLOAK_DISTRIBUTION
@@ -59,9 +55,9 @@ spec:
           resolver: bundles
         params:
           - name: url
-            value: $(tasks.parse-metadata.results.operator-url)
+            value: $(tasks.parse-metadata.results.git-url)
           - name: revision
-            value: $(tasks.parse-metadata.results.operator-revision)
+            value: $(tasks.parse-metadata.results.git-revision)
           - name: subdirectory
             value: "operator"
         workspaces:
@@ -83,7 +79,7 @@ spec:
           - name: url
             value: https://github.com/securesign/sigstore-e2e
           - name: revision
-            value: $(tasks.parse-metadata.results.tas-e2e-version)
+            value: "$(params.releaseBranch)"
           - name: subdirectory
             value: "sigstore-e2e"
         workspaces:
@@ -235,122 +231,15 @@ spec:
           - name: clusterName
             value: "$(tasks.provision-cluster.results.clusterName)"
           - name: bundleImage
-            value: "$(tasks.parse-metadata.results.image)"
-        # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
-        when:
-          - input: "$(tasks.parse-metadata.results.component)"
-            operator: in
-            values: [ "rhtas-operator-bundle", "rhtas-operator-bundle-v1-1", "rhtas-operator-bundle-v1-2", "rhtas-operator-bundle-v1-3" ]
-      - name: install-operator-from-image
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-          - clone-operator-source-code
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-image.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: operatorImage
-            value: "$(tasks.parse-metadata.results.image)"
-          - name: resourcesPath
-            value: "$(workspaces.source-code.path)/operator/config/env/openshift"
-        workspaces:
-            - name: source-code
-              workspace: work
-        # use CEL regexp once it moves from alpha (see https://tekton.dev/docs/pipelines/pipelines/#use-cel-expression-in-whenexpression)
-        when:
-          - input: "$(tasks.parse-metadata.results.component)"
-            operator: in
-            values: [ "rhtas-operator", "rhtas-operator-v1-1", "rhtas-operator-v1-2", "rhtas-operator-v1-3" ]
-      - name: install-operator-from-fbc
-        timeout: "0h5m0s"
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-fbc.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: fbcImage
-            value: "$(tasks.parse-metadata.results.image)"
-        # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
-        when:
-          - input: $(params.OLMv1)
-            operator: notin
-            values: ["true"]
-          - input: "$(tasks.parse-metadata.results.component)"
-            operator: in
-            values: [
-              "fbc-v4-20", "fbc-v4-19", "fbc-v4-18", "fbc-v4-17", "fbc-v4-16", "fbc-v4-15",
-              "fbc-v4-19-v1-2", "fbc-v4-18-v1-2", "fbc-v4-17-v1-2", "fbc-v4-16-v1-2", "fbc-v4-15-v1-2",
-              "fbc-v4-18-v1-1", "fbc-v4-17-v1-1", "fbc-v4-16-v1-1", "fbc-v4-15-v1-1"]
-      - name: install-operator-from-fbc-olmv1
-        timeout: "0h5m0s"
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-fbc.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: fbcImage
-            value: "$(tasks.parse-metadata.results.image)"
-        # replace with cel regexp once enabled https://issues.redhat.com/browse/KFLUXSPRT-1833
-        when:
-          - input: "$(params.OLMv1)"
-            operator: in
-            values: ["true"]
-          - input: "$(tasks.parse-metadata.results.component)"
-            operator: in
-            values: ["fbc-v4-20"]
+            value: "$(tasks.parse-metadata.results.container-image)"
       - name: prepare-tests
         runAfter:
-          # run after either one
-          - install-operator-from-image
           - install-operator-from-bundle
-          - install-operator-from-fbc
-          - install-operator-from-fbc-olmv1
           - clone-operator-source-code
         workspaces:
           - name: source-code
             workspace: work
-        params:
-          - name: branch
-            value: $(params.branch)
         taskSpec:
-          params:
-            - name: branch
-              description: Branch name for git operations
           results:
             - name: oidc-hostname
               type: string
@@ -358,18 +247,6 @@ spec:
             - name: oidc-issuer-url
               type: string
               value: "$(steps.install-keycloak.results.oidc-issuer-url)"
-            - name: fulcio-url
-              type: string
-              value: "$(steps.install-tas.results.fulcio-url)"
-            - name: tsa-url
-              type: string
-              value: "$(steps.install-tas.results.tsa-url)"
-            - name: tuf-url
-              type: string
-              value: "$(steps.install-tas.results.tuf-url)"
-            - name: rekor-url
-              type: string
-              value: "$(steps.install-tas.results.rekor-url)"
           volumes:
             - name: credentials
               emptyDir: { }
@@ -434,90 +311,29 @@ spec:
         runAfter:
           - prepare-tests
           - download-binaries
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/operator-e2e.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: $(tasks.provision-cluster.results.clusterName)
+          - name: oidcHostname
+            value: $(tasks.prepare-tests.results.oidc-hostname)
+          - name: oidc-issuer-url
+            value: $(tasks.prepare-tests.results.oidc-issuer-url)
+          - name: fips-enabled
+            value: "$(params.FIPS_ENABLED)"
         workspaces:
           - name: source-code
             workspace: work
-        taskSpec:
-          results:
-            - name: TEST_OUTPUT
-              description: "Full JSON summary of test results"
-          volumes:
-            - name: credentials
-              emptyDir: { }
-          workspaces:
-              - name: source-code
-          steps:
-            - name: get-kubeconfig
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/konflux-ci/build-definitions.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-              params:
-                - name: eaasSpaceSecretRef
-                  value: $(tasks.provision-eaas-space.results.secretRef)
-                - name: clusterName
-                  value: "$(tasks.provision-cluster.results.clusterName)"
-                - name: credentials
-                  value: credentials
-            - name: execute-operator-e2e
-              onError: continue
-              image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
-              env:
-                - name: OIDC_HOST
-                  value: "$(tasks.prepare-tests.results.oidc-hostname)"
-                - name: OIDC_ISSUER_URL
-                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
-                - name: KUBECONFIG
-                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: CI
-                  value: "true"
-                - name: FIPS_ENABLED
-                  value: "$(params.FIPS_ENABLED)"
-              volumeMounts:
-                - name: credentials
-                  mountPath: /credentials
-              workingDir: $(workspaces.source-code.path)/operator
-              script: |
-                #!/bin/sh
-                set +e -o pipefail
-  
-                mkdir -p $(workspaces.source-code.path)/dump/operator-e2e/
-                
-                export PATH="$PATH:$(workspaces.source-code.path)/binaries"
-                openssl s_client -connect $OIDC_HOST:443 > /tmp/ssl.cert
-                export SSL_CERT_FILE=/tmp/ssl.cert
-                go mod vendor
-                make generate
-
-                TAGS="integration"
-                if [[ "$FIPS_ENABLED" == "true" ]]; then
-                  TAGS="fips,integration"
-                fi
-
-                go test -p 1 ./test/e2e/... -tags="$TAGS" -timeout 60m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
-
-                cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-e2e/ || echo "no test dump files found"
-
-              securityContext:
-                runAsUser: 0
-            - name: process-test-results
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/process-go-test-results.yaml
-              params:
-                - name: test_output_file
-                  value: $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
       - name: run-tas-e2e
         runAfter:
           - prepare-tests
@@ -525,147 +341,30 @@ spec:
         workspaces:
           - name: source-code
             workspace: work
-        taskSpec:
-          results:
-            - name: TEST_OUTPUT
-              description: "Full JSON summary of test results"
-          volumes:
-            - name: credentials
-              emptyDir: { }
-          workspaces:
-            - name: source-code
-          steps:
-            - name: get-kubeconfig
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/konflux-ci/build-definitions.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-              params:
-                - name: eaasSpaceSecretRef
-                  value: $(tasks.provision-eaas-space.results.secretRef)
-                - name: clusterName
-                  value: "$(tasks.provision-cluster.results.clusterName)"
-                - name: credentials
-                  value: credentials
-            - name: install-tas
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/install-tas.yaml
-              params:
-                - name: credentials
-                  value: credentials
-                - name: KUBECONFIG
-                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: workdir
-                  value: $(workspaces.source-code.path)/operator
-                - name: tas-namespace
-                  value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: OIDC_HOST
-                  value: "$(tasks.prepare-tests.results.oidc-hostname)"
-                - name: OIDC_ISSUER_URL
-                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
-            - name: push-test-image
-              image: quay.io/konflux-ci/buildah-task:latest@sha256:5c5eb4117983b324f932f144aa2c2df7ed508174928a423d8551c4e11f30fbd9
-              results:
-                - name: image
-                  type: string
-              securityContext:
-                capabilities:
-                  add:
-                    - SETFCAP
-              computeResources:
-                limits:
-                  memory: 8Gi
-                requests:
-                  memory: 2Gi
-                  cpu: '1'
-              script: |
-                #!/bin/sh
-                IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
-                printf "%s" "$IMAGE" > "$(step.results.image.path)"
-                buildah pull alpine:latest
-                buildah tag alpine:latest $IMAGE
-                buildah push $IMAGE
-            - name: prepare-tas-e2e
-              image: registry.redhat.io/openshift4/ose-cli
-              volumeMounts:
-                - name: credentials
-                  mountPath: /credentials
-              env:
-                - name: KUBECONFIG
-                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: TASNAMESPACE
-                  value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: OIDC_ISSUER_URL
-                  value: "$(tasks.prepare-tests.results.oidc-issuer-url)"
-              workingDir: $(workspaces.source-code.path)/sigstore-e2e
-              script: |
-                oc project $TASNAMESPACE
-                ./tas-env-variables.sh > .env
-            - name: execute-tas-e2e
-              image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
-              computeResources:
-                limits:
-                  memory: 4Gi
-                requests:
-                  memory: 512Mi
-              volumeMounts:
-                - name: credentials
-                  mountPath: /credentials
-              onError: continue
-              env:
-                - name: OIDC_HOST
-                  value: "$(tasks.prepare-tests.results.oidc-hostname)"
-                - name: KUBECONFIG
-                  value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: CLI_STRATEGY
-                  value: "openshift"
-                - name: TARGET_IMAGE_NAME
-                  value: "$(steps.push-test-image.results.image)"
-                - name: MANUAL_IMAGE_SETUP
-                  value: "true"
-              workingDir: $(workspaces.source-code.path)/sigstore-e2e
-              script: |
-                #!/bin/bash
-                set -x
-                echo "Add certificate to ca-bundle.crt"
-                openssl s_client -connect "$OIDC_HOST:443" -showcerts </dev/null > /tmp/ssl.cert
-                sed -ni '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /tmp/ssl.cert
-                cat /tmp/ssl.cert >> /etc/pki/tls/certs/ca-bundle.crt
-                
-                echo "Run tests"
-                mkdir -p $(workspaces.source-code.path)/dump/sigstore-e2e
-                set -o allexport && source ./.env && set +o allexport
-                go mod vendor
-                # exclude UI and benchmark tests 
-                go test -v $(go list ./test/... | grep -v rekorsearchui | grep -v benchmark) --ginkgo.v  -json \
-                > $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
-              securityContext:
-                runAsUser: 0
-            - name: process-test-results
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/process-go-test-results.yaml
-              params:
-                - name: test_output_file
-                  value: $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/sigstore-e2e.yaml
+        computeResources:
+          limits:
+            memory: 8Gi
+          requests:
+            memory: 2Gi
+            cpu: '1'
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: $(tasks.provision-cluster.results.clusterName)
+          - name: oidcHostname
+            value: $(tasks.prepare-tests.results.oidc-hostname)
+          - name: oidc-issuer-url
+            value: $(tasks.prepare-tests.results.oidc-issuer-url)
     finally:
       - name: secure-push-test-dump
         workspaces:

@@ -1,11 +1,10 @@
----
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: operator-dast-
+  generateName: operator-e2e-
 spec:
   workspaces:
-    - name: sources
+    - name: work
       volumeClaimTemplate:
         spec:
           accessModes:
@@ -18,10 +17,16 @@ spec:
       - name: SNAPSHOT
       - name: OCP_VERSION
         default: "4.19"
-      - name: TAS_DEPLOY_NAMESPACE
-        default: "tas-e2e"
+      - name: OLMv1
+        default: "false"
+      - name: FIPS_ENABLED
+        default: "false"
+      - name: KEYCLOAK_DISTRIBUTION
+        description: "Which Keycloak build to install rhsso or rhbk"
+        default: "rhsso"
     workspaces:
-      - name: sources
+      - name: work
+        description: Shared workspace for pipeline tasks
     tasks:
       - name: parse-metadata
         taskRef:
@@ -76,7 +81,29 @@ spec:
             value: "operator"
         workspaces:
           - name: output
-            workspace: sources
+            workspace: work
+      - name: clone-e2e-test-source-code
+        runAfter:
+          - release-info
+        taskRef:
+          params:
+            - name: name
+              value: git-clone
+            - name: bundle
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
+            - name: kind
+              value: task
+          resolver: bundles
+        params:
+          - name: url
+            value: https://github.com/securesign/sigstore-e2e
+          - name: revision
+            value: "$(tasks.release-info.results.release-branch)"
+          - name: subdirectory
+            value: "sigstore-e2e"
+        workspaces:
+          - name: output
+            workspace: work
       - name: provision-eaas-space
         taskRef:
           resolver: bundles
@@ -98,7 +125,6 @@ spec:
         taskSpec:
           results:
             - name: clusterName
-              type: string
               value: "$(steps.create-cluster.results.clusterName)"
           steps:
             - name: pick-version
@@ -133,6 +159,8 @@ spec:
                   value: m5.large
                 - name: timeout
                   value: 60m
+                - name: fips
+                  value: "$(params.FIPS_ENABLED)"
                 - name: imageContentSources
                   value: |
                     - source: registry.redhat.io/rhtas/rhtas-operator-bundle
@@ -204,7 +232,7 @@ spec:
                       mirrors:
                       - quay.io/securesign/tuffer
       - name: install-operator-from-fbc
-        timeout: "0h10m0s"
+        timeout: "0h5m0s"
         runAfter:
           - provision-cluster
           - release-info
@@ -226,30 +254,54 @@ spec:
             value: "$(tasks.parse-metadata.results.container-image)"
           - name: installChannel
             value: "$(tasks.release-info.results.channel)"
+        when:
+          - input: $(params.OLMv1)
+            operator: notin
+            values: ["true"]
+      - name: install-operator-from-fbc-olmv1
+        timeout: "0h5m0s"
+        runAfter:
+          - provision-cluster
+          - parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/install-operator-from-fbc-olm-v1.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: fbcImage
+            value: "$(tasks.parse-metadata.results.container-image)"
+          - name: installChannel
+            value: "$(tasks.release-info.results.channel)"
+        when:
+          - input: "$(params.OLMv1)"
+            operator: in
+            values: ["true"]
       - name: prepare-tests
         runAfter:
+          # run after either one
           - install-operator-from-fbc
+          - install-operator-from-fbc-olmv1
           - clone-operator-source-code
         workspaces:
           - name: source-code
-            workspace: sources
+            workspace: work
         taskSpec:
           results:
             - name: oidc-hostname
               type: string
               value: "$(steps.install-keycloak.results.oidc-hostname)"
-            - name: fulcio-url
+            - name: oidc-issuer-url
               type: string
-              value: "$(steps.install-tas.results.fulcio-url)"
-            - name: tsa-url
-              type: string
-              value: "$(steps.install-tas.results.tsa-url)"
-            - name: tuf-url
-              type: string
-              value: "$(steps.install-tas.results.tuf-url)"
-            - name: rekor-url
-              type: string
-              value: "$(steps.install-tas.results.rekor-url)"
+              value: "$(steps.install-keycloak.results.oidc-issuer-url)"
           volumes:
             - name: credentials
               emptyDir: { }
@@ -290,117 +342,113 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
-            - name: install-tas
+                - name: keycloak-distribution
+                  value: "$(params.KEYCLOAK_DISTRIBUTION)"
+      - name: download-binaries
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: work
+          steps:
+            - name: get-tuftool
+              image: registry.redhat.io/rhtas/tuftool-rhel9:1.3.0
+              script: |
+                mkdir -p $(workspaces.work.path)/binaries
+                cp /usr/bin/tuftool $(workspaces.work.path)/binaries/
+            - name: get-cosign
+              image: registry.redhat.io/rhtas/cosign-rhel9:1.3.0
+              script: |
+                mkdir -p $(workspaces.work.path)/binaries
+                cp /usr/local/bin/cosign $(workspaces.work.path)/binaries/
+      - name: run-operator-e2e
+        runAfter:
+          - prepare-tests
+          - download-binaries
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/operator-e2e.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: $(tasks.provision-cluster.results.clusterName)
+          - name: oidcHostname
+            value: $(tasks.prepare-tests.results.oidc-hostname)
+          - name: oidc-issuer-url
+            value: $(tasks.prepare-tests.results.oidc-issuer-url)
+          - name: fips-enabled
+            value: "$(params.FIPS_ENABLED)"
+        workspaces:
+          - name: source-code
+            workspace: work
+      - name: run-tas-e2e
+        runAfter:
+          - prepare-tests
+          - clone-e2e-test-source-code
+        workspaces:
+          - name: source-code
+            workspace: work
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/sigstore-e2e.yaml
+        computeResources:
+          limits:
+            memory: 8Gi
+          requests:
+            memory: 2Gi
+            cpu: '1'
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: $(tasks.provision-cluster.results.clusterName)
+          - name: oidcHostname
+            value: $(tasks.prepare-tests.results.oidc-hostname)
+          - name: oidc-issuer-url
+            value: $(tasks.prepare-tests.results.oidc-issuer-url)
+    finally:
+      - name: secure-push-test-dump
+        workspaces:
+         - name: dump
+           workspace: work
+        taskSpec:
+          workspaces:
+            - name: dump
+          volumes:
+            - name: push-creds
+              secret:
+                secretName: securesign-test-dump-oci
+          steps:
+            - name: oci-push
               ref:
                 resolver: git
                 params:
                   - name: url
-                    value: https://github.com/securesign/pipelines.git
+                    value: https://github.com/konflux-ci/tekton-integration-catalog.git
                   - name: revision
                     value: main
                   - name: pathInRepo
-                    value: stepactions/integration-test/install-tas.yaml
+                    value: stepactions/secure-push-oci/0.1/secure-push-oci.yaml
               params:
-                - name: credentials
-                  value: credentials
-                - name: KUBECONFIG
-                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: workdir
-                  value: $(workspaces.source-code.path)/operator
-                - name: tas-namespace
-                  value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: OIDC_ISSUER_URL
-                  value: "$(steps.install-keycloak.results.oidc-issuer-url)"
-# FULCIO DAST testing
-      - name: fulcio-dast
-        runAfter:
-         - prepare-tests
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/rapidast.yaml
-        params:
-          - name: app_name
-            value: Fulcio
-          - name: api_url
-            value: "https://raw.githubusercontent.com/sigstore/fulcio/main/fulcio.swagger.json"
-          - name: app_url
-            value: $(tasks.prepare-tests.results.fulcio-url)
-# REKOR DAST testing
-      - name: clone-rekor-source-code
-        runAfter:
-          - prepare-tests
-        taskRef:
-          params:
-            - name: name
-              value: git-clone
-            - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
-            - name: kind
-              value: task
-          resolver: bundles
-        params:
-          - name: url
-            value: "https://github.com/sigstore/rekor.git"
-          - name: revision
-            value: main
-          - name: subdirectory
-            value: "rekor"
-        workspaces:
-          - name: output
-            workspace: sources
-      - name: bundle-rekor-openapi-spec
-        runAfter:
-          - clone-rekor-source-code
-        workspaces:
-          - name: source-repo
-            workspace: sources
-        taskSpec:
-          params:
-            - name: input-file-path
-              type: string
-              default: openapi.yaml
-            - name: output-file-path
-              type: string
-              default: bundled/openapi.json
-          steps:
-            - name: bundle-spec
-              image: "redocly/cli:2.14.4"
-              workingDir: $(workspaces.source-repo.path)/rekor
-
-              script: |
-                #!/bin/sh
-                set -ex
-                
-                redocly bundle $(params.input-file-path) --output "$(params.output-file-path)"
-                echo "OpenAPI spec successfully bundled to ${OUTPUT_PATH}"
-          workspaces:
-            - name: source-repo
-              description: The workspace containing the OpenAPI files.
-      - name: rekor-dast
-        runAfter:
-          - bundle-rekor-openapi-spec
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/rapidast.yaml
-        params:
-          - name: app_name
-            value: Rekor
-          - name: api_file
-            value: "/data/rekor/bundled/openapi.json"
-          - name: app_url
-            value: $(tasks.prepare-tests.results.rekor-url)
-        workspaces:
-          - name: shared-data
-            workspace: sources
+                - name: oci-ref
+                  value: "quay.io/securesign/test-dump-oci:$(context.pipelineRun.name)"
+                - name: credentials-volume-name
+                  value: push-creds
+                - name: oci-tag-expiration
+                  value: 1d
+                - name: workdir-path
+                  value: $(workspaces.dump.path)/dump
