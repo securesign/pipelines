@@ -1,0 +1,97 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: derive-release-info
+spec:
+  description: | 
+    The task derive the release info (patch/new version) creating diff on the graph.yaml file.
+  workspaces:
+    - name: source-code
+  volumes:
+    - name: work
+      emptyDir: {}
+  results:
+    - name: channel
+      default: "stable"
+      description: "Updated OLM release channel"
+    - name: release-branch
+    - name: operator-branch
+      default: main
+  params:
+    - name: component
+    - name: ocp-version
+    - name: ocp-catalog-image
+      default: registry.redhat.io/redhat/redhat-operator-index
+    - name: release-branch
+    - name: operator-branch
+  steps:
+    - name: for-operator-components
+      image: quay.io/redhat-appstudio/konflux-test:stable
+      script: |
+        #!/bin/sh
+          echo $(params.release-branch) > $(results.release-branch.path)
+          echo $(params.operator-branch) > $(results.operator-branch.path)
+      when:
+        - input: "$(params.component)"
+          operator: in
+          values: [ "rhtas-operator-bundle" ]
+
+    # for fbc
+    - name: render-graph-from-index-image
+      image: quay.io/operator-framework/opm:latest
+      volumeMounts:
+        - name: work
+          mountPath: /work
+      script: |
+        package_name="rhtas-operator"
+        
+        opm render $(params.ocp-catalog-image):$(params.ocp-version) -o yaml | \
+        yq "select( .package == \"$package_name\" or .name == \"$package_name\")" | \
+        yq 'select(.schema == "olm.bundle") = {"schema": .schema, "image": .image}' | \
+        yq 'select(.schema == "olm.package") = {"schema": .schema, "name": .name, "defaultChannel": .defaultChannel}' | \
+        yq ea -P '[.] | { "schema": "olm.template.basic", "entries": . }' > /work/main.yaml
+      when:
+        - input: "$(params.component)"
+          operator: in
+          values: [ "fbc-4.20" ]
+    - name: test-metadata
+      image: quay.io/redhat-appstudio/konflux-test:stable
+      env:
+        - name: OCP-VERSION
+          value: $(params.ocp-version)
+      script: |
+        #!/bin/sh
+        
+        cp $(workspaces.source-code.path)/fbc/${OCP-VERSION}/rhtas-operator/graph.yaml ./current.yaml
+        
+        DIFF=$(sdiff -s <(cat main.yaml | yq -r '.entries[] | select(.schema == "olm.channel") | .name + ": " + ([.entries[].name] | sort | .[-1])' | sort ) \
+        <(cat current.yaml | yq -r '.entries[] | select(.schema == "olm.channel") | .name + ": " + ([.entries[].name] | sort | .[-1])' | sort ))
+        
+        echo $DIFF
+        
+        LINE_COUNT=$(echo "$DIFF_OUT" | wc -l)
+
+        if [ -z "$DIFF" ] || [ "$LINE_COUNT" -eq 0 ]; then
+          echo "No graph changes detected."
+          exit 0
+        elif [ "$LINE_COUNT" -ge 2 ]; then
+          echo "Error: More than 1 differences found."
+          exit 1
+        fi
+        
+        if echo "$DIFF" | grep -q "stable-"; then
+          echo "Patch release detected"
+        
+          # This removes the '|' and everything after it, then grabs the word before ':'
+          CHANNEL=$(echo "$RAW_DIFF" | sed 's/[[:space:]]*|.*//' | cut -d':' -f1 | xargs)
+          echo -n "${CHANNEL}" > $(results.channel.path)
+        
+          VERSION="${CHANNEL#stable-v}"
+          echo "release-$VERSION" > $(results.release-branch.path)
+        else
+          echo "New stable release detected"
+        fi
+      when:
+        - input: "$(params.component)"
+          operator: in
+          values: [ "fbc-4.20" ]

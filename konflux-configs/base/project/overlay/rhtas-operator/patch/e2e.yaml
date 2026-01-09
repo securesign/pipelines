@@ -13,7 +13,7 @@
         - description: runs the integration test for a group Snapshot
           name: group
       params:
-        - name: branch
+        - name: releaseBranch
           value: "{{.branch}}"
       resolverRef:
         params:

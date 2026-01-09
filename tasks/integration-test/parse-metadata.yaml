@@ -8,26 +8,17 @@ spec:
       description: "Stores information about the event type that indicates if a job is running for a Pull Request or Push event"
     - name: application-name
       description: "Stores information about the Konflux application that the Snapshot was created for."
-    - name: component
+    - name: component-name
       description: "Stores information about the Konflux component that was built."
-    - name: image
+    - name: container-image
       description: "Stores information about the component's container that was built in case of the component-type Snapshot."
     - name: git-url
       description: "Stores information about the component's source url."
     - name: git-revision
       description: "Stores information about the component's source revision."
-    - name: operator-url
-      description: "Stores information about the rhtas-operator source url."
-    - name: operator-revision
-      description: "Stores information about the rhtas-operator's source revision."
-    - name: tas-e2e-version
-      description: "Stores the E2E test branch version derived from application name."
   params:
     - name: SNAPSHOT
       description: The JSON string of the Snapshot under test
-    - name: TAS_E2E_VERSION
-      description: The E2E test branch version to use (derived automatically if not provided)
-      default: "main"
   steps:
     - name: test-metadata
       image: quay.io/redhat-appstudio/konflux-test:stable
@@ -70,25 +61,6 @@ spec:
           GIT_REVISION=$(jq -r --arg component_name "${COMPONENT_NAME}" '.components[] | select(.name | startswith($component_name)) | .source.git.revision' <<< "${SNAPSHOT}")
         fi
 
-  
-        if [[ "$COMPONENT_NAME" =~ ^rhtas-operator.* ]]; then
-          OPERATOR_URL=$GIT_URL
-          OPERATOR_REVISION=$GIT_REVISION
-        else
-          #use default values
-          OPERATOR_URL="https://github.com/securesign/secure-sign-operator.git"
-          OPERATOR_REVISION="main"
-        fi
-
-        # Derive TAS E2E version from application name
-        if [[ "$APPLICATION_NAME" =~ operator-v([0-9]+)-([0-9]+) ]]; then
-          MAJOR_VERSION="${BASH_REMATCH[1]}"
-          MINOR_VERSION="${BASH_REMATCH[2]}"
-          TAS_E2E_VERSION="release-${MAJOR_VERSION}.${MINOR_VERSION}"
-        else
-          TAS_E2E_VERSION="main"
-        fi
-
         # Log declared environment variables
         echo "Snapshot metadata:"
         echo "  SNAPSHOT: ${SNAPSHOT}"
@@ -98,17 +70,11 @@ spec:
         echo "  IMAGE: ${IMAGE}"
         echo "  GIT_URL: ${GIT_URL}"
         echo "  GIT_REVISION: ${GIT_REVISION}"
-        echo "  OPERATOR_URL: ${OPERATOR_URL}"
-        echo "  OPERATOR_REVISION: ${OPERATOR_REVISION}"
-        echo "  TAS_E2E_VERSION: ${TAS_E2E_VERSION}"
 
         # Write each environment variable to its respective results:
         echo -n "${EVENT_TYPE}" > $(results.test-event-type.path)
         echo -n "${APPLICATION_NAME}" > $(results.application-name.path)
-        echo -n "${COMPONENT_NAME}" > $(results.component.path)
-        echo -n "${IMAGE}" > $(results.image.path)
+        echo -n "${COMPONENT_NAME}" > $(results.component-name.path)
+        echo -n "${IMAGE}" > $(results.container-image.path)
         echo -n "${GIT_URL}" > $(results.git-url.path)
         echo -n "${GIT_REVISION}" > $(results.git-revision.path)
-        echo -n "${OPERATOR_URL}" > $(results.operator-url.path)
-        echo -n "${OPERATOR_REVISION}" > $(results.operator-revision.path)
-        echo -n "${TAS_E2E_VERSION}" > $(results.tas-e2e-version.path)
