@@ -435,7 +435,7 @@ spec:
                 - name: credentials
                   value: credentials
             - name: execute-operator-e2e
-              image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:6f0e6c534d6b785530f7961089f444bbb14d384bfa3ea09070f5a70029b4a5cb
+              image: registry.redhat.io/ubi9/go-toolset:9.7@sha256:38d909b4f0b5244bc6dffab499fa3324e2ce878dcc79e3ee85a200655cbba736
               env:
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
