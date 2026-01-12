@@ -10,9 +10,4 @@ resources:
   - model-validation-operator/base
   - policy-controller/base
   - policy-controller-operator/base
-  - rekor/base
-  - rekor-search/base
   - rhtas-console/base
-  - segment-backup-job/base
-  - timestamp-authority/base
-  - trillian/base
