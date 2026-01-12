@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - template.yaml
+
+components:
+  - ../../../project/base/ec
+  - ../../../project/base/release-plan
+
+patches:
+  - target:
+      name: tas-tools-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/cosign.yaml
+  - target:
+      name: tas-tools-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/fetch-tsa.yaml
+  - target:
+      name: tas-tools-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/gitsign.yaml
+  - target:
+      name: tas-tools-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/update-tree.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-cli.yaml

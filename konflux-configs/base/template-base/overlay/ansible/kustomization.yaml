@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - template.yaml
+
+components:
+  - ../../../project/base/release-plan
+  - ../../../project/base/ec
+
+patches:
+  - target:
+      name: ansible-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/collection.yaml
+  - target:
+      name: ansible-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/e2e.yaml

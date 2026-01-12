@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../template-base/overlay/tas-components
+  - ../../template-base/overlay/rhtas-operator
+  - ../../template-base/overlay/ansible
+  - ../../template-base/overlay/tas-tools
+
+patches:
+  # tas-components: rename template and add revision to ReleasePlan
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      name: tas-components-template
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: tas-components-v1-3-template
+      - op: add
+        path: /spec/resources/2/spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-v1.3"
+
+  # rhtas-operator: rename template and add revision to ReleasePlan
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      name: operator-template
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: operator-v1-3-template
+      - op: add
+        path: /spec/resources/4/spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-v1.3"
+
+  # ansible: rename template and add revision to ReleasePlan
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      name: ansible-template
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: ansible-v1-3-template
+      - op: add
+        path: /spec/resources/1/spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-v1.3"
+
+  # tas-tools: rename template and add revision to ReleasePlan
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      name: tas-tools-template
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: tas-tools-v1-3-template
+      - op: add
+        path: /spec/resources/2/spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-v1.3"
