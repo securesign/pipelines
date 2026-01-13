@@ -1,11 +1,11 @@
 apiVersion: projctl.konflux.dev/v1beta1
 kind: ProjectDevelopmentStream
 metadata:
-  name: rekor-monitor
+  name: tas-tools
 spec:
-  project: rekor-monitor
+  project: tas-tools
   template:
-    name: rekor-monitor-template
+    name: tas-tools-template
     values:
       - name: version
         value: "main"

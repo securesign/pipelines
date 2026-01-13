@@ -1,0 +1,39 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "gitsign{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "gitsign"
+      source:
+        git:
+          url: https://github.com/securesign/gitsign
+          revision: "{{.branch}}"
+          dockerfileUrl: Dockerfile.gitsign.rh
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository 
+    metadata:
+      name: "gitsign{{.nameSuffix}}"
+      labels:
+        appstudio.redhat.com/component: "gitsign{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/gitsign
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
