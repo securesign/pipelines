@@ -26,6 +26,7 @@
     metadata:
       name: "fetch-tsa-certs{{.nameSuffix}}"
       labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
         appstudio.redhat.com/component: "fetch-tsa-certs{{.nameSuffix}}"
     spec:
       image:
