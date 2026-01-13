@@ -25,6 +25,8 @@
     kind: ImageRepository 
     metadata:
       name: "fetch-tsa-certs{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
         appstudio.redhat.com/component: "fetch-tsa-certs{{.nameSuffix}}"

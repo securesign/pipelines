@@ -25,6 +25,8 @@
     kind: ImageRepository 
     metadata:
       name: "rekor-cli{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
         appstudio.redhat.com/component: "rekor-cli{{.nameSuffix}}"
