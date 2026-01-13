@@ -24,7 +24,7 @@
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository 
     metadata:
-      name: "fetch-tsa-certs{.nameSuffix}}"
+      name: "fetch-tsa-certs{{.nameSuffix}}"
       labels:
         appstudio.redhat.com/component: "fetch-tsa-certs{{.nameSuffix}}"
     spec:
