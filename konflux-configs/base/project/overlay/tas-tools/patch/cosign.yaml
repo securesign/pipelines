@@ -18,3 +18,22 @@
           url: https://github.com/securesign/cosign
           revision: "{{.branch}}"
           dockerfileUrl: Dockerfile.cosign.rh
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository 
+    metadata:
+      name: "cosign{{.nameSuffix}}"
+      labels:
+        appstudio.redhat.com/component: "cosign{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/cosign
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
