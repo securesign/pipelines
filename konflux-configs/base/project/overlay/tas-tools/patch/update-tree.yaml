@@ -26,7 +26,8 @@
     metadata:
       name: "update-tree{{.nameSuffix}}"
       labels:
-        appstudio.redhat.com/component: "update-tree{{.nameSuffix}}"
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "updatetree{{.nameSuffix}}"
     spec:
       image:
         name: rhtas-tenant/update-tree
