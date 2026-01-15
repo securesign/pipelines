@@ -15,3 +15,12 @@ patches:
       allowNameChange: false
     target:
       kind: ProjectDevelopmentStream
+  - patch: |
+      - op: add
+        path: /spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-v1.3"
+    target:
+      kind: ReleasePlan
+      labelSelector: "build.rhtas.com/release-plan=promote-to-candidate"

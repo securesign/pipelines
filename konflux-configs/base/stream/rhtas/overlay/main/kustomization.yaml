@@ -9,3 +9,13 @@ components:
 configurations:
   - kustomizeconfig.yaml
 
+patches:
+  - patch: |
+      - op: add
+        path: /spec/tenantPipeline/params/-
+        value:
+          name: revision
+          value: "RHTAS-build-bot_candidate-images-main"
+    target:
+      kind: ReleasePlan
+      labelSelector: "build.rhtas.com/release-plan=promote-to-candidate"

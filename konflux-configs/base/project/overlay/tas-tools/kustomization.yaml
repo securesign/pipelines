@@ -7,7 +7,6 @@ resources:
 
 components:
   - ../../base/ec
-  - ../../base/release-plan
 
 patches:
   - target:

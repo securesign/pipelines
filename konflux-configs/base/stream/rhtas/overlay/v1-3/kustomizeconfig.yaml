@@ -19,3 +19,9 @@ nameReference:
     kind: ProjectDevelopmentStream
     group: projctl.konflux.dev
     version: v1beta1
+
+nameSuffix:
+  - path: spec/application
+    kind: ReleasePlan
+    group: appstudio.redhat.com
+    version: v1alpha1
