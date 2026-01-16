@@ -1,0 +1,5 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: segment-backup-job
+$patch: delete
