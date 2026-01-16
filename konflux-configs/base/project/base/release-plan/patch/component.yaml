@@ -14,6 +14,8 @@
         params:
         - name: git-url
           value: https://github.com/securesign/releases
+        - name: revision
+          value: "RHTAS-build-bot_candidate-images-{{.version}}"
         - name: code-freeze
           value: "false"
         - name: type
