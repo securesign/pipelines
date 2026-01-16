@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - project.yaml
+  - template.yaml
+
+components:
+  - ../../base/ec
+  - ../../base/release-plan
+
+patches:
+  - target:
+      name: rekor-monitor-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-monitor.yaml

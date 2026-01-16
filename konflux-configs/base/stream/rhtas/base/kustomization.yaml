@@ -4,7 +4,9 @@ kind: Component
 
 resources:
   - ansible-stream.yaml
+  - rekor-monitor-stream.yaml
   - rhtas-operator-stream.yaml
-  - tough-stream.yaml
+  - segment-backup-job-stream.yaml
   - tas-tools-stream.yaml
   - tas-components-stream.yaml
+  - tough-stream.yaml
