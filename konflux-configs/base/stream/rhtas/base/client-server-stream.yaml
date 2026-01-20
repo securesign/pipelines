@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: client-server
+spec:
+  project: client-server
+  template:
+    name: client-server-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

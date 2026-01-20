@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: create-tree
+spec:
+  project: create-tree
+  template:
+    name: create-tree-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: create-tree
+spec:
+  displayName: "create-tree"
+  description: |
+    Create tree tooling for rhtas.

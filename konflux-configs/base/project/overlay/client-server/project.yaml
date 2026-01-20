@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: client-server
+spec:
+  displayName: "client-server"
+  description: |
+    Client Server used to serve CLI tooling for RHTAS.
