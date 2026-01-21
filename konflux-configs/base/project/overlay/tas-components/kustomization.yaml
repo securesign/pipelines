@@ -41,10 +41,6 @@ patches:
   - target:
       name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
-    path: patch/trillian-createtree.yaml
-  - target:
-      name: tas-components-template
-      kind: ProjectDevelopmentStreamTemplate
     path: patch/trillian-logserver.yaml
   - target:
       name: tas-components-template
