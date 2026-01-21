@@ -17,6 +17,10 @@ patches:
   - target:
       name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
+    path: patch/backfill-redis.yaml
+  - target:
+      name: tas-components-template
+      kind: ProjectDevelopmentStreamTemplate
     path: patch/certificate-transparency-go.yaml
   - target:
       name: tas-components-template
