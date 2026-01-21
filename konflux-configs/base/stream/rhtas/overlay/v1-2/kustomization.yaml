@@ -19,3 +19,4 @@ patches:
     target:
       kind: ProjectDevelopmentStream
   - path: patch/exclude-tough.yaml
+  - path: patch/exclude-rekor-monitor.yaml

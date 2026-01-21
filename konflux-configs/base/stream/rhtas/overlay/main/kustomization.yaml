@@ -9,3 +9,5 @@ components:
 configurations:
   - kustomizeconfig.yaml
 
+patches:
+  - path: patch/exclude-segment-backup-job.yaml

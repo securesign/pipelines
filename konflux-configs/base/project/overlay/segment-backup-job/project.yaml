@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: segment-backup-job
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Segment Backup Job"
+  description: |
+    Segment backup job for TAS (deprecated in 1.4+)
