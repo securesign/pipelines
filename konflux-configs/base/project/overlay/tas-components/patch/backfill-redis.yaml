@@ -12,7 +12,7 @@
       name: "backfill-redis{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "certificate-transparency-go"
+      componentName: "backfill-redis"
       source:
         git:
           url: https://github.com/securesign/rekor
