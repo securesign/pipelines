@@ -49,4 +49,4 @@ patches:
   - target:
       name: tas-components-template
       kind: ProjectDevelopmentStreamTemplate
-    path: patch/trillian-redis.yaml
+    path: patch/redis.yaml
