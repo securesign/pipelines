@@ -3,7 +3,10 @@ kind: Kustomization
 
 resources:
   - overlay/ansible
+  - overlay/rekor-monitor
   - overlay/rhtas-fbc
   - overlay/rhtas-operator
+  - overlay/segment-backup-job
   - overlay/tas-tools
+  - overlay/tas-components
   - overlay/tough

@@ -30,4 +30,3 @@ patches:
       name: tas-tools-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/rekor-cli.yaml
-  
