@@ -20,7 +20,7 @@
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: "{{.branch}}"
+            value: main
           - name: pathInRepo
             value: pipelines/integration-test/rhtas-operator-e2e.yaml
         resolver: git
