@@ -1,0 +1,105 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: run-operator-e2e
+spec:
+  description: "Runs E2E integration tests for the operator and processes results."
+  params:
+    - name: eaasSpaceSecretRef
+      type: string
+      description: "Secret reference for EaaS space"
+    - name: clusterName
+      type: string
+      description: "Name of the ephemeral cluster"
+    - name: oidcHostname
+      type: string
+      description: "The hostname for the OIDC provider"
+    - name: oidc-issuer-url
+      type: string
+      description: "Trusted artifact signer issuer url"
+    - name: fips-enabled
+  workspaces:
+    - name: source-code
+      description: "The workspace containing the operator source code"
+  results:
+    - name: TEST_OUTPUT
+      description: "Full JSON summary of test results"
+  volumes:
+    - name: credentials
+      emptyDir: {}
+  steps:
+    - name: get-kubeconfig
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(params.eaasSpaceSecretRef)
+        - name: clusterName
+          value: "$(params.clusterName)"
+        - name: credentials
+          value: credentials
+    - name: execute-operator-e2e
+      onError: continue
+      image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
+      env:
+        - name: OIDC_HOST
+          value: "$(params.oidcHostname)"
+        - name: OIDC_ISSUER_URL
+          value: "$(params.oidc-issuer-url)"
+        - name: KUBECONFIG
+          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+        - name: CI
+          value: "true"
+        - name: FIPS_ENABLED
+          value: "$(params.fips-enabled)"
+      volumeMounts:
+        - name: credentials
+          mountPath: /credentials
+      workingDir: $(workspaces.source-code.path)/operator
+      script: |
+        #!/bin/sh
+        set +e -o pipefail
+
+        mkdir -p $(workspaces.source-code.path)/dump/operator-e2e/
+        
+        export PATH="$PATH:$(workspaces.source-code.path)/binaries"
+        export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
+        
+        # Ensure SSL trust for the OIDC host
+        openssl s_client -connect $OIDC_HOST:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/ssl.cert
+        export SSL_CERT_FILE=/tmp/ssl.cert
+        
+        go mod vendor
+        make generate
+        
+        TAGS="integration"
+        if [[ "$FIPS_ENABLED" == "true" ]]; then
+          TAGS="fips,integration"
+        fi
+
+
+        go test -p 1 ./test/e2e/... -tags="$TAGS" -timeout 30m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
+
+        cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-e2e/ || echo "no test dump files found"
+      securityContext:
+        runAsUser: 0
+    - name: process-test-results
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/integration-test/process-go-test-results.yaml
+      params:
+        - name: test_output_file
+          value: $(workspaces.source-code.path)/dump/operator-e2e/test-result.json

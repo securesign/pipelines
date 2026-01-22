@@ -293,8 +293,6 @@ spec:
                   value: $(workspaces.source-code.path)/tas-operator
                 - name: tas-namespace
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: OIDC_HOST
-                  value: "$(steps.install-keycloak.results.oidc-hostname)"
                 - name: OIDC_ISSUER_URL
                   value: "$(steps.install-keycloak.results.oidc-issuer-url)"
       - name: install-operator-from-bundle

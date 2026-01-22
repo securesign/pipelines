@@ -53,6 +53,9 @@ spec:
         - name: credentials
           mountPath: /credentials
       script: |
+        #!/bin/bash
+        set -ex
+        
         if ! oc get namespace "$(params.namespace)" > /dev/null 2>&1; then
           oc new-project "$(params.namespace)"
           echo "Project $(params.namespace) created."

@@ -20,9 +20,6 @@ spec:
     - name: tas-namespace
       description: Namespace in which the TAS is created.
       type: string
-    - name: OIDC_HOST
-      description: OIDC hostname (keycloak)
-      type: string
     - name: OIDC_ISSUER_URL
       description: Trusted artifact signer issuer url
       type: string
@@ -42,15 +39,13 @@ spec:
       value: "$(params.workdir)"
     - name: TASNAMESPACE
       value: "$(params.tas-namespace)"
-    - name: OIDC_HOST
-      value: "$(params.OIDC_HOST)"
     - name: OIDC_ISSUER_URL
       value: "$(params.OIDC_ISSUER_URL)"
   script: |
     cd $WORKDIR
     sed -i "s#https://your-oidc-issuer-url#$OIDC_ISSUER_URL#" config/samples/rhtas_v1alpha1_securesign.yaml
     sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1alpha1_securesign.yaml
-    oc create ns $TASNAMESPACE
+    oc create ns $TASNAMESPACE || true
     oc create -f config/samples/rhtas_v1alpha1_securesign.yaml -n $TASNAMESPACE
     sleep 1
     oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n $TASNAMESPACE

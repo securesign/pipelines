@@ -1,0 +1,95 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: derive-release-info
+spec:
+  description: | 
+    The task derive the release info (patch/new version) creating diff on the graph.yaml file.
+  results:
+    - name: channel
+    - name: release-branch
+  params:
+    - name: package-name
+    - name: fbc-image
+    - name: ocp-version
+    - name: ocp-catalog-image
+      default: registry.redhat.io/redhat/redhat-operator-index
+  steps:
+    - name: test-metadata
+      image: quay.io/redhat-appstudio/konflux-test:v1.4.31
+      env:
+        - name: PKG_NAME
+          value: $(params.package-name)
+      script: |
+        #!/bin/bash
+        set -eo pipefail
+        
+        opm render $(params.ocp-catalog-image):v$(params.ocp-version) -o yaml > raw-catalog.yaml
+        yq -r --arg pkg "$PKG_NAME" '. | select(.package == $pkg and .schema == "olm.channel") | .name + ": " + ([.entries[].name] | sort | .[-1])' raw-catalog.yaml | sort > released.yaml
+        
+        opm render $(params.fbc-image) -o yaml > raw-catalog.yaml
+        yq -r --arg pkg "$PKG_NAME" '. | select(.package == $pkg and .schema == "olm.channel") | .name + ": " + ([.entries[].name] | sort | .[-1])' raw-catalog.yaml | sort > candidate.yaml
+        
+        echo -e "Candidate graph:"
+        cat candidate.yaml
+
+        echo -e "\nReleased graph:"
+        cat released.yaml
+        
+        #sdiff return 1 if files differs
+        DIFF=$(sdiff -s released.yaml candidate.yaml || true)
+        DIFF=$(echo "$DIFF" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        
+        echo -e "\nGraph diff:\n$DIFF\n\n"
+        
+        if [ -z "$DIFF" ]; then
+          echo "No graph changes detected."
+          exit 0
+        fi
+        
+        CHANNEL="stable"
+        BRANCH="main"
+        
+        # Categorize using sdiff symbols
+        UPDATES=$(echo "$DIFF" | grep "|" || true)
+        ADDITIONS=$(echo "$DIFF" | grep ">" || true)
+        REMOVALS=$(echo "$DIFF" | grep "<" || true)
+        
+        # 2. Define logic via Priority
+        if echo "$UPDATES" | grep -q "^stable:"; then
+          echo "Identified: Stable channel upgrade."
+
+          [[ -n "$ADDITIONS" ]] && echo -e "\tNOTE: New channels detected: $(echo "$ADDITIONS" | xargs)"
+          [[ -n "$REMOVALS" ]]  && echo -e "\tNOTE: Channels removed: $(echo "$REMOVALS" | xargs)"
+      
+        elif echo "$UPDATES" | grep -q "^stable-v"; then
+          echo "Identified: Patch release detected."
+      
+          # Strict check: patches shouldn't usually come with additions/removals
+          if [[ -n "$ADDITIONS" || -n "$REMOVALS" ]]; then
+            echo "Error: Unexpected additions or removals during a PATCH release."
+            exit 1
+          fi
+            
+          # Extract channel from the left side
+          CHANNEL=$(echo "$UPDATES" | cut -d':' -f1 | xargs)
+          BRANCH="release-${CHANNEL#stable-v}"
+            
+        elif [[ $(echo "$ADDITIONS" | wc -l) -eq 1 ]] && [[ -z "$UPDATES" ]]; then
+          echo "Identified: Single new channel addition. Do not forget to update the `stable` channel"
+          exit 1
+        else
+          echo "Error: Ambiguous changes detected (Multiple updates or unexpected removals)."
+          exit 1
+        fi
+      
+        echo "Final Selection: Channel=$CHANNEL, Branch=$BRANCH"
+          echo -n "$CHANNEL" > "$(results.channel.path)"
+          echo -n "$BRANCH"  > "$(results.release-branch.path)"
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "500m"
+        limits:
+          memory: "2Gi" # OPM load the whole index into memory; Red Hat Index is huge; it needs a space
