@@ -28,7 +28,7 @@
       annotations:
         image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
-        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}" 
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
         appstudio.redhat.com/component: "logsigner{{.nameSuffix}}"
     spec:
       image:
