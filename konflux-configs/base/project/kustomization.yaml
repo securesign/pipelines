@@ -9,4 +9,6 @@ resources:
   - overlay/segment-backup-job
   - overlay/tas-tools
   - overlay/tas-components
+  - overlay/create-tree
+  - overlay/client-server
   - overlay/tough

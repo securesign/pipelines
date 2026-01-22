@@ -10,3 +10,5 @@ resources:
   - tas-tools-stream.yaml
   - tas-components-stream.yaml
   - tough-stream.yaml
+  - create-tree-stream.yaml
+  - client-server-stream.yaml
