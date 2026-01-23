@@ -38,8 +38,13 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: runs the integration test for a group Snapshot
-          name: group
+        - description: "runs the integration test for a group Snapshot or disable where not supported"
+          name: >-
+            {{- if or (eq .version "v1.3") (eq .version "v1.2")  -}}
+            disabled
+            {{- else -}}
+            group
+            {{- end -}}
       params:
         - name: FIPS_ENABLED
           value: "true"
