@@ -13,3 +13,5 @@ spec:
       value: "component"
     - name: file-name
       value: "policy-controller.json"
+    - name: revision
+      value: "RHTAS-build-bot_candidate-images-main"

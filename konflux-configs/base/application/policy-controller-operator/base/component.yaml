@@ -27,7 +27,7 @@ metadata:
     git-provider-url: https://github.com
   name: policy-controller-operator-bundle
 spec:
-  componentName: policy-controller-operator-bundle  
+  componentName: policy-controller-operator-bundle
   source:
     git:
       url: https://github.com/securesign/policy-controller-operator
