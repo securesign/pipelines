@@ -19,7 +19,7 @@ spec:
       description: "Trusted artifact signer issuer url"
     - name: TAS_DEPLOY_NAMESPACE
       type: string
-      default: "trusted-artifact-signer"
+      default: "sigstore-e2e-test"
       description: "Namespace where TAS is deployed"
   workspaces:
     - name: source-code
