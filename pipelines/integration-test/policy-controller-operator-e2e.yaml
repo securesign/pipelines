@@ -395,6 +395,8 @@ spec:
           steps:
             - name: get-cosign
               image: registry.redhat.io/rhtas/cosign-rhel9:1.3.1
+              securityContext:
+                runAsUser: 0
               script: |
                 mkdir -p $(workspaces.work.path)/binaries
                 cp /usr/local/bin/cosign $(workspaces.work.path)/binaries/
