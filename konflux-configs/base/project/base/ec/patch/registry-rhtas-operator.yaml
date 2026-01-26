@@ -10,7 +10,7 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test for a Snapshot of the `group` type
+        - description: execute the integration test for a Snapshot of the `group` typee
           name: group
       params:
         - name: POLICY_CONFIGURATION
