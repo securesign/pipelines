@@ -24,7 +24,8 @@ spec:
           - user_provided
           - key_rotation
           - backup_restore_migrate
-          - postgresql
+          #TODO: add postgresql scenario for main
+          #- postgresql
       - name: cache_oci_storage
         default: "quay.io/securesign/ansible-test-cache"
         description: "OCI storage location for Ansible cache artifacts"

@@ -50,6 +50,10 @@ spec:
           value: /cache/ansible/roles
         - name: PIP_PATH
           value: /cache/pip
+        - name: PYTHONPATH
+          value: /cache/pip
+        - name: HOME
+          value: /tmp
       script: |
         #!/bin/sh
         set -ex
@@ -59,7 +63,8 @@ spec:
         
         # Install Python dependencies
         python3.11 -m pip install --upgrade pip --target="$PIP_PATH"
-        python3.11 -m pip install --target="$PIP_PATH" -r $(params.pythonRequirementsFile)
+        python3.11 -m pip install --isolated --target="$PIP_PATH" -r $(params.pythonRequirementsFile)
+        export PATH=/cache/pip/bin:$PATH
         
         ansible-galaxy install -r $(params.ansibleRequirementsFile)
         ansible-galaxy install -r $(params.moleculeRequirementsFile)
