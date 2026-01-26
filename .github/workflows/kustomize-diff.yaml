@@ -1,7 +1,7 @@
 name: Kustomize Diff Review
 
 on:
-  pull_request:
+  pull_request_target:
     paths:
       - 'konflux-configs/**'
     types: [opened, synchronize, reopened]
