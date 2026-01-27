@@ -13,3 +13,5 @@ spec:
       value: "operator"
     - name: file-name
       value: "policy-controller-operator.json"
+    - name: revision
+      value: "RHTAS-build-bot_candidate-images-main"

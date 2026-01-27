@@ -13,3 +13,5 @@ spec:
       value: "operator"
     - name: file-name
       value: "model-validation-operator.json"
+    - name: revision
+      value: "RHTAS-build-bot_candidate-images-main"

@@ -27,7 +27,7 @@ metadata:
     git-provider-url: https://github.com
   name: model-validation-operator-bundle
 spec:
-  componentName: model-validation-operator-bundle  
+  componentName: model-validation-operator-bundle
   source:
     git:
       url: https://github.com/securesign/model-validation-operator
