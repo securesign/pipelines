@@ -145,6 +145,8 @@ spec:
                   value: "eu-north-1"
                 - name: AWS_KEY_NAME
                   value: CI-TEST
+                - name: HOME
+                  value: /tmp
               workingDir: $(workspaces.work.path)/ansible
               script: |
                 #!/bin/sh
