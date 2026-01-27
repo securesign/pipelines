@@ -56,34 +56,35 @@ spec:
         ADDITIONS=$(echo "$DIFF" | grep ">" || true)
         REMOVALS=$(echo "$DIFF" | grep "<" || true)
         
-        # 2. Define logic via Priority
-        if echo "$UPDATES" | grep -q "^stable:"; then
-          echo "Identified: Stable channel upgrade."
-
+        # Check for specific versioned patch updates FIRST
+        if echo "$UPDATES" | grep -q "^stable-v"; then
+          echo "Identified: Patch release detected."
+        
+          # Extract the first versioned channel that changed
+          CHANNEL=$(echo "$UPDATES" | grep "^stable-v" | head -n 1 | cut -d':' -f1 | xargs)
+          
+          BRANCH="release-${CHANNEL#stable-v}"
+        
+          echo "Targeting versioned branch: $BRANCH based on $CHANNEL"
+          
+          # Then check for general stable channel updates
+        elif echo "$UPDATES" | grep -q "^stable:"; then
+          echo "Identified: General Stable channel upgrade."
+          CHANNEL="stable"
+          BRANCH="main"
+        
           [[ -n "$ADDITIONS" ]] && echo -e "\tNOTE: New channels detected: $(echo "$ADDITIONS" | xargs)"
           [[ -n "$REMOVALS" ]]  && echo -e "\tNOTE: Channels removed: $(echo "$REMOVALS" | xargs)"
-      
-        elif echo "$UPDATES" | grep -q "^stable-v"; then
-          echo "Identified: Patch release detected."
-      
-          # Strict check: patches shouldn't usually come with additions/removals
-          if [[ -n "$ADDITIONS" || -n "$REMOVALS" ]]; then
-            echo "Error: Unexpected additions or removals during a PATCH release."
-            exit 1
-          fi
-            
-          # Extract channel from the left side
-          CHANNEL=$(echo "$UPDATES" | cut -d':' -f1 | xargs)
-          BRANCH="release-${CHANNEL#stable-v}"
-            
+        
+          # Handle new channel additions
         elif [[ $(echo "$ADDITIONS" | wc -l) -eq 1 ]] && [[ -z "$UPDATES" ]]; then
-          echo "Identified: Single new channel addition. Do not forget to update the `stable` channel"
+          echo "Identified: Single new channel addition. Do not forget to update the `stable` channel too."
           exit 1
         else
           echo "Error: Ambiguous changes detected (Multiple updates or unexpected removals)."
           exit 1
         fi
-      
+        
         echo "Final Selection: Channel=$CHANNEL, Branch=$BRANCH"
           echo -n "$CHANNEL" > "$(results.channel.path)"
           echo -n "$BRANCH"  > "$(results.release-branch.path)"
