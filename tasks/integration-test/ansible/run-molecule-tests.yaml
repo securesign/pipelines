@@ -90,6 +90,8 @@ spec:
           value: /cache/pip
         - name: MOLECULE_EPHEMERAL_DIRECTORY
           value: /work/molecule
+        - name: HOME
+          value: /tmp
       workingDir: /work/ansible
       script: |
         #!/bin/sh
