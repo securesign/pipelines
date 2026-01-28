@@ -38,7 +38,12 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: runs molecule upgrade test on ansible collection
-          name: application
+          name: >-
+            {{- if eq .version "v1.2" -}}
+            disabled
+            {{- else -}}
+            application
+            {{- end -}}
       resolverRef:
         params:
           - name: url
