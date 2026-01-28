@@ -14,7 +14,7 @@
           name: application
       params:
         - name: releaseBranch
-          value: {{.branch}}
+          value: "{{.branch}}"
       resolverRef:
         params:
           - name: url

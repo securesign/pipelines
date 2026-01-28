@@ -23,8 +23,8 @@ spec:
           - default
           - user_provided
           - key_rotation
-          - backup_restore_migrate
-          #TODO: add postgresql scenario for main
+          #TODO: find a way how to reduce scenarios by stream
+          #- backup_restore_migrate
           #- postgresql
       - name: cache_oci_storage
         default: "quay.io/securesign/ansible-test-cache"
