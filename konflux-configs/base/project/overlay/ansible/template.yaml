@@ -21,6 +21,9 @@ spec:
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
+    - name: scenarios
+      description: Molecule scenarios to execute in Json format
+      defaultValue: '["default","user_provided", "key_rotation", "backup_restore_migrate", "postgresql"]'
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application
