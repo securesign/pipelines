@@ -101,7 +101,7 @@ spec:
             - ""
     - name: process-releases
       runAfter:
-        - clone-repository
+        - parse-release-config
       params:
         - name: component-release-dir
           value: "$(tasks.parse-release-config.results.componentReleaseDirectory)"
