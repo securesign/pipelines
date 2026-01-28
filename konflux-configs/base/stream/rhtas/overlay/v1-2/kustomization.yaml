@@ -19,3 +19,7 @@ patches:
     target:
       kind: ProjectDevelopmentStream
   - path: patch/exclude-rekor-monitor.yaml
+  - path: patch/ansible.yaml
+    target:
+      kind: ProjectDevelopmentStream
+      name: ansible

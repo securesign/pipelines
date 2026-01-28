@@ -19,13 +19,7 @@ spec:
       - name: releaseBranch
         default: "main"
       - name: molecule_scenarios
-        default:
-          - default
-          - user_provided
-          - key_rotation
-          #TODO: find a way how to reduce scenarios by stream
-          #- backup_restore_migrate
-          #- postgresql
+        default: "[\"default\",\"user_provided\", \"key_rotation\", \"backup_restore_migrate\", \"postgresql\"]"
       - name: cache_oci_storage
         default: "quay.io/securesign/ansible-test-cache"
         description: "OCI storage location for Ansible cache artifacts"
@@ -94,6 +88,9 @@ spec:
           - name: work
             workspace: work
         taskSpec:
+          results:
+            - name: scenario-matrix
+              type: array
           workspaces:
             - name: work
           steps:
@@ -108,7 +105,7 @@ spec:
               script: |
                 #!/bin/sh
                 set -ex
-
+                echo -n $(params.molecule_scenarios) | tee $(results.scenario-matrix.path)
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
 
@@ -149,7 +146,7 @@ spec:
         matrix:
           params:
             - name: scenario
-              value: $(params.molecule_scenarios)
+              value: $(tasks.prepare-molecule-tests.results.scenario-matrix)
         params:
           - name: cache
             value: $(tasks.build-test-cache.results.cache)
