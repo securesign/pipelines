@@ -101,11 +101,14 @@ spec:
                 - $(tasks.parse-metadata.results.container-image)
                 - $(workspaces.work.path)/image.tar
             - name: prepare-tests
+              env:
+                - name: SCENARIOS
+                  value: $(params.molecule_scenarios)
               image: "quay.io/redhat-appstudio/konflux-test:stable"
               script: |
                 #!/bin/sh
                 set -ex
-                echo -n "$(params.molecule_scenarios)" | tee $(results.scenario-matrix.path)
+                echo -n "$SCENARIOS" | tee $(results.scenario-matrix.path)
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
 
