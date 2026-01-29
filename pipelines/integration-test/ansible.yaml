@@ -105,7 +105,7 @@ spec:
               script: |
                 #!/bin/sh
                 set -ex
-                echo -n $(params.molecule_scenarios) | tee $(results.scenario-matrix.path)
+                echo -n "$(params.molecule_scenarios)" | tee $(results.scenario-matrix.path)
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
 
