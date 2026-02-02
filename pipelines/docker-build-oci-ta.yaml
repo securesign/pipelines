@@ -187,6 +187,19 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: derive-product-version
+    taskRef:
+      resolver: git
+      params:
+        - name: url
+          value: "https://github.com/securesign/pipelines.git"
+        - name: revision
+          value: "b39f8091aea7b8e8d4851387efe7966bdde10558"
+        - name: pathInRepo
+          value: tasks/derive-product-version.yaml
+    params:
+      - name: release-version
+        value: $(params.release-version)
   - name: generate-labels
     params:
     - name: label-templates
@@ -195,7 +208,7 @@ spec:
         - "version=$(params.release-version)"
         - "vendor=Red Hat, Inc."
         - "maintainer=rhtas-support@redhat.com"
-        - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(params.release-version)::el9"
+        - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.derive-product-version.results.product-version)::el9"
         - "org.opencontainers.image.created=$SOURCE_DATE"
         - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
         - "url=https://catalog.redhat.com/en/software/container-stacks/detail/6604180e80e2fa3e4947d1d5#overview"
@@ -204,6 +217,7 @@ spec:
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     runAfter:
     - clone-repository
+    - derive-product-version
     taskRef:
       params:
       - name: name
