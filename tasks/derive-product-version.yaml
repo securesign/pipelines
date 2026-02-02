@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: derive-product-version
+spec:
+  description: >
+    Extracts the Major.Minor version from a full Release Version string.
+  params:
+    - name: release-version
+      description: Full release version (including Patch)
+  results:
+    - name: product-version
+      description: The truncated version string.
+  steps:
+    - name: derivative-product-version
+      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      env:
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env sh
+        echo -n ${RELEASE_VERSION%.*} > $(results.product-version.path)
