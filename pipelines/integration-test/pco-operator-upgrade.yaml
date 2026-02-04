@@ -1,11 +1,11 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: policy-controller-operator-e2e-
+  generateName: policy-controller-operator-upgrade-
 spec:
   description: |
-    An integration test which provisions an ephemeral Hypershift cluster, deploys the policy controller operator
-    from a Konflux snapshot and run the e2e test suite.
+    An integration test which provisions an ephemeral Hypershift cluster, and runs the 
+    policy controller operators upgrade scenario.
   workspaces:
     - name: work
       volumeClaimTemplate:
@@ -24,8 +24,6 @@ spec:
         default: registry.redhat.io/rhtas/rhtas-operator-bundle:1.3.1
       - name: TAS_DEPLOY_NAMESPACE
         default: tas
-      - name: POLICY_CONTROLLER_OPERATOR_NS
-        default: policy-controller-operator
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
       - name: RHTAS_GIT_URL
@@ -84,32 +82,6 @@ spec:
           resolver: bundles
         params:
           - name: url
-            value: $(tasks.parse-metadata.results.git-url)
-          - name: revision
-            value: $(tasks.parse-metadata.results.git-revision)
-          - name: subdirectory
-            value: "operator"
-        workspaces:
-          - name: output
-            workspace: work
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: in
-            values: [ "policy-controller-operator" ]
-      - name: clone-operator-source-code-with-defaults
-        runAfter:
-          - parse-metadata
-        taskRef:
-          params:
-            - name: name
-              value: git-clone
-            - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1
-            - name: kind
-              value: task
-          resolver: bundles
-        params:
-          - name: url
             value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_URL)
           - name: revision
             value: main
@@ -118,11 +90,9 @@ spec:
         workspaces:
           - name: output
             workspace: work
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: notin
-            values: [ "policy-controller-operator" ]
       - name: provision-eaas-space
+        runAfter:
+          - parse-metadata
         taskRef:
           resolver: bundles
           params:
@@ -182,10 +152,10 @@ spec:
                     - source: registry.redhat.io/rhtas/policy-controller-rhel9
                       mirrors:
                         - quay.io/securesign/policy-controller
-                    - source: registry.redhat.io/rhtas/policy-controller-rhel9-operator 
+                    - source: registry.redhat.io/rhtas/policy-controller-rhel9-operator
                       mirrors:
                         - quay.io/securesign/policy-controller-operator
-                    - source: registry.redhat.io/rhtas/policy-controller-operator-bundle 
+                    - source: registry.redhat.io/rhtas/policy-controller-operator-bundle
                       mirrors:
                       - quay.io/securesign/policy-controller-operator-bundle
       - name: install-rhtas-operator
@@ -207,6 +177,21 @@ spec:
             value: "$(tasks.provision-cluster.results.clusterName)"
           - name: bundleImage
             value: "$(params.RHTAS_BUNDLE_IMAGE)"
+      - name: download-binaries
+        workspaces:
+          - name: work
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: work
+          steps:
+            - name: get-cosign
+              image: registry.redhat.io/rhtas/cosign-rhel9:1.3.1
+              securityContext:
+                runAsUser: 0
+              script: |
+                mkdir -p $(workspaces.work.path)/binaries
+                cp /usr/local/bin/cosign $(workspaces.work.path)/binaries/
       - name: prepare-tests
         runAfter:
           - install-rhtas-operator
@@ -295,124 +280,18 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: OIDC_ISSUER_URL
                   value: "$(steps.install-keycloak.results.oidc-issuer-url)"
-      - name: install-operator-from-bundle
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-bundle.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: bundleImage
-            value: "$(tasks.parse-metadata.results.container-image)"
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: in
-            values: [ "policy-controller-operator-bundle" ]
-      - name: install-operator-from-image
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-image.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: operatorImage
-            value: "$(tasks.parse-metadata.results.container-image)"
-          - name: replaceImage
-            value: "registry.redhat.io/rhtas/policy-controller-rhel9-operator"
-          - name: resourcesPath
-            value: "$(workspaces.source-code.path)/operator/config/openshift"
-          - name: namespace
-            value: "$(params.POLICY_CONTROLLER_OPERATOR_NS)"
-          - name: deployName
-            value: "policy-controller-manager"
-        workspaces:
-          - name: source-code
-            workspace: work
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: in
-            values: [ "policy-controller-operator" ]
-      - name: install-operator-from-fbc
-        timeout: "0h5m0s"
-        runAfter:
-          - provision-cluster
-          - parse-metadata
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-fbc.yaml
-        params:
-          - name: eaasSpaceSecretRef
-            value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: clusterName
-            value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: fbcImage
-            value: "$(tasks.parse-metadata.results.container-image)"
-          - name: operator-name
-            value: "policy-controller-operator"
-          - name: operator-deployment-name
-            value: "policy-controller-manager"
-          - name: installChannel
-            value: "stable"
-        when:
-          - input: "$(tasks.parse-metadata.results.component-name)"
-            operator: in
-            values: ["pco-fbc-v4-15","pco-fbc-v4-16","pco-fbc-v4-17","pco-fbc-v4-18","pco-fbc-v4-19"]
-      - name: download-binaries
-        workspaces:
-          - name: work
-            workspace: work
-        taskSpec:
-          workspaces:
-            - name: work
-          steps:
-            - name: get-cosign
-              image: registry.redhat.io/rhtas/cosign-rhel9:1.3.1
-              securityContext:
-                runAsUser: 0
-              script: |
-                mkdir -p $(workspaces.work.path)/binaries
-                cp /usr/local/bin/cosign $(workspaces.work.path)/binaries/
-      - name: run-operator-e2e
+      - name: run-operator-upgrade
         runAfter:
           - prepare-tests
           - download-binaries
-          - clone-operator-source-code-with-defaults
           - clone-operator-source-code
-          - install-operator-from-image
-          - install-operator-from-bundle
-          - install-operator-from-fbc
         workspaces:
           - name: source-code
             workspace: work
         taskSpec:
+          results:
+            - name: TEST_OUTPUT
+              description: "Full JSON summary of test results"
           volumes:
             - name: credentials
               emptyDir: { }
@@ -436,8 +315,9 @@ spec:
                   value: "$(tasks.provision-cluster.results.clusterName)"
                 - name: credentials
                   value: credentials
-            - name: execute-operator-e2e
-              image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:6f0e6c534d6b785530f7961089f444bbb14d384bfa3ea09070f5a70029b4a5cb
+            - name: execute-test
+              onError: continue
+              image: registry.redhat.io/ubi9/go-toolset:1.25@sha256:359dd4c6c4255b3f7bce4dc15ffa5a9aa65a401f819048466fa91baa8244a793
               env:
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
@@ -455,15 +335,12 @@ spec:
                   value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: RHTAS_INSTALL_NAMESPACE
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: POLICY_CONTROLLER_OPERATOR_NS
-                  value: "$(params.POLICY_CONTROLLER_OPERATOR_NS)"
-              computeResources:
-                requests:
-                  cpu: "1500m"
-                  memory: "3Gi"
-                limits:
-                  cpu: "3"
-                  memory: "6Gi"
+                - name: UPGRADE_FROM_OPERATOR_INDEX_IMAGE
+                  value: "registry.redhat.io/redhat/redhat-operator-index:v$(params.OCP_VERSION)"
+                - name: UPGRADE_TO_OPERATOR_INDEX_IMAGE
+                  value: "$(tasks.parse-metadata.results.container-image)"
+                - name: UPGRADE_FROM_CHANNEL
+                  value: "tech-preview"
               volumeMounts:
                 - name: credentials
                   mountPath: /credentials
@@ -478,18 +355,25 @@ spec:
                 export SSL_CERT_FILE=/tmp/ssl.cert
                 export INJECT_CA=true
                 export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
-                
+
                 source ./test/tas-env-variables.sh
                 go mod vendor
-                make e2e-test
-                status=$?
-                
-                if [[ $status -ne 0 ]]; then
-                  pods=$(oc get pods -n "$POLICY_CONTROLLER_OPERATOR_NS" -o jsonpath='{.items[*].metadata.name}')
-                  for pod in $pods; do
-                    echo "===== logs for $pod ====="
-                    oc logs -n "$POLICY_CONTROLLER_OPERATOR_NS" --all-containers --prefix true "$pod" || true
-                  done
-                fi
-                
-                exit "$status"
+                mkdir -p $(workspaces.source-code.path)/dump/operator-upgrade
+                go test -count=1 -tags=upgrade -v -timeout 30m -json ./test/... > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+                cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-upgrade/ || echo "no test dump files found"
+
+              securityContext:
+                runAsUser: 0
+            - name: process-test-results
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/securesign/pipelines.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/integration-test/process-go-test-results.yaml
+              params:
+                - name: test_output_file
+                  value: $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
