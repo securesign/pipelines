@@ -13,6 +13,9 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "redis"
+      build-nudges-ref:
+        - "artifact-signer-ansible{{.nameSuffix}}"
+        - "rhtas-operator{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/trillian
