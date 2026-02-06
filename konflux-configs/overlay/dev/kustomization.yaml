@@ -9,6 +9,7 @@ resources:
   - ../../base/application
   - ../../base/project
   - ../../base/stream
+  - ../../base/config
 
 configMapGenerator:
   - name: registry-config

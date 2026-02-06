@@ -9,6 +9,7 @@ resources:
   - ../../base/application
   - ../../base/project
   - ../../base/stream
+  - ../../base/config
 
 # Prod environment already uses quay.io/securesign prefix in base
 # No patches needed
