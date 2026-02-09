@@ -1,0 +1,15 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: model-transparency-go
+spec:
+  componentName: model-transparency-go
+  source:
+    git:
+      url: https://github.com/securesign/model-transparency-go
+      revision: main
+      dockerfileUrl: Containerfile.model-transparency-go.rh
