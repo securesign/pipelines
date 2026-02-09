@@ -16,6 +16,7 @@
       build-nudges-ref:
         - "artifact-signer-ansible{{.nameSuffix}}"
         - "rhtas-operator{{.nameSuffix}}"
+        - "client-server{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/trillian

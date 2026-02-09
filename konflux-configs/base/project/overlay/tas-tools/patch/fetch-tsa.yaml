@@ -13,6 +13,8 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "fetch-tsa-certs"
+      build-nudges-ref:
+        - "client-server{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/timestamp-authority
