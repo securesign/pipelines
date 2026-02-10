@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: policy-controller-operator
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Policy Controller Operator"
+  description: |
+    A Helm-based operator for deploying and managing instances of the Sigstore Policy Controller on OpenShift/Kubernetes.

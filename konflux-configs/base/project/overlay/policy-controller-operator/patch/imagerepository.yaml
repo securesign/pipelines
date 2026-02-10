@@ -1,0 +1,45 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "policy-controller-operator{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "policy-controller-operator{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/policy-controller-operator
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
+
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "policy-controller-operator-bundle{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "policy-controller-operator-bundle{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/policy-controller-operator-bundle
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino

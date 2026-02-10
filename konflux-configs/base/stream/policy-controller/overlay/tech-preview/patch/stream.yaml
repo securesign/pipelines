@@ -1,0 +1,11 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: "dummy"
+spec:
+  template:
+    values:
+      - name: version
+        value: "tech-preview"
+      - name: branch
+        value: "tech-preview"

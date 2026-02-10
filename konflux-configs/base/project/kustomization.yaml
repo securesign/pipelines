@@ -12,3 +12,5 @@ resources:
   - overlay/create-tree
   - overlay/client-server
   - overlay/tough
+  - overlay/policy-controller
+  - overlay/policy-controller-operator

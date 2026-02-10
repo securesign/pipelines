@@ -1,0 +1,5 @@
+- op: add
+  path: /spec/resources/3/spec/tenantPipeline/params/-
+  value:
+    name: file-name
+    value: "policy-controller-operator.json"
