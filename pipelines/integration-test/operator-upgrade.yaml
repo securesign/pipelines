@@ -71,7 +71,7 @@ spec:
           - name: url
             value: "https://github.com/securesign/secure-sign-operator.git"
           - name: revision
-            value: "$(tasks.release-info.results.release-branch)"
+            value: "knrc_align_upgrade_channel_with_pipelines"
           - name: subdirectory
             value: "operator"
         workspaces:
