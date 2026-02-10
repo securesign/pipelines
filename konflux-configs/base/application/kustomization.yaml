@@ -9,6 +9,4 @@ resources:
   - model-transparency/base
   - model-transparency-go/base
   - model-validation-operator/base
-  - policy-controller/base
-  - policy-controller-operator/base
   - rhtas-console/base

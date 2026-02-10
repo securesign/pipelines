@@ -1,0 +1,18 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "policy-controller-operator-bundle{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "policy-controller-operator-bundle{{.nameSuffix}}"
+      source:
+        git:
+          context: ./
+          dockerfileUrl: bundle.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/policy-controller-operator

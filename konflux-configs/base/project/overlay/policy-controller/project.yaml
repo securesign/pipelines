@@ -1,0 +1,9 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: policy-controller
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Policy Controller"
+  description: |
+    Policy Controller - an admission controller that can be used to enforce policy on a Kubernetes cluster based 
+    on verifiable supply-chain metadata from cosign.
