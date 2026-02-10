@@ -5,7 +5,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "true"
+        test.appstudio.openshift.io/optional: "false"
       name: "ansible-e2e-test{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
@@ -34,7 +34,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "true"
+        test.appstudio.openshift.io/optional: "false"
       name: "ansible-upgrade-test{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
