@@ -358,3 +358,36 @@ spec:
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+    finally:
+      - name: secure-push-test-dump
+        workspaces:
+          - name: dump
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: dump
+          volumes:
+            - name: push-creds
+              secret:
+                secretName: securesign-test-dump-oci
+          steps:
+            - name: oci-push
+              ref:
+                resolver: git
+                params:
+                  - name: url
+                    value: https://github.com/konflux-ci/tekton-integration-catalog.git
+                  - name: revision
+                    value: main
+                  - name: pathInRepo
+                    value: stepactions/secure-push-oci/0.1/secure-push-oci.yaml
+              params:
+                - name: oci-ref
+                  value: "quay.io/securesign/test-dump-oci:$(context.pipelineRun.name)"
+                - name: credentials-volume-name
+                  value: push-creds
+                - name: oci-tag-expiration
+                  value: 1d
+                - name: workdir-path
+                  value: $(workspaces.dump.path)/dump
+
