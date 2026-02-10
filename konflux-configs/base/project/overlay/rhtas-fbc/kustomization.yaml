@@ -12,3 +12,4 @@ components:
   - ../../base/ocp/v4.18
   - ../../base/ocp/v4.19
   - ../../base/ocp/v4.20
+  - ../../base/ocp/v4.21
