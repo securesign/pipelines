@@ -1,0 +1,143 @@
+# OCP 4.21
+
+# Component
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "{{.application}}{{.nameSuffix}}-v4-21"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "{{.application}}{{.nameSuffix}}-v4-21"
+      source:
+        git:
+          context: "v4.21/{{.operator}}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/fbc
+
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+      params:
+        - name: OCP_VERSION
+          value: "4.21"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e-fips"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+      params:
+        - name: OCP_VERSION
+          value: "4.21"
+        - name: FIPS_ENABLED
+          value: "true"
+        - name: KEYCLOAK_DISTRIBUTION
+          value: "rhbk"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipeline
+
+# IntegrationTestScenario Upgrade
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: "{{.application}}{{.nameSuffix}}-v4-21-upgrade"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+      params:
+        - name: OCP_VERSION
+          value: "4.21"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+
+# IntegrationTestScenario OLMv1
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e-olmv1"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+      params:
+        - name: OCP_VERSION
+          value: "4.21"
+        - name: OLMv1
+          value: "true"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
