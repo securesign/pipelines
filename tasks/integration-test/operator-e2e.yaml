@@ -47,7 +47,7 @@ spec:
           value: credentials
     - name: execute-operator-e2e
       onError: continue
-      image: registry.redhat.io/ubi9/go-toolset:1.25@sha256:359dd4c6c4255b3f7bce4dc15ffa5a9aa65a401f819048466fa91baa8244a793
+      image: registry.redhat.io/ubi9/go-toolset:9.7@sha256:2bb1fe3e239c0085cdaac1de3d50b44fcdc12ccc8360c8e49eeaeca09a5a072c
       env:
         - name: OIDC_HOST
           value: "$(params.oidcHostname)"
