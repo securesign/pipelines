@@ -118,6 +118,13 @@ spec:
         - name: MANUAL_IMAGE_SETUP
           value: "true"
       workingDir: $(workspaces.source-code.path)/sigstore-e2e
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "1"
+        limits:
+          memory: "8Gi"
+          cpu: "2"
       script: |
         #!/bin/bash
         set -x

@@ -407,12 +407,6 @@ spec:
               value: main
             - name: pathInRepo
               value: tasks/integration-test/sigstore-e2e.yaml
-        computeResources:
-          limits:
-            memory: 8Gi
-          requests:
-            memory: 2Gi
-            cpu: '1'
         params:
           - name: eaasSpaceSecretRef
             value: $(tasks.provision-eaas-space.results.secretRef)
