@@ -90,7 +90,7 @@ spec:
           echo -n "$BRANCH"  > "$(results.release-branch.path)"
       resources:
         requests:
-          memory: "2Gi"
+          memory: "4Gi"
           cpu: "500m"
         limits:
-          memory: "4Gi" # OPM load the whole index into memory; Red Hat Index is huge; it needs a space
+          memory: "8Gi" # OPM load the whole index into memory; Red Hat Index is huge; it needs a space
