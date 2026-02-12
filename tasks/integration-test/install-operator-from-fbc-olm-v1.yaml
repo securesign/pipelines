@@ -11,8 +11,10 @@ spec:
       type: string
       description: The name of a ClusterTemplateInstance.
     - name: fbcImage
+      type: string
       description: Fbc image to be installed from
     - name: namespace
+      type: string
       default: "tas-operator"
       description: Namespace to be used for installation
     - name: operator-name
@@ -21,8 +23,8 @@ spec:
       description: Name of installed operator
     - name: operator-deployment-name
       type: string
-      default: "rhtas-operator-controller-manager"
-      description: Namespace to be used for installation
+      default: "rhtas-operator"
+      description: Name of the controller manager deployment
   volumes:
     - name: credentials
       emptyDir: { }
@@ -55,15 +57,15 @@ spec:
       script: |
         #!/bin/bash
         set -ex
-        
+
         if ! oc get namespace "$(params.namespace)" > /dev/null 2>&1; then
           oc new-project "$(params.namespace)"
           echo "Project $(params.namespace) created."
         else
-        echo "Project $(params.namespace) already exists."
+          echo "Project $(params.namespace) already exists."
         fi
-        
-        oc create -f - <<EOF+
+
+        oc create -f - <<EOF
         apiVersion: olm.operatorframework.io/v1
         kind: ClusterCatalog
         metadata:
@@ -79,11 +81,11 @@ spec:
               ref: $(params.fbcImage)
             type: Image
         EOF
+
         sleep 2
         oc wait --for=condition=Serving=true clustercatalog tas-test --timeout=3m
-        
+
         oc create -f - <<EOF
-        ---
         apiVersion: v1
         kind: ServiceAccount
         metadata:
@@ -106,12 +108,12 @@ spec:
         apiVersion: olm.operatorframework.io/v1
         kind: ClusterExtension
         metadata:
-          name: rhtas-operator
+          name: $(params.operator-deployment-name)
           namespace: $(params.namespace)
         spec:
           namespace: test
           serviceAccount:
-            name: rhtas-operator-installer
+            name: tas-installer
           source:
             sourceType: Catalog
             catalog:
@@ -120,9 +122,9 @@ spec:
                 matchLabels:
                   tas: olm-test
         EOF
-        
+
         oc get pods -o yaml
         oc get clustercatalog tas-test -o yaml
-        
+
         sleep 2
-        oc --for=condition=Installed=true --timeout=2m clusterextension  rhtas-operator
+        oc wait --for=condition=Installed=true --timeout=2m clusterextension $(params.operator-deployment-name)
