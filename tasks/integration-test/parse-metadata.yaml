@@ -19,6 +19,9 @@ spec:
   params:
     - name: SNAPSHOT
       description: The JSON string of the Snapshot under test
+    - name: DEFAULT_COMPONENT_NAME
+      description: Component name to use when PipelineRun metadata does not include component label.
+      default: "rhtas-operator-bundle"
   steps:
     - name: test-metadata
       image: quay.io/redhat-appstudio/konflux-test:stable
@@ -26,6 +29,8 @@ spec:
       env:
         - name: SNAPSHOT
           value: $(params.SNAPSHOT)
+        - name: DEFAULT_COMPONENT_NAME
+          value: $(params.DEFAULT_COMPONENT_NAME)
         - name: EVENT_TYPE
           valueFrom:
             fieldRef:
@@ -42,7 +47,7 @@ spec:
         #!/bin/sh
 
         # Install from the bundle if not set
-        COMPONENT_NAME="${COMPONENT_NAME:-rhtas-operator-bundle}"
+        COMPONENT_NAME="${COMPONENT_NAME:-${DEFAULT_COMPONENT_NAME}}"
         
         # Derive additional environment variables from SNAPSHOT
         # First try exact match, then try pattern match for versioned components

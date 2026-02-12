@@ -1,11 +1,11 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: policy-controller-operator-e2e-
+  generateName: policy-controller-fbc-e2e-
 spec:
   description: |
     An integration test which provisions an ephemeral Hypershift cluster, deploys the policy controller operator
-    from a Konflux snapshot and run the e2e test suite.
+    from a Konflux FBC snapshot and run the e2e test suite.
   workspaces:
     - name: work
       volumeClaimTemplate:
@@ -26,6 +26,12 @@ spec:
         default: tas
       - name: POLICY_CONTROLLER_OPERATOR_NS
         default: policy-controller-operator
+      - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
+        default: https://github.com/securesign/policy-controller-operator
+      - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+        default: main
+      - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
+        default: stable
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
@@ -38,16 +44,14 @@ spec:
           resolver: git
           params:
             - name: url
-              value: https://github.com/securesign/pipelines.git
+              value: https://github.com/konflux-ci/tekton-integration-catalog
             - name: revision
               value: main
             - name: pathInRepo
-              value: tasks/integration-test/parse-metadata.yaml
+              value: tasks/test-metadata/0.3/test-metadata.yaml
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
-          - name: DEFAULT_COMPONENT_NAME
-            value: policy-controller-operator-bundle
       - name: clone-tas-operator-source-code
         runAfter:
           - parse-metadata
@@ -84,9 +88,9 @@ spec:
           resolver: bundles
         params:
           - name: url
-            value: $(tasks.parse-metadata.results.git-url)
+            value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_URL)
           - name: revision
-            value: $(tasks.parse-metadata.results.git-revision)
+            value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_REVISION)
           - name: subdirectory
             value: "operator"
         workspaces:
@@ -265,7 +269,8 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: OIDC_ISSUER_URL
                   value: "$(steps.install-keycloak.results.oidc-issuer-url)"
-      - name: install-operator-from-bundle
+      - name: install-operator-from-fbc
+        timeout: "0h5m0s"
         runAfter:
           - provision-cluster
           - parse-metadata
@@ -277,14 +282,20 @@ spec:
             - name: revision
               value: main
             - name: pathInRepo
-              value: tasks/integration-test/install-operator-from-bundle.yaml
+              value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
           - name: eaasSpaceSecretRef
             value: $(tasks.provision-eaas-space.results.secretRef)
           - name: clusterName
             value: "$(tasks.provision-cluster.results.clusterName)"
-          - name: bundleImage
+          - name: fbcImage
             value: "$(tasks.parse-metadata.results.container-image)"
+          - name: operator-name
+            value: "policy-controller-operator"
+          - name: operator-deployment-name
+            value: "policy-controller-manager"
+          - name: installChannel
+            value: $(params.POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL)
       - name: download-binaries
         workspaces:
           - name: work
@@ -305,7 +316,7 @@ spec:
           - prepare-tests
           - download-binaries
           - clone-operator-source-code
-          - install-operator-from-bundle
+          - install-operator-from-fbc
         workspaces:
           - name: source-code
             workspace: work
