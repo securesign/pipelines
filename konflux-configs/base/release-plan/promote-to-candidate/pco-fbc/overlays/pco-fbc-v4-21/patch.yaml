@@ -7,4 +7,4 @@ metadata:
   name: promote-to-candidate-
   namespace: rhtas-tenant
 spec:
-  application: scaffold
+  application: pco-fbc-v4-21
