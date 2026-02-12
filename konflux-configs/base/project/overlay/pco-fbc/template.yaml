@@ -1,0 +1,45 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  name: pco-fbc-template
+  labels:
+    build.rhtas.com/ec: fbc-standard
+    build.rhtas.com/type: fbc
+spec:
+  project: pco-fbc
+  variables:
+    - name: ocpVersion
+      description: OCP version for this stream (for example 4.21)
+    - name: version
+      description: A version number for a new development stream
+      defaultValue: "v{{.ocpVersion}}"
+    - name: branch
+      description: Git branch
+      defaultValue: "main"
+    - name: nameSuffix
+      description: A suffix which will be added to K8s resource name
+      defaultValue: ""
+    - name: application
+      description: The application name
+      defaultValue: "pco-fbc-v{{hyphenize .ocpVersion}}"
+    - name: mintmakerDisabled
+      description: Whether to disable mintmaker annotation on the Component
+      defaultValue: "false"
+    - name: operator
+      description: The operator name
+      defaultValue: "policy-controller-operator"
+    - name: policyControllerOperatorGitRevision
+      description: Git revision of policy-controller-operator repo used by PCO FBC e2e
+      defaultValue: "main"
+    - name: installChannel
+      description: The operator install channel used for e2e
+      defaultValue: "stable"
+  resources:
+    - apiVersion: appstudio.redhat.com/v1alpha1
+      kind: Application
+      metadata:
+        annotations:
+          application.thumbnail: "5"
+        name: "{{.application}}{{.nameSuffix}}"
+      spec:
+        displayName: "{{.application}} ({{.version}})"

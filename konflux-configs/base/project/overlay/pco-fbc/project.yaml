@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: pco-fbc
+spec:
+  displayName: "Policy Controller Operator FBC"
+  description: |
+    File-Based Catalogs for Red Hat Trusted Artifact Signer Policy Controller Operator.

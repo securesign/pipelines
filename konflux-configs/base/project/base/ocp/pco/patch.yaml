@@ -1,0 +1,54 @@
+# Component
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "{{.application}}{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "{{.application}}{{.nameSuffix}}"
+      source:
+        git:
+          context: "v{{.ocpVersion}}/{{.operator}}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/fbc
+
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-e2e"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}} updates
+          name: "component_{{.application}}{{.nameSuffix}}"
+      params:
+        - name: OCP_VERSION
+          value: "{{.ocpVersion}}"
+        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+          value: "{{.policyControllerOperatorGitRevision}}"
+        - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
+          value: "{{.installChannel}}"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/policy-controller-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun

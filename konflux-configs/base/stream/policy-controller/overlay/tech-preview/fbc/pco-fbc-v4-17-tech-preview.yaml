@@ -1,0 +1,21 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-17-tech-preview
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+      - name: ocpVersion
+        value: "4.17"
+      - name: version
+        value: "tech-preview"
+      - name: branch
+        value: "pco-tech-preview"
+      - name: nameSuffix
+        value: "-tech-preview"
+      - name: policyControllerOperatorGitRevision
+        value: "tech-preview"
+      - name: installChannel
+        value: "tech-preview"
