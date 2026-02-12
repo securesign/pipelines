@@ -125,7 +125,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-20"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.20"

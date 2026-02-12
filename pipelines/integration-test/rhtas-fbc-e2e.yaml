@@ -269,7 +269,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: olm_v1_fix
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc-olm-v1.yaml
         params:
