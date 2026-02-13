@@ -71,8 +71,8 @@
           value: "4.18"
         - name: FIPS_ENABLED
           value: "true"
-        - name: KEYCLOAK_DISTRIBUTION
-          value: "rhbk"
+        - name: CLUSTER_PLATFORM
+          value: "openshift"
       resolverRef:
         params:
           - name: url
