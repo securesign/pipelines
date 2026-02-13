@@ -77,7 +77,7 @@ spec:
         mkdir -p $(workspaces.source-code.path)/dump/operator-e2e/
         
         export PATH="$PATH:$(workspaces.source-code.path)/binaries"
-        export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
+        export OIDC_ISSUER_URL=https://$OIDC_HOST/realms/trusted-artifact-signer
         
         # Ensure SSL trust for the OIDC host
         openssl s_client -connect $OIDC_HOST:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/ssl.cert

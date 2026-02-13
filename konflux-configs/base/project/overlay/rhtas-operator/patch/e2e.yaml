@@ -48,8 +48,8 @@
       params:
         - name: FIPS_ENABLED
           value: "true"
-        - name: KEYCLOAK_DISTRIBUTION
-          value: "rhbk"
+        - name: CLUSTER_PLATFORM
+          value: "openshift"
         - name: releaseBranch
           value: "{{.branch}}"
       resolverRef:

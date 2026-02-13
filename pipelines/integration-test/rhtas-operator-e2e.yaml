@@ -21,9 +21,9 @@ spec:
         default: "main"
       - name: FIPS_ENABLED
         default: "false"
-      - name: KEYCLOAK_DISTRIBUTION
-        description: "Which Keycloak build to install rhsso or rhbk"
-        default: "rhsso"
+      - name: CLUSTER_PLATFORM
+        description: "Target environment for Keycloak installation: openshift or kind"
+        default: "openshift"
     workspaces:
       - name: work
         description: Shared workspace for pipeline tasks
@@ -290,8 +290,8 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/operator"
-                - name: keycloak-distribution
-                  value: "$(params.KEYCLOAK_DISTRIBUTION)"
+                - name: cluster-platform
+                  value: "$(params.CLUSTER_PLATFORM)"
       - name: download-binaries
         workspaces:
           - name: work
