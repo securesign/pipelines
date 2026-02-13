@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - overlay/ansible
   - overlay/rekor-monitor
+  - overlay/pco-fbc
   - overlay/rhtas-fbc
   - overlay/rhtas-operator
   - overlay/segment-backup-job

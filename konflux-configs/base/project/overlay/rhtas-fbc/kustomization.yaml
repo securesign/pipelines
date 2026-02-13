@@ -7,9 +7,9 @@ resources:
 
 components:
   - ../../base/ec
-  - ../../base/ocp/v4.16
-  - ../../base/ocp/v4.17
-  - ../../base/ocp/v4.18
-  - ../../base/ocp/v4.19
-  - ../../base/ocp/v4.20
-  - ../../base/ocp/v4.21
+  - ../../base/ocp/rhtas/v4.16
+  - ../../base/ocp/rhtas/v4.17
+  - ../../base/ocp/rhtas/v4.18
+  - ../../base/ocp/rhtas/v4.19
+  - ../../base/ocp/rhtas/v4.20
+  - ../../base/ocp/rhtas/v4.21

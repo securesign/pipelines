@@ -1,0 +1,21 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-19
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+      - name: ocpVersion
+        value: "4.19"
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""
+      - name: policyControllerOperatorGitRevision
+        value: "main"
+      - name: installChannel
+        value: "stable"
