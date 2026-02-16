@@ -19,3 +19,5 @@ spec:
         value: "tech-preview"
       - name: installChannel
         value: "tech-preview"
+      - name: policyControllerOperatorDeploymentName
+        value: "policy-op-controller-manager"
