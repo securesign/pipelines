@@ -32,6 +32,8 @@ spec:
         default: main
       - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
         default: stable
+      - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
+        default: policy-controller-manager
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
@@ -293,7 +295,7 @@ spec:
           - name: operator-name
             value: "policy-controller-operator"
           - name: operator-deployment-name
-            value: "policy-controller-manager"
+            value: "$(params.POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME)"
           - name: installChannel
             value: $(params.POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL)
       - name: download-binaries

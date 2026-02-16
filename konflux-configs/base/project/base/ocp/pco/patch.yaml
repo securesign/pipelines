@@ -42,6 +42,8 @@
           value: "{{.policyControllerOperatorGitRevision}}"
         - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
           value: "{{.installChannel}}"
+        - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
+          value: "{{.policyControllerOperatorDeploymentName}}"
       resolverRef:
         params:
           - name: url

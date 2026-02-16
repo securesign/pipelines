@@ -34,6 +34,9 @@ spec:
     - name: installChannel
       description: The operator install channel used for e2e
       defaultValue: "stable"
+    - name: policyControllerOperatorDeploymentName
+      description: The operator deployment name to wait for in e2e install
+      defaultValue: "policy-controller-manager"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application

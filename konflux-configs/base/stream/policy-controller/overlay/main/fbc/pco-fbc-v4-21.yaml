@@ -19,3 +19,5 @@ spec:
         value: "main"
       - name: installChannel
         value: "stable"
+      - name: policyControllerOperatorDeploymentName
+        value: "policy-controller-manager"
