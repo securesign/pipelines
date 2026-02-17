@@ -374,7 +374,7 @@ spec:
                 cat /tmp/ssl.cert >> /etc/pki/tls/certs/ca-bundle.crt
                 export SSL_CERT_FILE=/tmp/ssl.cert
                 export INJECT_CA=true
-                export OIDC_ISSUER_URL=https://$OIDC_HOST/auth/realms/trusted-artifact-signer
+                export OIDC_ISSUER_URL=https://$OIDC_HOST/realms/trusted-artifact-signer
                 
                 source ./test/tas-env-variables.sh
                 go mod vendor

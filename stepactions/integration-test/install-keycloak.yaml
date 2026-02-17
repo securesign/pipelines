@@ -4,7 +4,7 @@ metadata:
   name: install-keycloak-from-repository
 spec:
   description: >-
-    This StepAction install RHSSO operator and create Keycloak instance using predefined script.
+    This StepAction installs and configures a Keycloak instance on either OpenShift or kind clusters.
   image: registry.redhat.io/openshift4/ose-cli
   params:
     - name: credentials
@@ -17,10 +17,10 @@ spec:
     - name: KUBECONFIG
       type: string
       description: KUBECONFIG path.
-    - name: keycloak-distribution
+    - name: cluster-platform
       type: string
-      default: "rhsso"
-      description: "Which Keycloak build to install rhsso or rhbk"
+      default: "openshift"
+      description: "Target environment for Keycloak installation: openshift or kind"
   results:
     - name: oidc-hostname
       description: Hostname of the installed OIDC provider
@@ -34,20 +34,19 @@ spec:
       value: "/credentials/$(params.KUBECONFIG)"
     - name: WORKDIR
       value: "$(params.workdir)"
-    - name: KEYCLOAK_DISTRIBUTION
-      value: "$(params.keycloak-distribution)"
+    - name: CLUSTER_PLATFORM
+      value: "$(params.cluster-platform)"
   script: |
     cd $WORKDIR
 
-    if [[ "$KEYCLOAK_DISTRIBUTION" == "rhbk" ]]; then
-      ci/openshift/tas-keycloak-install.sh rhbk
-      OIDC_HOSTNAME=$(oc get route -n keycloak-system -l app=keycloak -o jsonpath='{.items[0].status.ingress[0].host}')
-      OIDC_ISSUER_URL="https://$OIDC_HOSTNAME/realms/trusted-artifact-signer"
+    if [[ "$CLUSTER_PLATFORM" == "kind" ]]; then
+      ci/openshift/tas-keycloak-install.sh kind
     else
       ci/openshift/tas-keycloak-install.sh
-      OIDC_HOSTNAME=$(oc get route -n keycloak-system keycloak -o jsonpath='{.status.ingress[0].host}')
-      OIDC_ISSUER_URL="https://$OIDC_HOSTNAME/auth/realms/trusted-artifact-signer"
     fi
+
+    OIDC_HOSTNAME=$(oc get route -n keycloak-system -l app=keycloak -o jsonpath='{.items[0].status.ingress[0].host}')
+    OIDC_ISSUER_URL="https://$OIDC_HOSTNAME/realms/trusted-artifact-signer"
 
     printf %s "$OIDC_HOSTNAME" > "$(step.results.oidc-hostname.path)"
     printf %s "$OIDC_ISSUER_URL" > "$(step.results.oidc-issuer-url.path)"
