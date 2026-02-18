@@ -30,6 +30,9 @@ spec:
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
         default: main
+      - name: CLUSTER_PLATFORM
+        description: "Target environment for Keycloak installation: openshift or kind"
+        default: "openshift"
     workspaces:
       - name: work
     tasks:
@@ -181,6 +184,7 @@ spec:
         runAfter:
           - install-rhtas-operator
           - clone-tas-operator-source-code
+          - install-operator-from-bundle
         workspaces:
           - name: source-code
             workspace: work
@@ -244,6 +248,8 @@ spec:
                   value: "$(steps.get-kubeconfig.results.kubeconfig)"
                 - name: workdir
                   value: "$(workspaces.source-code.path)/tas-operator"
+                - name: cluster-platform
+                  value: "$(params.CLUSTER_PLATFORM)"
             - name: install-tas
               ref:
                 resolver: git
