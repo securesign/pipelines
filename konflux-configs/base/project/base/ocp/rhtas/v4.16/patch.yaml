@@ -82,7 +82,7 @@
           - name: pathInRepo
             value: pipelines/integration-test/rhtas-fbc-e2e.yaml
         resolver: git
-        resourceKind: pipeline
+        resourceKind: pipelinerun
 
 # IntegrationTestScenario Upgrade
 - op: add
