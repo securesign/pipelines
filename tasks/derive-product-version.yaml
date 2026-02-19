@@ -4,19 +4,33 @@ metadata:
   name: derive-product-version
 spec:
   description: >
-    Extracts the Major.Minor version from a full Release Version string.
+    Derives product and image metadata versions from release/image inputs.
   params:
     - name: release-version
       description: Full release version (including Patch)
+    - name: image-version
+      default: ""
+      description: Optional image metadata version label. Falls back to release-version when empty.
   results:
     - name: product-version
       description: The truncated version string.
+    - name: image-version
+      description: Image metadata version label.
   steps:
     - name: derivative-product-version
       image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
       env:
         - name: RELEASE_VERSION
           value: $(params.release-version)
+        - name: IMAGE_VERSION
+          value: $(params.image-version)
       script: |
         #!/usr/bin/env sh
-        echo -n ${RELEASE_VERSION%.*} > $(results.product-version.path)
+        if [ -n "${IMAGE_VERSION}" ]; then
+          APPLIED_IMAGE_VERSION="${IMAGE_VERSION}"
+        else
+          APPLIED_IMAGE_VERSION="${RELEASE_VERSION}"
+        fi
+
+        echo -n "${RELEASE_VERSION%.*}" > "$(results.product-version.path)"
+        echo -n "${APPLIED_IMAGE_VERSION}" > "$(results.image-version.path)"
