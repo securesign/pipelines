@@ -105,6 +105,10 @@ spec:
     default: docker
     type: string
     description: The format for the resulting image's mediaType. Valid values are oci or docker.
+  - name: image-version
+    default: ""
+    type: string
+    description: Image metadata version label.
   - name: release-version
     default: "1.3.1"
     type: string
@@ -193,18 +197,20 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "b39f8091aea7b8e8d4851387efe7966bdde10558"
+        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
     - name: release-version
       value: $(params.release-version)
+    - name: image-version
+      value: $(params.image-version)
   - name: generate-labels
     params:
     - name: label-templates
       value:
       - "release=$SOURCE_DATE_EPOCH"
-      - "version=$(params.release-version)"
+      - "version=$(tasks.derive-product-version.results.image-version)"
       - "vendor=Red Hat, Inc."
       - "maintainer=rhtas-support@redhat.com"
       - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.derive-product-version.results.product-version)::el9"

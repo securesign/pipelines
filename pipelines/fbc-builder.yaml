@@ -165,7 +165,7 @@ spec:
         - name: url
           value: "https://github.com/securesign/pipelines.git"
         - name: revision
-          value: "b39f8091aea7b8e8d4851387efe7966bdde10558"
+          value: "df75ceee623c9c7f1b330c19122a6e354641d019"
         - name: pathInRepo
           value: tasks/derive-product-version.yaml
     params:
