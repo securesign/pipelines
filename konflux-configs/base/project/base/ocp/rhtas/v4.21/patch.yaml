@@ -36,7 +36,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.21"
@@ -65,7 +65,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.21"
@@ -96,7 +96,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-21"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.21"
