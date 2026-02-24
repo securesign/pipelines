@@ -1,0 +1,73 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: branch-sync-check
+spec:
+  description: |
+    Checks if the component's source revision contains all commits from a target branch.
+    Fails if the revision is behind the target branch, preventing the snapshot from being released.
+  params:
+    - description: Snapshot of the application
+      name: SNAPSHOT
+      type: string
+    - description: The target branch that the source revision must be up to date with
+      name: TARGET_BRANCH
+      default: main
+      type: string
+  tasks:
+    - name: check-branch-sync
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: TARGET_BRANCH
+          value: $(params.TARGET_BRANCH)
+      taskSpec:
+        params:
+          - name: SNAPSHOT
+            description: The JSON string of the Snapshot under test
+          - name: TARGET_BRANCH
+            description: The target branch to check against
+        steps:
+          - name: check-sync
+            image: quay.io/konflux-ci/konflux-test:stable
+            env:
+              - name: SNAPSHOT
+                value: $(params.SNAPSHOT)
+              - name: TARGET_BRANCH
+                value: $(params.TARGET_BRANCH)
+            script: |
+              #!/bin/bash
+              set -euo pipefail
+
+              GIT_URL=$(jq -r '.components[0].source.git.url' <<< "${SNAPSHOT}")
+              GIT_REVISION=$(jq -r '.components[0].source.git.revision' <<< "${SNAPSHOT}")
+
+              echo "Checking branch sync for:"
+              echo "  Repository:    ${GIT_URL}"
+              echo "  Revision:      ${GIT_REVISION}"
+              echo "  Target branch: ${TARGET_BRANCH}"
+
+              git clone --no-checkout --filter=blob:none "${GIT_URL}" /tmp/repo
+              cd /tmp/repo
+
+              git fetch origin "${GIT_REVISION}" 2>/dev/null || true
+
+              TARGET_SHA=$(git rev-parse "origin/${TARGET_BRANCH}")
+              echo "  Target HEAD:   ${TARGET_SHA}"
+
+              if ! git merge-base --is-ancestor "origin/${TARGET_BRANCH}" "${GIT_REVISION}"; then
+                MERGE_BASE=$(git merge-base "origin/${TARGET_BRANCH}" "${GIT_REVISION}" 2>/dev/null || echo "unknown")
+                BEHIND_COUNT=$(git rev-list --count "${MERGE_BASE}..origin/${TARGET_BRANCH}" 2>/dev/null || echo "unknown")
+
+                echo ""
+                echo "FAIL: Source revision ${GIT_REVISION} is behind ${TARGET_BRANCH}."
+                echo "  Merge base: ${MERGE_BASE}"
+                echo "  Commits behind: ${BEHIND_COUNT}"
+                echo ""
+                echo "The source does not contain all commits from ${TARGET_BRANCH}."
+                echo "Please rebase or merge ${TARGET_BRANCH} into your branch before building."
+                exit 1
+              fi
+
+              echo ""
+              echo "SUCCESS: Source revision ${GIT_REVISION} is up to date with ${TARGET_BRANCH}."
