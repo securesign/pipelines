@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - release-stream.yaml
-  - stage-stream.yaml
 
 configurations:
   - kustomizeconfig.yaml
