@@ -40,9 +40,9 @@ spec:
     cd $WORKDIR
 
     if [[ "$CLUSTER_PLATFORM" == "kind" ]]; then
-      ci/openshift/tas-keycloak-install.sh kind
+      ci/keycloak/tas-keycloak-install.sh kind
     else
-      ci/openshift/tas-keycloak-install.sh
+      ci/keycloak/tas-keycloak-install.sh
     fi
 
     OIDC_HOSTNAME=$(oc get route -n keycloak-system -l app=keycloak -o jsonpath='{.items[0].status.ingress[0].host}')
