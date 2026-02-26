@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - rhtas/overlay
   - policy-controller/overlay
+  - model-validation/overlay

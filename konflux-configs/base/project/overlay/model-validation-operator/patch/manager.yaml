@@ -1,0 +1,18 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "model-validation-operator{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "model-validation-operator{{.nameSuffix}}"
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile.model-validation.rh
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/model-validation-operator

@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-validation-operator
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Model Validation Operator"
+  description: |
+    The RHTAS (Red Hat Trusted Artifact Signer) operator allows for the deployment of a production ready version of the SigStore Model Transparency.
