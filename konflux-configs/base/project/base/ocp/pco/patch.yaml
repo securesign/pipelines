@@ -54,3 +54,38 @@
             value: pipelines/integration-test/policy-controller-fbc-e2e.yaml
         resolver: git
         resourceKind: pipelinerun
+
+# IntegrationTestScenario Upgrade
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-upgrade"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}} updates
+          name: "component_{{.application}}{{.nameSuffix}}"
+      params:
+        - name: OCP_VERSION
+          value: "{{.ocpVersion}}"
+        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+          value: "{{.policyControllerOperatorGitRevision}}"
+        - name: UPGRADE_FROM_CHANNEL
+          value: "tech-preview"
+        - name: UPGRADE_TO_CHANNEL
+          value: "{{.installChannel}}"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/pco-operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
