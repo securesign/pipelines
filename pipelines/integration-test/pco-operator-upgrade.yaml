@@ -323,7 +323,7 @@ spec:
                   value: credentials
             - name: execute-test
               onError: continue
-              image: registry.redhat.io/ubi9/go-toolset:1.25@sha256:359dd4c6c4255b3f7bce4dc15ffa5a9aa65a401f819048466fa91baa8244a793
+              image: registry.redhat.io/ubi9/go-toolset:9.7@sha256:31ce6a4b3348874c6a3ba1f7e88371348f96b34b7615e6680f16f4b0c9cf3c6b
               env:
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
