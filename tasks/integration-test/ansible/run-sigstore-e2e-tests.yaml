@@ -33,7 +33,7 @@ spec:
         - use
         - $(params.sigstore_e2e_repo)=/work/sigstore-e2e
     - name: push-test-image
-      image: quay.io/konflux-ci/buildah-task:latest@sha256:ad6b1781824e7fdcc75b0f7a608c78b4f23447cd0a7a7aced6123d8640211aed
+      image: quay.io/konflux-ci/buildah-task:latest@sha256:4c470b5a153c4acd14bf4f8731b5e36c61d7faafe09c2bf376bb81ce84aa5709
       results:
         - name: image
           type: string
