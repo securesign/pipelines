@@ -349,6 +349,13 @@ spec:
                   value: "$(params.UPGRADE_FROM_CHANNEL)"
                 - name: UPGRADE_TO_CHANNEL
                   value: "$(params.UPGRADE_TO_CHANNEL)"
+              computeResources:
+                requests:
+                  cpu: "1"
+                  memory: "4Gi"
+                limits:
+                  cpu: "2"
+                  memory: "8Gi"
               volumeMounts:
                 - name: credentials
                   mountPath: /credentials
@@ -367,7 +374,7 @@ spec:
                 source ./test/tas-env-variables.sh
                 go mod vendor
                 mkdir -p $(workspaces.source-code.path)/dump/operator-upgrade
-                go test -count=1 -tags=upgrade -v -timeout 30m -json ./test/... > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+                go test -p 1 -count=1 -tags=upgrade -v -timeout 30m -json ./test/... > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
                 cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-upgrade/ || echo "no test dump files found"
 
               securityContext:
