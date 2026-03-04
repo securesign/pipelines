@@ -17,4 +17,8 @@ patches:
   - target:
       name: model-validation-operator-template
       kind: ProjectDevelopmentStreamTemplate
+    path: patch/imagerepository.yaml
+  - target:
+      name: model-validation-operator-template
+      kind: ProjectDevelopmentStreamTemplate
     path: patch/bundle.yaml

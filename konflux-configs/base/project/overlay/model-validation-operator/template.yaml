@@ -18,7 +18,7 @@ spec:
       defaultValue: "-{{hyphenize .version}}"
     - name: application
       description: The application name
-      defaultValue: "operator"
+      defaultValue: "model-validation-operator"
     - name: operator
       description: The operator name
       defaultValue: "model-validation-operator"
@@ -33,4 +33,4 @@ spec:
           application.thumbnail: "5"
         name: "{{.application}}{{.nameSuffix}}"
       spec:
-        displayName: "{{.operator}} ({{.version}})"
+        displayName: "{{.application}} ({{.version}})"
