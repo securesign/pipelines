@@ -324,6 +324,8 @@ spec:
             - name: execute-test
               onError: continue
               image: registry.redhat.io/ubi9/go-toolset:9.7@sha256:31ce6a4b3348874c6a3ba1f7e88371348f96b34b7615e6680f16f4b0c9cf3c6b
+              results:
+                - name: exit-code
               env:
                 - name: OIDC_HOST
                   value: "$(tasks.prepare-tests.results.oidc-hostname)"
@@ -375,6 +377,8 @@ spec:
                 go mod vendor
                 mkdir -p $(workspaces.source-code.path)/dump/operator-upgrade
                 go test -p 1 -count=1 -tags=upgrade -v -timeout 30m -json ./test/... > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+                status=$?
+                printf "%s" "$status" > "$(step.results.exit-code.path)"
                 cp test/**/k8s-dump-*.tar.gz $(workspaces.source-code.path)/dump/operator-upgrade/ || echo "no test dump files found"
 
               securityContext:
@@ -392,3 +396,5 @@ spec:
               params:
                 - name: test_output_file
                   value: $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
+                - name: test_status
+                  value: $(steps.execute-test.results.exit-code)
