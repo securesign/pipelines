@@ -25,6 +25,29 @@
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "ctlog-monitor{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "ctlog-monitor"
+      build-nudges-ref:
+        - "artifact-signer-ansible{{.nameSuffix}}"
+        - "rhtas-operator{{.nameSuffix}}"
+      source:
+        git:
+          url: https://github.com/securesign/rekor-monitor
+          revision: "{{.branch}}"
+          dockerfileUrl: Dockerfile.ctlog-monitor.rh
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository
     metadata:
       name: "rekor-monitor{{.nameSuffix}}"
@@ -36,6 +59,28 @@
     spec:
       image:
         name: rhtas-tenant/rekor-monitor
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "ctlog-monitor{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "ctlog-monitor{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/ctlog-monitor
         visibility: public
       notifications:
         - config:
