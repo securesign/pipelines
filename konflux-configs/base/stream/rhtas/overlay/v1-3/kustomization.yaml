@@ -15,7 +15,3 @@ patches:
       allowNameChange: false
     target:
       kind: ProjectDevelopmentStream
-  - path: patch/ansible.yaml
-    target:
-      kind: ProjectDevelopmentStream
-      name: ansible
