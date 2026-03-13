@@ -64,8 +64,13 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-16 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-16"
+        - description: "runs the integration test for a group Snapshot or disable where not supported"
+          name: >-
+            {{- if or (eq .version "v1.3") (eq .version "v1.2")  -}}
+            disabled
+            {{- else -}}
+            group
+            {{- end -}}
       params:
         - name: OCP_VERSION
           value: "4.16"
