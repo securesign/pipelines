@@ -6,7 +6,7 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "false"
-      name: "ansible-e2e-test{{.nameSuffix}}"
+      name: "ansible-e2e-test-default{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
@@ -15,8 +15,134 @@
       params:
         - name: releaseBranch
           value: "{{.branch}}"
-        - name: molecule_scenarios
-          value: "{{.scenarios}}"
+        - name: scenario
+          value: "default"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "ansible-e2e-test-user-provided{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: runs molecule and go-e2e test suite on ansible collection
+          name: application
+      params:
+        - name: releaseBranch
+          value: "{{.branch}}"
+        - name: scenario
+          value: "user_provided"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "ansible-e2e-test-key-rotation{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: runs molecule and go-e2e test suite on ansible collection
+          name: application
+      params:
+        - name: releaseBranch
+          value: "{{.branch}}"
+        - name: scenario
+          value: "key_rotation"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "ansible-e2e-test-backup-restore{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: runs molecule and go-e2e test suite on ansible collection
+          name: >-
+            {{- if eq .version "v1.2" -}}
+            disabled
+            {{- else -}}
+            application
+            {{- end -}}
+      params:
+        - name: releaseBranch
+          value: "{{.branch}}"
+        - name: scenario
+          value: "backup_restore_migrate"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "ansible-e2e-test-postgresql{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: runs molecule and go-e2e test suite on ansible collection
+          name: >-
+            {{- if or (eq .version "v1.2") (eq .version "v1.3") -}}
+            disabled
+            {{- else -}}
+            application
+            {{- end -}}
+      params:
+        - name: releaseBranch
+          value: "{{.branch}}"
+        - name: scenario
+          value: "postgresql"
       resolverRef:
         params:
           - name: url

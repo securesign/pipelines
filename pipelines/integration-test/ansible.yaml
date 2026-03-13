@@ -18,11 +18,7 @@ spec:
       - name: SNAPSHOT
       - name: releaseBranch
         default: "main"
-      - name: molecule_scenarios
-        default: "[\"default\",\"user_provided\", \"key_rotation\", \"backup_restore_migrate\", \"postgresql\"]"
-      - name: cache_oci_storage
-        default: "quay.io/securesign/ansible-test-cache"
-        description: "OCI storage location for Ansible cache artifacts"
+      - name: scenario
     workspaces:
       - name: work
     tasks:
@@ -57,7 +53,7 @@ spec:
           - name: revision
             value: $(tasks.parse-metadata.results.git-revision)
           - name: subdirectory
-            value: "ansible"
+            value: "artifact-signer-ansible"
         workspaces:
           - name: output
             workspace: work
@@ -82,15 +78,10 @@ spec:
           - name: output
             workspace: work
       - name: prepare-molecule-tests
-        runAfter:
-          - clone-source-code
         workspaces:
           - name: work
             workspace: work
         taskSpec:
-          results:
-            - name: scenario-matrix
-              type: array
           workspaces:
             - name: work
           steps:
@@ -100,63 +91,30 @@ spec:
                 - export
                 - $(tasks.parse-metadata.results.container-image)
                 - $(workspaces.work.path)/image.tar
-            - name: prepare-tests
-              env:
-                - name: SCENARIOS
-                  value: $(params.molecule_scenarios)
+            - name: prepare-env
               image: "quay.io/redhat-appstudio/konflux-test:stable"
               script: |
                 #!/bin/sh
                 set -ex
-                echo -n "$SCENARIOS" | tee $(results.scenario-matrix.path)
+                
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
-
+                
                 # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
-                find $(workspaces.work.path)/ansible/molecule -type f -name "converge.yml" \
+                find $(workspaces.work.path)/artifact-signer-ansible/molecule -type f -name "converge.yml" \
                 -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
-      # build OCI test cache for parallel task execution
-      - name: build-test-cache
-        runAfter:
-          - prepare-molecule-tests
-          - clone-e2e-test-source-code
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/ansible/build-test-cache.yaml
-        params:
-          - name: pythonRequirementsFile
-            value: $(workspaces.work.path)/ansible/testing-requirements.txt
-          - name: ansibleRequirementsFile
-            value: $(workspaces.work.path)/ansible/requirements.yml
-          - name: moleculeRequirementsFile
-            value: $(workspaces.work.path)/ansible/molecule/requirements.yml
-          - name: releaseArtifactSignerFile
-            value: $(workspaces.work.path)/releases/redhat-artifact_signer-*.tar.gz
-          - name: ociStorage
-            value: "$(params.cache_oci_storage):$(context.pipelineRun.name)"
-        workspaces:
-          - name: work
-            workspace: work
       - name: run-molecule-tests
         runAfter:
-          - build-test-cache
-        matrix:
-          params:
-            - name: scenario
-              value: $(tasks.prepare-molecule-tests.results.scenario-matrix)
+          - prepare-molecule-tests
+          - clone-source-code
         params:
-          - name: cache
-            value: $(tasks.build-test-cache.results.cache)
-          - name: ansible_repo
-            value: $(tasks.build-test-cache.results.ansible_repo)
+          - name: scenario
+            value: $(params.scenario)
           - name: run-id
             value: $(context.pipelineRun.name)
+        workspaces:
+          - name: sources
+            workspace: work
         taskRef:
           resolver: git
           params:
@@ -169,13 +127,13 @@ spec:
       - name: run-sigstore-e2e-tests
         runAfter:
           - run-molecule-tests
-        matrix:
-          params:
-            - name: info
-              value: $(tasks.run-molecule-tests.results.instance-info[*])
+          - clone-e2e-test-source-code
         params:
-          - name: sigstore_e2e_repo
-            value: $(tasks.build-test-cache.results.sigstore_e2e_repo)
+          - name: info
+            value: $(tasks.run-molecule-tests.results.instance-info)
+        workspaces:
+          - name: source-code
+            workspace: work
         taskRef:
           resolver: git
           params:

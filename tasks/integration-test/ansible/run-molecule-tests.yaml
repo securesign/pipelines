@@ -11,11 +11,6 @@ spec:
       - name: run-id
         type: string
         description: "run id"
-      - name: cache
-        type: string
-        description: "OCI artifact URI containing the Ansible cache"
-      - name: ansible_repo
-        type: string
   results:
     - name: instance-info
   volumes:
@@ -32,21 +27,11 @@ spec:
           - key: ansible.cfg
             path: ansible.cfg
     - name: work
-      emptyDir: {}
-    - name: cache
-      emptyDir: {}
+      emptyDir: { }
+  workspaces:
+    - name: sources
+      description: "The workspace containing the source code"
   steps:
-    - name: extract-dependency-cache
-      volumeMounts:
-        - name: cache
-          mountPath: /cache
-        - name: work
-          mountPath: /work
-      image: "quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d"
-      args:
-        - use
-        - $(params.cache)=/cache
-        - $(params.ansible_repo)=/work/ansible
     - name: extract-registry-credentials
       image: "quay.io/redhat-appstudio/konflux-test:stable"
       volumeMounts:
@@ -68,8 +53,6 @@ spec:
           mountPath: /creds
         - name: work
           mountPath: /work
-        - name: cache
-          mountPath: /cache
         - name: aah
           mountPath: /etc/ansible/ansible.cfg
           subPath: ansible.cfg
@@ -82,22 +65,16 @@ spec:
           value: "eu-north-1"
         - name: AWS_KEY_NAME
           value: CI-TEST
-        - name: ANSIBLE_COLLECTIONS_PATH
-          value: /cache/ansible/collections
-        - name: ANSIBLE_ROLES_PATH
-          value: /cache/ansible/roles
-        - name: PYTHONPATH
-          value: /cache/pip
-        - name: MOLECULE_EPHEMERAL_DIRECTORY
-          value: /work/molecule
         - name: HOME
-          value: /tmp
-      workingDir: /work/ansible
+          value: /work
+        - name: MOLECULE_EPHEMERAL_DIRECTORY
+          value: /work/molecule-cache/$(params.scenario)
+      workingDir: $(workspaces.sources.path)/artifact-signer-ansible
       script: |
         #!/bin/sh
         set -ex
     
-        mkdir -p ~/.ssh /work/molecule
+        mkdir -p ~/.ssh /work/molecule-cache
         chmod 700 ~/.ssh
         touch ~/.ssh/known_hosts
         chmod 600 ~/.ssh/known_hosts
@@ -112,6 +89,16 @@ spec:
         export TAS_SINGLE_NODE_REGISTRY_USERNAME=$(cat /work/rhio-username)
         export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /work/rhio-password)
         set -x
+        
+        python3.11 -m venv /work/venv
+        source /work/venv/bin/activate
+        
+        python3.11 -m pip install --upgrade pip
+        python3.11 -m pip install -r $(workspaces.sources.path)/artifact-signer-ansible/testing-requirements.txt
+
+        ansible-galaxy install -r  $(workspaces.sources.path)/artifact-signer-ansible/molecule/requirements.yml
+        ansible-galaxy collection install $(workspaces.sources.path)/releases/redhat-artifact_signer-*.tar.gz --force
+        
         molecule test --scenario-name $(params.scenario) --destroy never
       computeResources:
         limits:
@@ -126,8 +113,8 @@ spec:
         - name: work
           mountPath: /work
       env:
-        - name: INSTANCE_CONFIG
-          value: /work/molecule/instance_config.yml
+      - name: INSTANCE_CONFIG
+        value: /work/molecule-cache/$(params.scenario)/instance_config.yml
       script: |
         #!/bin/sh
         set -ex
