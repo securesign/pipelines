@@ -35,12 +35,16 @@ spec:
                 value: $(params.SNAPSHOT)
               - name: TARGET_BRANCH
                 value: $(params.TARGET_BRANCH)
+              - name: COMPONENT_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.labels['appstudio.openshift.io/component']
             script: |
               #!/bin/bash
               set -euo pipefail
 
-              GIT_URL=$(jq -r '.components[0].source.git.url' <<< "${SNAPSHOT}")
-              GIT_REVISION=$(jq -r '.components[0].source.git.revision' <<< "${SNAPSHOT}")
+              GIT_URL=$(jq -r --arg name "${COMPONENT_NAME}" '.components[] | select(.name == $name) | .source.git.url' <<< "${SNAPSHOT}")
+              GIT_REVISION=$(jq -r --arg name "${COMPONENT_NAME}" '.components[] | select(.name == $name) | .source.git.revision' <<< "${SNAPSHOT}")
 
               echo "Checking branch sync for:"
               echo "  Repository:    ${GIT_URL}"

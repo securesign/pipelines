@@ -11,7 +11,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test in all cases - this would be the default state
-          name: application
+          name: component
       params:
         - name: TARGET_BRANCH
           value: "{{.branch}}"
