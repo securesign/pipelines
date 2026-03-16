@@ -1,5 +1,0 @@
-- op: add
-  path: /spec/template/values/-
-  value:
-    name: scenarios
-    value: '["default","user_provided", "key_rotation", "backup_restore_migrate"]'
