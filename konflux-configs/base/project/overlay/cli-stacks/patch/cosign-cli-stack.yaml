@@ -9,33 +9,30 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "gitsign{{.nameSuffix}}"
+      name: "cosign-cli-stack{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "gitsign"
-      build-nudges-ref:
-        - "client-server{{.nameSuffix}}"
-        - "gitsign-cli-stack{{.nameSuffix}}"
+      componentName: "cosign-cli-stack"
       source:
         git:
-          url: https://github.com/securesign/gitsign
+          url: https://github.com/securesign/cosign
           revision: "{{.branch}}"
-          dockerfileUrl: Dockerfile.gitsign.rh
+          dockerfileUrl: Dockerfile.cli-stack.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
-    kind: ImageRepository 
+    kind: ImageRepository
     metadata:
-      name: "gitsign{{.nameSuffix}}"
+      name: "cosign-cli-stack{{.nameSuffix}}"
       annotations:
         image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
-        appstudio.redhat.com/component: "gitsign{{.nameSuffix}}"
+        appstudio.redhat.com/component: "cosign-cli-stack{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/gitsign
+        name: rhtas-tenant/cosign-cli-stack
         visibility: public
       notifications:
         - config:

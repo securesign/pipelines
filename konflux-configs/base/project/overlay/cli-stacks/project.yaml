@@ -1,0 +1,10 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: cli-stacks
+spec:
+  displayName: "cli-stacks"
+  description: |
+    Per-CLI flat images aggregating binaries from multi-arch runtime builds.
+    Contains all architecture and OS binaries as .tar.gz archives.
+    Used for CDN publishing and client-server distribution.
