@@ -9,33 +9,30 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "updatetree{{.nameSuffix}}"
+      name: "gitsign-cli-stack{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "updatetree"
-      build-nudges-ref:
-        - "client-server{{.nameSuffix}}"
-        - "updatetree-cli-stack{{.nameSuffix}}"
+      componentName: "gitsign-cli-stack"
       source:
         git:
-          url: https://github.com/securesign/trillian
+          url: https://github.com/securesign/gitsign
           revision: "{{.branch}}"
-          dockerfileUrl: Dockerfile.updatetree.rh
+          dockerfileUrl: Dockerfile.cli-stack.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
-    kind: ImageRepository 
+    kind: ImageRepository
     metadata:
-      name: "update-tree{{.nameSuffix}}"
+      name: "gitsign-cli-stack{{.nameSuffix}}"
       annotations:
         image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
-        appstudio.redhat.com/component: "updatetree{{.nameSuffix}}"
+        appstudio.redhat.com/component: "gitsign-cli-stack{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/update-tree
+        name: rhtas-tenant/gitsign-cli-stack
         visibility: public
       notifications:
         - config:

@@ -15,6 +15,7 @@
       componentName: "rekor-cli"
       build-nudges-ref:
         - "client-server{{.nameSuffix}}"
+        - "rekor-cli-stack{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/rekor

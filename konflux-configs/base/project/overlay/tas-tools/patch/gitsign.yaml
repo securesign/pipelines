@@ -15,6 +15,7 @@
       componentName: "gitsign"
       build-nudges-ref:
         - "client-server{{.nameSuffix}}"
+        - "gitsign-cli-stack{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/gitsign
