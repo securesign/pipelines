@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-transparency-cli
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Model Transparency Cli"
+  description: |
+    Model Transparency Cli - Generating signatures via Sigstore and protect the integrity of a model by signing it.
