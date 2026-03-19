@@ -17,6 +17,7 @@
         - "artifact-signer-ansible{{.nameSuffix}}"
         - "rhtas-operator{{.nameSuffix}}"
         - "client-server{{.nameSuffix}}"
+        - "trillian-cli-stack{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/trillian

@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: cli-stacks
+spec:
+  project: cli-stacks
+  template:
+    name: cli-stacks-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

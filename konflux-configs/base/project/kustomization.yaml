@@ -17,3 +17,4 @@ resources:
   - overlay/policy-controller-operator
   - overlay/model-validation-operator
   - overlay/model-transparency
+  - overlay/cli-stacks

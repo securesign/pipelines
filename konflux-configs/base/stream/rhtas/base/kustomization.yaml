@@ -12,3 +12,4 @@ resources:
   - tough-stream.yaml
   - create-tree-stream.yaml
   - client-server-stream.yaml
+  - cli-stacks-stream.yaml
