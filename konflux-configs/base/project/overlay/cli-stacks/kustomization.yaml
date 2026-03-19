@@ -24,7 +24,7 @@ patches:
   - target:
       name: cli-stacks-template
       kind: ProjectDevelopmentStreamTemplate
-    path: patch/updatetree-cli-stack.yaml
+    path: patch/trillian-cli-stack.yaml
   - target:
       name: cli-stacks-template
       kind: ProjectDevelopmentStreamTemplate
