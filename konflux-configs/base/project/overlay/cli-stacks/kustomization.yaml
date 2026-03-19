@@ -13,20 +13,19 @@ patches:
       name: cli-stacks-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/gitsign-cli-stack.yaml
-  # Uncomment once Dockerfile.cli-stack.rh exists in each upstream repo:
-  # - target:
-  #     name: cli-stacks-template
-  #     kind: ProjectDevelopmentStreamTemplate
-  #   path: patch/cosign-cli-stack.yaml
-  # - target:
-  #     name: cli-stacks-template
-  #     kind: ProjectDevelopmentStreamTemplate
-  #   path: patch/rekor-cli-stack.yaml
-  # - target:
-  #     name: cli-stacks-template
-  #     kind: ProjectDevelopmentStreamTemplate
-  #   path: patch/updatetree-cli-stack.yaml
-  # - target:
-  #     name: cli-stacks-template
-  #     kind: ProjectDevelopmentStreamTemplate
-  #   path: patch/fetch-tsa-certs-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/cosign-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/rekor-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/updatetree-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/fetch-tsa-certs-cli-stack.yaml
