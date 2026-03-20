@@ -18,4 +18,3 @@ patches:
   - path: patch/mintmaker.yaml
     target:
       kind: ProjectDevelopmentStream
-  - path: patch/exclude-model-validation-agent.yaml
