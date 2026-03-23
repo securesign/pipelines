@@ -9,30 +9,30 @@
         git-provider: github
         git-provider-url: https://github.com
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "tuf-tool{{.nameSuffix}}"
+      name: "tuftool-cli-stack{{.nameSuffix}}"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "tuf-tool"
-      build-nudges-ref:
-        - "client-server{{.nameSuffix}}"
-        - "tuftool-cli-stack{{.nameSuffix}}"
+      componentName: "tuftool-cli-stack"
       source:
         git:
           url: https://github.com/securesign/tough
-          revision: "{{.branch}}"
-          dockerfileUrl: Dockerfile.rh
+          revision: "develop"
+          dockerfileUrl: Dockerfile.cli-stack.rh
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1alpha1
-    kind: ImageRepository 
+    kind: ImageRepository
     metadata:
-      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-tuf-tool"
+      name: "tuftool-cli-stack{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
-        appstudio.redhat.com/component: "tuf-tool{{.nameSuffix}}"
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "tuftool-cli-stack{{.nameSuffix}}"
     spec:
       image:
-        name: rhtas-tenant/tuf-tool
+        name: rhtas-tenant/tuftool-cli-stack
         visibility: public
       notifications:
         - config:
