@@ -29,3 +29,7 @@ patches:
       name: cli-stacks-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/fetch-tsa-certs-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/tuftool-cli-stack.yaml
