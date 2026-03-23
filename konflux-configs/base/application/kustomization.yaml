@@ -6,5 +6,4 @@ resources:
   - konflux/base
   - pipelines/base
   # RHTAS components
-  - model-transparency-go/base
   - rhtas-console/base

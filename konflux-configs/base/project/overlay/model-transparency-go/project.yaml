@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-transparency-go
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Model Transparency Go"
+  description: |
+    Model Transparency Go - Go implementation of model transparency for verifiable supply-chain metadata.
