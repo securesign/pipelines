@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-transparency-go
+spec:
+  project: model-transparency-go
+  template:
+    name: model-transparency-go-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""
