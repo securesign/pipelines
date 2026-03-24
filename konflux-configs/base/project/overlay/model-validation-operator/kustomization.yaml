@@ -22,3 +22,7 @@ patches:
       name: model-validation-operator-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/bundle.yaml
+  - target:
+      name: model-validation-operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/agent.yaml
