@@ -22,6 +22,13 @@ spec:
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
+
+        if [[ -z "$SELECTOR" ]]; then
+          echo "No selector provided, skipping"
+          printf "" > "$(results.ARTIFACT_DIGEST.path)"
+          printf "" > "$(results.ARTIFACT_REFERENCE.path)"
+          exit 0
+        fi
         
         get_pr_status() {
           local name="$1"
