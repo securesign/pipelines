@@ -1,0 +1,6153 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konflux-configuration-as-code-deployer
+  namespace: rhtas-dev-tenant
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhtas-build-bot
+  namespace: rhtas-dev-tenant
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhtas-release
+  namespace: rhtas-dev-tenant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: konflux-configuration-as-code-role
+  namespace: rhtas-dev-tenant
+rules:
+- apiGroups:
+  - appstudio.redhat.com
+  resources:
+  - applications
+  - components
+  - integrationtestscenarios
+  - releaseplans
+  - snapshots
+  - imagerepositories
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - projctl.konflux.dev
+  resources:
+  - projects
+  - projectdevelopmentstreamtemplates
+  - projectdevelopmentstreams
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhtas-build-bot-role
+  namespace: rhtas-dev-tenant
+rules:
+- apiGroups:
+  - appstudio.redhat.com
+  resources:
+  - releases
+  - releaseplans
+  - snapshots
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelineruns
+  verbs:
+  - list
+  - get
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhtas-release-role
+  namespace: rhtas-dev-tenant
+rules:
+- apiGroups:
+  - appstudio.redhat.com
+  resources:
+  - releaseplans
+  - releases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: konflux-configuration-as-code-deployer-rolebinding
+  namespace: rhtas-dev-tenant
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: konflux-configuration-as-code-role
+subjects:
+- kind: ServiceAccount
+  name: konflux-configuration-as-code-deployer
+  namespace: rhtas-dev-tenant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhtas-build-bot-rolebinding
+  namespace: rhtas-dev-tenant
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhtas-build-bot-role
+subjects:
+- kind: ServiceAccount
+  name: rhtas-build-bot
+  namespace: rhtas-dev-tenant
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhtas-release-rolebinding
+  namespace: rhtas-dev-tenant
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhtas-release-role
+subjects:
+- kind: ServiceAccount
+  name: rhtas-release
+  namespace: rhtas-dev-tenant
+---
+apiVersion: v1
+data:
+  automerge: "true"
+  platformAutomerge: "true"
+kind: ConfigMap
+metadata:
+  name: namespace-wide-nudging-renovate-config
+  namespace: rhtas-dev-tenant
+---
+apiVersion: v1
+data:
+  github-org: securesign
+  mintmaker-disabled: "true"
+  registry-namespace: rhtas-dev-tenant
+kind: ConfigMap
+metadata:
+  name: registry-config-bkmttdht48
+  namespace: rhtas-dev-tenant
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Application
+metadata:
+  name: konflux
+  namespace: rhtas-dev-tenant
+spec:
+  displayName: Konflux
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Application
+metadata:
+  name: pipelines
+  namespace: rhtas-dev-tenant
+spec:
+  displayName: Konflux pipelines
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Application
+metadata:
+  name: rhtas-console
+  namespace: rhtas-dev-tenant
+spec:
+  displayName: rhtas-console (main)
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: configuration-as-code
+  namespace: rhtas-dev-tenant
+spec:
+  application: konflux
+  componentName: configuration-as-code
+  source:
+    git:
+      context: konflux-configs
+      dockerfileUrl: Dockerfile
+      revision: main
+      url: https://github.com/securesign/pipelines.git
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/2","configuration-time":"Thu,
+      21 Nov 2024 16:50:06 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: docker-build
+  namespace: rhtas-dev-tenant
+spec:
+  application: pipelines
+  componentName: docker-build
+  source:
+    git:
+      dockerfileUrl: pipeline-tests/Dockerfile
+      revision: main
+      url: https://github.com/securesign/pipelines
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-multi-platform-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/19","configuration-time":"Tue,
+      26 Nov 2024 12:46:01 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: docker-build-multi-platform-oci-ta
+  namespace: rhtas-dev-tenant
+spec:
+  application: pipelines
+  componentName: docker-build-multi-platform-oci-ta
+  source:
+    git:
+      dockerfileUrl: pipeline-tests/Dockerfile
+      revision: main
+      url: https://github.com/securesign/pipelines
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/3","configuration-time":"Thu,
+      21 Nov 2024 16:52:24 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: docker-build-oci-ta
+  namespace: rhtas-dev-tenant
+spec:
+  application: pipelines
+  componentName: docker-build-oci-ta
+  source:
+    git:
+      dockerfileUrl: pipeline-tests/Dockerfile
+      revision: main
+      url: https://github.com/securesign/pipelines
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/25","configuration-time":"Thu,
+      05 Dec 2024 09:27:59 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: fbc-builder
+  namespace: rhtas-dev-tenant
+spec:
+  application: pipelines
+  componentName: fbc-builder
+  source:
+    git:
+      context: pipeline-tests/fbc
+      dockerfileUrl: pipeline-tests/fbc/catalog.Dockerfile
+      revision: main
+      url: https://github.com/securesign/pipelines
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: rhtas-console
+  namespace: rhtas-dev-tenant
+spec:
+  application: rhtas-console
+  componentName: rhtas-console
+  source:
+    git:
+      dockerfileUrl: Dockerfile.rh
+      revision: main
+      url: https://github.com/securesign/rhtas-console
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    git-provider: github
+    git-provider-url: https://github.com
+    mintmaker.appstudio.redhat.com/disabled: "true"
+  name: rhtas-console-ui
+  namespace: rhtas-dev-tenant
+spec:
+  application: rhtas-console
+  componentName: rhtas-console-ui
+  source:
+    git:
+      context: ./
+      dockerfileUrl: Dockerfile
+      revision: main
+      url: https://github.com/securesign/rhtas-console-ui/
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: "true"
+  labels:
+    appstudio.redhat.com/application: konflux
+    appstudio.redhat.com/component: configuration-as-code
+  name: konflux-configuration-as-code
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/configuration-as-code
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: "true"
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build
+  name: konflux-docker-build
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/docker-build
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: "true"
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-multi-platform-oci-ta
+  name: konflux-docker-build-multi-platform-oci-ta
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/docker-build-multi-platform-oci-ta
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: "true"
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-oci-ta
+  name: konflux-docker-build-oci-ta
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/docker-build-oci-ta
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: "true"
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: fbc-builder
+  name: konflux-fbc-builder
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/fbc-builder
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  labels:
+    appstudio.redhat.com/application: rhtas-console
+    appstudio.redhat.com/component: rhtas-console
+  name: rhtas-console
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/rhtas-console
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  labels:
+    appstudio.redhat.com/application: rhtas-console
+    appstudio.redhat.com/component: rhtas-console-ui
+  name: rhtas-console-ui
+  namespace: rhtas-dev-tenant
+spec:
+  image:
+    name: rhtas-dev-tenant/rhtas-console-ui
+    visibility: public
+  notifications:
+  - config:
+      url: https://bombino.api.redhat.com/v1/sbom/quay/push
+    event: repo_push
+    method: webhook
+    title: SBOM-event-to-Bombino
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: deploy-konflux-configuration-as-code
+  namespace: rhtas-dev-tenant
+spec:
+  application: konflux
+  tenantPipeline:
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/konflux/deploy-config.yaml
+      resolver: git
+    serviceAccountName: konflux-configuration-as-code-deployer
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-16
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-16
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-17
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-17
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-18
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-18
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-19
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-19
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-20
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-20
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-fbc-v4-21
+  namespace: rhtas-dev-tenant
+spec:
+  application: fbc-v4-21
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-16
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-16
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-17
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-17
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-18
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-18
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-19
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-19
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-20
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-20
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-pco-fbc-v4-21
+  namespace: rhtas-dev-tenant
+spec:
+  application: pco-fbc-v4-21
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: fbc
+    - name: file-name
+      value: policy-controller-operator-fbc.json
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/standing-attribution: "true"
+  name: promote-to-candidate-rhtas-console
+  namespace: rhtas-dev-tenant
+spec:
+  application: rhtas-console
+  tenantPipeline:
+    params:
+    - name: git-url
+      value: https://github.com/securesign/releases
+    - name: code-freeze
+      value: "false"
+    - name: type
+      value: component
+    pipelineRef:
+      params:
+      - name: url
+        value: https://github.com/securesign/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/promote-to-candidate.yaml
+      resolver: git
+    serviceAccountName: rhtas-build-bot
+---
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  annotations:
+    test.appstudio.openshift.io/kind: enterprise-contract
+  name: configuration-as-code-enterprise-contract
+  namespace: rhtas-dev-tenant
+spec:
+  application: konflux
+  resolverRef:
+    params:
+    - name: url
+      value: https://github.com/konflux-ci/build-definitions
+    - name: revision
+      value: main
+    - name: pathInRepo
+      value: pipelines/enterprise-contract.yaml
+    resolver: git
+    resourceKind: pipeline
+---
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  name: configuration-as-code-it
+  namespace: rhtas-dev-tenant
+spec:
+  application: konflux
+  contexts:
+  - description: execute the integration test when component configuration-as-code
+      updates
+    name: component_configuration-as-code
+  resolverRef:
+    params:
+    - name: url
+      value: https://github.com/securesign/pipelines.git
+    - name: revision
+      value: main
+    - name: pathInRepo
+      value: pipelines/konflux/integration-test.yaml
+    resolver: git
+    resourceKind: pipeline
+---
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  annotations:
+    test.appstudio.openshift.io/kind: enterprise-contract
+  name: pipelines-enterprise-contract
+  namespace: rhtas-dev-tenant
+spec:
+  application: pipelines
+  resolverRef:
+    params:
+    - name: url
+      value: https://github.com/konflux-ci/build-definitions
+    - name: revision
+      value: main
+    - name: pathInRepo
+      value: pipelines/enterprise-contract.yaml
+    resolver: git
+    resourceKind: pipeline
+---
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  annotations:
+    test.appstudio.openshift.io/kind: enterprise-contract
+  name: rhtas-console-enterprise-contract
+  namespace: rhtas-dev-tenant
+spec:
+  application: rhtas-console
+  resolverRef:
+    params:
+    - name: url
+      value: https://github.com/konflux-ci/build-definitions
+    - name: revision
+      value: main
+    - name: pathInRepo
+      value: pipelines/enterprise-contract.yaml
+    resolver: git
+    resourceKind: pipeline
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: ansible
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Ansible collections to automate the deployment of the Red Hat Trusted Artifact Signer (RHTAS) service on Red Hat Enterprise Linux (RHEL).
+  displayName: Red Hat Trusted Artifact Signer Ansible
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: cli-stacks
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Per-CLI flat images aggregating binaries from multi-arch runtime builds.
+    Contains all architecture and OS binaries as .tar.gz archives.
+    Used for CDN publishing and client-server distribution.
+  displayName: cli-stacks
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: client-server
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Client Server used to serve CLI tooling for RHTAS.
+  displayName: client-server
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: create-tree
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Create tree tooling for rhtas.
+  displayName: create-tree
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-transparency
+  namespace: rhtas-dev-tenant
+spec:
+  description: "Policy Controller - an admission controller that can be used to enforce
+    policy on a Kubernetes cluster based \non verifiable supply-chain metadata from
+    cosign.\n"
+  displayName: Red Hat Trusted Artifact Signer Model Transparency
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-transparency-go
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Model Transparency Go - Go implementation of model transparency for verifiable supply-chain metadata.
+  displayName: Red Hat Trusted Artifact Signer Model Transparency Go
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: model-validation-operator
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    The RHTAS (Red Hat Trusted Artifact Signer) operator allows for the deployment of a production ready version of the SigStore Model Transparency.
+  displayName: Red Hat Trusted Artifact Signer Model Validation Operator
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: operator
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    The RHTAS (Red Hat Trusted Artifact Signer) operator allows for the deployment of a production ready version of the SigStore project.
+  displayName: Red Hat Trusted Artifact Signer Operator
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: pco-fbc
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    File-Based Catalogs for Red Hat Trusted Artifact Signer Policy Controller Operator.
+  displayName: Policy Controller Operator FBC
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: policy-controller
+  namespace: rhtas-dev-tenant
+spec:
+  description: "Policy Controller - an admission controller that can be used to enforce
+    policy on a Kubernetes cluster based \non verifiable supply-chain metadata from
+    cosign.\n"
+  displayName: Red Hat Trusted Artifact Signer Policy Controller
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: policy-controller-operator
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    A Helm-based operator for deploying and managing instances of the Sigstore Policy Controller on OpenShift/Kubernetes.
+  displayName: Red Hat Trusted Artifact Signer Policy Controller Operator
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rekor-monitor
+  namespace: rhtas-dev-tenant
+spec:
+  description: Rekor transparency log monitoring
+  displayName: Red Hat Trusted Artifact Signer Rekor Monitor
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rhtas-fbc
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    File-Based Catalogs for Red Hat Trusted Artifact Signer.
+  displayName: RHTAS FBC
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: segment-backup-job
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Segment backup job for TAS (deprecated in 1.4+)
+  displayName: Red Hat Trusted Artifact Signer Segment Backup Job
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tas-components
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Dependencies of the TAS Operator
+  displayName: tas-components
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tas-tools
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Tooling used with the the TAS Operator
+  displayName: tas-tools
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tough
+  namespace: rhtas-dev-tenant
+spec:
+  description: |
+    Tough provides TUF (The Update Framework) implementation with tuf-tool and tuffer components.
+  displayName: Tough
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: ansible-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: ansible
+  template:
+    name: ansible-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: ansible-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: ansible
+  template:
+    name: ansible-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: ansible-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: ansible
+  template:
+    name: ansible-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: cli-stacks-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: cli-stacks
+  template:
+    name: cli-stacks-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: cli-stacks-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: cli-stacks
+  template:
+    name: cli-stacks-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: cli-stacks-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: cli-stacks
+  template:
+    name: cli-stacks-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: client-server-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: client-server
+  template:
+    name: client-server-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: client-server-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: client-server
+  template:
+    name: client-server-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: client-server-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: client-server
+  template:
+    name: client-server-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: create-tree-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: create-tree
+  template:
+    name: create-tree-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: create-tree-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: create-tree
+  template:
+    name: create-tree-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: create-tree-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: create-tree
+  template:
+    name: create-tree-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-transparency-go-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency-go
+  template:
+    name: model-transparency-go-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-transparency-go-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency-go
+  template:
+    name: model-transparency-go-template
+    values:
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: tech-preview
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-transparency-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency
+  template:
+    name: model-transparency-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-transparency-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency
+  template:
+    name: model-transparency-template
+    values:
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: tech-preview
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-validation-operator-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-validation-operator
+  template:
+    name: model-validation-operator-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: model-validation-operator-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-validation-operator
+  template:
+    name: model-validation-operator-template
+    values:
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: tech-preview
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: operator-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: operator
+  template:
+    name: operator-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: operator-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: operator
+  template:
+    name: operator-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: operator-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: operator
+  template:
+    name: operator-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-16
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.16"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-16-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.16"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-17
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.17"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-17-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.17"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-18
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.18"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-18-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.18"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-19
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.19"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-19-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.19"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-20
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.20"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-20-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.20"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-21
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.21"
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+    - name: policyControllerOperatorGitRevision
+      value: main
+    - name: installChannel
+      value: stable
+    - name: policyControllerOperatorDeploymentName
+      value: policy-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: pco-fbc-v4-21-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  template:
+    name: pco-fbc-template
+    values:
+    - name: ocpVersion
+      value: "4.21"
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: pco-tech-preview
+    - name: nameSuffix
+      value: -tech-preview
+    - name: policyControllerOperatorGitRevision
+      value: tech-preview
+    - name: installChannel
+      value: tech-preview
+    - name: policyControllerOperatorDeploymentName
+      value: policy-op-controller-manager
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: policy-controller-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller
+  template:
+    name: policy-controller-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: policy-controller-operator-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller-operator
+  template:
+    name: policy-controller-operator-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: policy-controller-operator-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller-operator
+  template:
+    name: policy-controller-operator-template
+    values:
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: tech-preview
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: policy-controller-tech-preview
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller
+  template:
+    name: policy-controller-template
+    values:
+    - name: version
+      value: tech-preview
+    - name: branch
+      value: tech-preview
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rekor-monitor-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: rekor-monitor
+  template:
+    name: rekor-monitor-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rekor-monitor-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: rekor-monitor
+  template:
+    name: rekor-monitor-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-console-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-console
+  template:
+    name: rhtas-console-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-console-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-console
+  template:
+    name: rhtas-console-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-console-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-console
+  template:
+    name: rhtas-console-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: rhtas-fbc-release
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-fbc
+  template:
+    name: rhtas-fbc-template
+    values:
+    - name: version
+      value: release
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: segment-backup-job-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: segment-backup-job
+  template:
+    name: segment-backup-job-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: segment-backup-job-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: segment-backup-job
+  template:
+    name: segment-backup-job-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-components-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-components
+  template:
+    name: tas-components-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-components-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-components
+  template:
+    name: tas-components-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-components-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-components
+  template:
+    name: tas-components-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-tools-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-tools
+  template:
+    name: tas-tools-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: main
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-tools-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-tools
+  template:
+    name: tas-tools-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tas-tools-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-tools
+  template:
+    name: tas-tools-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tough-main
+  namespace: rhtas-dev-tenant
+spec:
+  project: tough
+  template:
+    name: tough-template
+    values:
+    - name: version
+      value: main
+    - name: branch
+      value: develop
+    - name: nameSuffix
+      value: ""
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tough-v1-2
+  namespace: rhtas-dev-tenant
+spec:
+  project: tough
+  template:
+    name: tough-template
+    values:
+    - name: version
+      value: v1.2
+    - name: branch
+      value: release-1.2
+    - name: mintmakerDisabled
+      value: "false"
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: tough-v1-3
+  namespace: rhtas-dev-tenant
+spec:
+  project: tough
+  template:
+    name: tough-template
+    values:
+    - name: version
+      value: v1.3
+    - name: branch
+      value: release-1.3
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/type: ansible
+  name: ansible-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: ansible
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: operator
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/artifact-signer-ansible/pull/259","configuration-time":"Wed,
+          07 Aug 2024 08:59:18 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: artifact-signer-ansible{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: artifact-signer-ansible{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/artifact-signer-ansible
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-e2e-test-default{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule and go-e2e test suite on ansible collection
+        name: application
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      - name: scenario
+        value: default
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-e2e-test-user-provided{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule and go-e2e test suite on ansible collection
+        name: application
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      - name: scenario
+        value: user_provided
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-e2e-test-key-rotation{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule and go-e2e test suite on ansible collection
+        name: application
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      - name: scenario
+        value: key_rotation
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-e2e-test-backup-restore{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule and go-e2e test suite on ansible collection
+        name: '{{- if eq .version "v1.2" -}} disabled {{- else -}} application {{-
+          end -}}'
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      - name: scenario
+        value: backup_restore_migrate
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-e2e-test-postgresql{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule and go-e2e test suite on ansible collection
+        name: '{{- if or (eq .version "v1.2") (eq .version "v1.3") -}} disabled {{-
+          else -}} application {{- end -}}'
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      - name: scenario
+        value: postgresql
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: ansible-upgrade-test{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs molecule upgrade test on ansible collection
+        name: '{{- if eq .version "v1.2" -}} disabled {{- else -}} application {{-
+          end -}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/ansible-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: ansible
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: cli-stacks-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: cli-stacks
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: gitsign-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: gitsign-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/gitsign
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: gitsign-cli-stack{{.nameSuffix}}
+      name: gitsign-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/gitsign-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: cosign-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: cosign-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/cosign
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: cosign-cli-stack{{.nameSuffix}}
+      name: cosign-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/cosign-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rekor-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: rekor-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rekor-cli-stack{{.nameSuffix}}
+      name: rekor-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rekor-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: trillian-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: trillian-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: trillian-cli-stack{{.nameSuffix}}
+      name: trillian-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/trillian-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: fetch-tsa-certs-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: fetch-tsa-certs-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/timestamp-authority
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: fetch-tsa-certs-cli-stack{{.nameSuffix}}
+      name: fetch-tsa-certs-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/fetch-tsa-certs-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: tuftool-cli-stack{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: tuftool-cli-stack
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cli-stack.rh
+          revision: develop
+          url: https://github.com/securesign/tough
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: tuftool-cli-stack{{.nameSuffix}}
+      name: tuftool-cli-stack{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/tuftool-cli-stack
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: cli-stacks
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: client-server-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: client-server
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: client-server{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: client-server
+      source:
+        git:
+          dockerfileUrl: Dockerfile.clients.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/cosign
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: client-server{{.nameSuffix}}
+      name: client-server{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/client-server
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: client-server
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: create-tree-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: create-tree
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: create-tree{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      - client-server{{.nameSuffix}}
+      - trillian-cli-stack{{.nameSuffix}}
+      componentName: create-tree
+      source:
+        git:
+          dockerfileUrl: Dockerfile.createtree.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: create-tree{{.nameSuffix}}
+      name: create-tree{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/create-tree
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: create-tree
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: model-transparency-go-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency-go
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: model-transparency-go{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - model-validation-operator{{.nameSuffix}}
+      componentName: model-transparency-go
+      source:
+        git:
+          dockerfileUrl: Containerfile.model-transparency-go.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/model-transparency-go
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: model-transparency-go{{.nameSuffix}}
+      name: model-transparency-go{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/model-transparency-go
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: model-transparency-go
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: model-transparency-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-transparency
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: model-transparency{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - model-validation-operator{{.nameSuffix}}
+      componentName: model-transparency
+      source:
+        git:
+          dockerfileUrl: Dockerfile.model-transparency.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/model-transparency
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: model-transparency{{.nameSuffix}}
+      name: model-transparency{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/model-transparency
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: model-transparency
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas-operator
+    build.rhtas.com/type: operator
+  name: model-validation-operator-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: model-validation-operator
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract-group'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test for a Snapshot of the `group` type
+        name: group
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.operator}}{{.nameSuffix}}
+          updates
+        name: component_{{.operator}}{{.nameSuffix}}
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      - name: SINGLE_COMPONENT
+        value: "true"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/redhat-appstudio/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-monorepo-snapshot'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test for a Snapshot created for a `push`
+          event
+        name: push
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/monorepo-check.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: model-validation-operator{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: model-validation-operator{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile.model-validation.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/model-validation-operator
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: model-validation-operator{{.nameSuffix}}
+      name: model-validation-operator{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/model-validation-operator
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: model-validation-operator-bundle{{.nameSuffix}}
+      name: model-validation-operator-bundle{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/model-validation-operator-bundle
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: model-validation-operator-bundle{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: model-validation-operator-bundle{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile.model-validation-bundle.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/model-validation-operator
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: model-validation-operator
+    description: The application name
+    name: application
+  - defaultValue: model-validation-operator
+    description: The operator name
+    name: operator
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas-operator
+    build.rhtas.com/type: operator
+  name: operator-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: operator
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.operator}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract-group'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test for a Snapshot of the `group` type
+        name: group
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.operator}}{{.nameSuffix}}
+          updates
+        name: component_{{.operator}}{{.nameSuffix}}
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      - name: SINGLE_COMPONENT
+        value: "true"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/redhat-appstudio/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-monorepo-snapshot'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test for a Snapshot created for a `push`
+          event
+        name: push
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/monorepo-check.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: operator
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rhtas-operator{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: rhtas-operator{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile.rhtas-operator.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/secure-sign-operator
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rhtas-operator-bundle{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: rhtas-operator-bundle{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: bundle.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/secure-sign-operator
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: rhtas-operator-e2e-test{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs the integration test for a group Snapshot
+        name: group
+      params:
+      - name: releaseBranch
+        value: '{{.branch}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: rhtas-operator-e2e-test{{.nameSuffix}}-fips
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs the integration test for a group Snapshot or disable where
+          not supported
+        name: '{{- if or (eq .version "v1.3") (eq .version "v1.2")  -}} disabled {{-
+          else -}} group {{- end -}}'
+      params:
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      - name: releaseBranch
+        value: '{{.branch}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: operator
+    description: The application name
+    name: application
+  - defaultValue: rhtas-operator
+    description: The operator name
+    name: operator
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: fbc-standard
+    build.rhtas.com/type: fbc
+  name: pco-fbc-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: pco-fbc
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: Application testing
+        name: application
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/fbc-standard
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/redhat-appstudio/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}'
+      source:
+        git:
+          context: v{{.ocpVersion}}/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}
+          updates
+        name: component_{{.application}}{{.nameSuffix}}
+      params:
+      - name: OCP_VERSION
+        value: '{{.ocpVersion}}'
+      - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+        value: '{{.policyControllerOperatorGitRevision}}'
+      - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
+        value: '{{.installChannel}}'
+      - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
+        value: '{{.policyControllerOperatorDeploymentName}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/policy-controller-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}}
+          updates
+        name: component_{{.application}}{{.nameSuffix}}
+      params:
+      - name: OCP_VERSION
+        value: '{{.ocpVersion}}'
+      - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+        value: '{{.policyControllerOperatorGitRevision}}'
+      - name: UPGRADE_FROM_CHANNEL
+        value: tech-preview
+      - name: UPGRADE_TO_CHANNEL
+        value: '{{.installChannel}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/pco-operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  variables:
+  - description: OCP version for this stream (for example 4.21)
+    name: ocpVersion
+  - defaultValue: v{{.ocpVersion}}
+    description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: ""
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: pco-fbc-v{{hyphenize .ocpVersion}}
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+  - defaultValue: policy-controller-operator
+    description: The operator name
+    name: operator
+  - defaultValue: main
+    description: Git revision of policy-controller-operator repo used by PCO FBC e2e
+    name: policyControllerOperatorGitRevision
+  - defaultValue: stable
+    description: The operator install channel used for e2e
+    name: installChannel
+  - defaultValue: policy-controller-manager
+    description: The operator deployment name to wait for in e2e install
+    name: policyControllerOperatorDeploymentName
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas-operator
+    build.rhtas.com/type: operator
+  name: policy-controller-operator-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller-operator
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract-group'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test for a Snapshot of the `group` type
+        name: group
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.operator}}{{.nameSuffix}}
+          updates
+        name: component_{{.operator}}{{.nameSuffix}}
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      - name: SINGLE_COMPONENT
+        value: "true"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/redhat-appstudio/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: operator
+        - name: file-name
+          value: policy-controller-operator.json
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: policy-controller-operator{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: policy-controller-operator{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/policy-controller-operator
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: policy-controller-operator{{.nameSuffix}}
+      name: policy-controller-operator{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/policy-controller-operator
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: policy-controller-operator-bundle{{.nameSuffix}}
+      name: policy-controller-operator-bundle{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/policy-controller-operator-bundle
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: policy-controller-operator-bundle{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: policy-controller-operator-bundle{{.nameSuffix}}
+      source:
+        git:
+          context: ./
+          dockerfileUrl: bundle.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/policy-controller-operator
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: policy-controller-operator-e2e{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: runs the integration test for a group Snapshot
+        name: group
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/policy-controller-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: policy-controller-operator
+    description: The application name
+    name: application
+  - defaultValue: policy-controller-operator
+    description: The operator name
+    name: operator
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: policy-controller-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: policy-controller
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        - name: file-name
+          value: policy-controller.json
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: policy-controller{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - policy-controller-operator{{.nameSuffix}}
+      componentName: policy-controller
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/policy-controller
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: policy-controller{{.nameSuffix}}
+      name: policy-controller{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/policy-controller
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: policy-controller
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: rekor-monitor-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: rekor-monitor
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rekor-monitor{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: rekor-monitor
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rekor-monitor.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor-monitor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: ctlog-monitor{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: ctlog-monitor
+      source:
+        git:
+          dockerfileUrl: Dockerfile.ctlog-monitor.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor-monitor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rekor-monitor{{.nameSuffix}}
+      name: rekor-monitor{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rekor-monitor
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: ctlog-monitor{{.nameSuffix}}
+      name: ctlog-monitor{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/ctlog-monitor
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: rekor-monitor
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: rhtas-console-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-console
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rhtas-console{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: rhtas-console
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rhtas-console.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rhtas-console
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rhtas-console-ui{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: rhtas-console-ui
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rhtas-console-ui.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rhtas-console-ui
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rhtas-console{{.nameSuffix}}
+      name: rhtas-console{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rhtas-console
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rhtas-console-ui{{.nameSuffix}}
+      name: rhtas-console-ui{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rhtas-console-ui
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: rhtas-console
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: fbc-standard
+    build.rhtas.com/type: fbc
+  name: rhtas-fbc-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: rhtas-fbc
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: Application testing
+        name: application
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/fbc-standard
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/redhat-appstudio/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-branch-sync-check'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test in all cases - this would be the
+          default state
+        name: component
+      params:
+      - name: TARGET_BRANCH
+        value: '{{.branch}}'
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/branch-sync-check.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-16'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-16'
+      source:
+        git:
+          context: v4.16/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-16-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-16
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-16
+      params:
+      - name: OCP_VERSION
+        value: "4.16"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-16-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-16
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-16
+      params:
+      - name: OCP_VERSION
+        value: "4.16"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-16-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-16
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-16
+      params:
+      - name: OCP_VERSION
+        value: "4.16"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-17'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-17'
+      source:
+        git:
+          context: v4.17/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-17-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-17
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-17
+      params:
+      - name: OCP_VERSION
+        value: "4.17"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-17-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-17
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-17
+      params:
+      - name: OCP_VERSION
+        value: "4.17"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-17-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-17
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-17
+      params:
+      - name: OCP_VERSION
+        value: "4.17"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-18'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-18'
+      source:
+        git:
+          context: v4.18/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-18-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-18
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-18
+      params:
+      - name: OCP_VERSION
+        value: "4.18"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-18-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-18
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-18
+      params:
+      - name: OCP_VERSION
+        value: "4.18"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-18-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-18
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-18
+      params:
+      - name: OCP_VERSION
+        value: "4.18"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-19'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-19'
+      source:
+        git:
+          context: v4.19/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-19-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-19
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-19
+      params:
+      - name: OCP_VERSION
+        value: "4.19"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-19-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-19
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-19
+      params:
+      - name: OCP_VERSION
+        value: "4.19"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-19-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-19
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-19
+      params:
+      - name: OCP_VERSION
+        value: "4.19"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-19-dast'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the DAST test when component {{.application}}{{.nameSuffix}}-v4-19
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-19
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-dast.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-20'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-20'
+      source:
+        git:
+          context: v4.20/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-20-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-20
+      params:
+      - name: OCP_VERSION
+        value: "4.20"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-20-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-20
+      params:
+      - name: OCP_VERSION
+        value: "4.20"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-20-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20
+          updates
+        name: component_{{.application}}{{.nameSuffix}}-v4-20
+      params:
+      - name: OCP_VERSION
+        value: "4.20"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-20-e2e-olmv1'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-20
+          updates
+        name: disabled
+      params:
+      - name: OCP_VERSION
+        value: "4.20"
+      - name: OLMv1
+        value: "true"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27
+          Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-21'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: '{{.application}}{{.nameSuffix}}-v4-21'
+      source:
+        git:
+          context: v4.21/{{.operator}}
+          dockerfileUrl: catalog.Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fbc
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-21-e2e'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21
+          updates
+        name: disabled
+      params:
+      - name: OCP_VERSION
+        value: "4.21"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: '{{.application}}{{.nameSuffix}}-v4-21-e2e-fips'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21
+          updates
+        name: disabled
+      params:
+      - name: OCP_VERSION
+        value: "4.21"
+      - name: FIPS_ENABLED
+        value: "true"
+      - name: CLUSTER_PLATFORM
+        value: openshift
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      name: '{{.application}}{{.nameSuffix}}-v4-21-upgrade'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21
+          updates
+        name: disabled
+      params:
+      - name: OCP_VERSION
+        value: "4.21"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: '{{.application}}{{.nameSuffix}}-v4-21-e2e-olmv1'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      contexts:
+      - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21
+          updates
+        name: disabled
+      params:
+      - name: OCP_VERSION
+        value: "4.21"
+      - name: OLMv1
+        value: "true"
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/securesign/pipelines.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: rhtas-fbc
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+  - defaultValue: rhtas-operator
+    description: The operator name
+    name: operator
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: segment-backup-job-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: segment-backup-job
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: segment-backup-job{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      componentName: segment-backup-job
+      source:
+        git:
+          dockerfileUrl: Dockerfile.segment-backup-job.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/segment-backup-job
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: segment-backup-job{{.nameSuffix}}
+      name: segment-backup-job{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/segment-backup-job
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: segment-backup-job
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: tas-components-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-components
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: database{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: database
+      source:
+        git:
+          dockerfileUrl: Dockerfile.database.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: database{{.nameSuffix}}
+      name: database{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/database
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: backfill-redis{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: backfill-redis
+      source:
+        git:
+          dockerfileUrl: Dockerfile.backfill-redis.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: backfill-redis{{.nameSuffix}}
+      name: backfill-redis{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/backfill-redis
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: certificate-transparency-go{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: certificate-transparency-go
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/certificate-transparency-go
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: certificate-transparency-go{{.nameSuffix}}
+      name: certificate-transparency-go{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/certificate-transparency-go
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: fulcio-server{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: fulcio-server
+      source:
+        git:
+          dockerfileUrl: Dockerfile.fulcio-server.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/fulcio
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: fulcio-server{{.nameSuffix}}
+      name: fulcio-server{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/fulcio-server
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rekor-search{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: rekor-search
+      source:
+        git:
+          dockerfileUrl: Dockerfile
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor-search-ui
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rekor-search{{.nameSuffix}}
+      name: rekor-search{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rekor-search
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rekor-server{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: rekor-server
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rekor-server.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rekor-server{{.nameSuffix}}
+      name: rekor-server{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rekor-server
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: timestamp-authority{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: timestamp-authority
+      source:
+        git:
+          dockerfileUrl: Dockerfile.tsa.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/timestamp-authority.git
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: timestamp-authority{{.nameSuffix}}
+      name: timestamp-authority{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/timestamp-authority
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: logserver{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: logserver
+      source:
+        git:
+          dockerfileUrl: Dockerfile.logserver.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: logserver{{.nameSuffix}}
+      name: logserver{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/logserver
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: logsigner{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: logsigner
+      source:
+        git:
+          dockerfileUrl: Dockerfile.logsigner.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: logsigner{{.nameSuffix}}
+      name: logsigner{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/logsigner
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: redis{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: redis
+      source:
+        git:
+          dockerfileUrl: Dockerfile.redis.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: redis{{.nameSuffix}}
+      name: redis{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/redis
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: tas-components
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: tas-tools-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: tas-tools
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: '{{.application}} ({{.version}})'
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: cosign{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - cosign-cli-stack{{.nameSuffix}}
+      componentName: cosign
+      source:
+        git:
+          dockerfileUrl: Dockerfile.cosign.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/cosign
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: cosign{{.nameSuffix}}
+      name: cosign{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/cosign
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: fetch-tsa-certs{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - fetch-tsa-certs-cli-stack{{.nameSuffix}}
+      componentName: fetch-tsa-certs
+      source:
+        git:
+          dockerfileUrl: Dockerfile.fetch_tsa_certs.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/timestamp-authority
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: fetch-tsa-certs{{.nameSuffix}}
+      name: fetch-tsa-certs{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/fetch-tsa-certs
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: gitsign{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - gitsign-cli-stack{{.nameSuffix}}
+      componentName: gitsign
+      source:
+        git:
+          dockerfileUrl: Dockerfile.gitsign.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/gitsign
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: gitsign{{.nameSuffix}}
+      name: gitsign{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/gitsign
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: updatetree{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - trillian-cli-stack{{.nameSuffix}}
+      componentName: updatetree
+      source:
+        git:
+          dockerfileUrl: Dockerfile.updatetree.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/trillian
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: updatetree{{.nameSuffix}}
+      name: update-tree{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/update-tree
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: rekor-cli{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - rekor-cli-stack{{.nameSuffix}}
+      componentName: rekor-cli
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rekor-cli.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/rekor
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: "true"
+      labels:
+        appstudio.redhat.com/application: '{{.application}}{{.nameSuffix}}'
+        appstudio.redhat.com/component: rekor-cli{{.nameSuffix}}
+      name: rekor-cli{{.nameSuffix}}
+    spec:
+      image:
+        name: rhtas-tenant/rekor-cli
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: main
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: tas-tools
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled
+---
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStreamTemplate
+metadata:
+  labels:
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
+  name: tough-template
+  namespace: rhtas-dev-tenant
+spec:
+  project: tough
+  resources:
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Application
+    metadata:
+      annotations:
+        application.thumbnail: "5"
+      name: '{{.application}}{{.nameSuffix}}'
+    spec:
+      displayName: tough ({{.version}})
+  - apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      params:
+      - name: POLICY_CONFIGURATION
+        value: rhtap-releng-tenant/registry-rhtas
+      resolverRef:
+        params:
+        - name: url
+          value: https://github.com/konflux-ci/build-definitions
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ReleasePlan
+    metadata:
+      labels:
+        release.appstudio.openshift.io/auto-release: "true"
+        release.appstudio.openshift.io/standing-attribution: "true"
+      name: promote-to-candidate-{{.application}}{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      tenantPipeline:
+        params:
+        - name: git-url
+          value: https://github.com/securesign/releases
+        - name: revision
+          value: RHTAS-build-bot_candidate-images-{{.version}}
+        - name: code-freeze
+          value: "false"
+        - name: type
+          value: component
+        pipelineRef:
+          params:
+          - name: url
+            value: https://github.com/securesign/pipelines
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/promote-to-candidate.yaml
+          resolver: git
+        serviceAccountName: rhtas-build-bot
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: tuf-tool{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - client-server{{.nameSuffix}}
+      - tuftool-cli-stack{{.nameSuffix}}
+      componentName: tuf-tool
+      source:
+        git:
+          dockerfileUrl: Dockerfile.rh
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/tough
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      labels:
+        appstudio.redhat.com/component: tuf-tool{{.nameSuffix}}
+      name: imagerepository-for-{{.application}}{{.nameSuffix}}-tuf-tool
+    spec:
+      image:
+        name: rhtas-tenant/tuf-tool
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "true"
+      name: tuffer{{.nameSuffix}}
+    spec:
+      application: '{{.application}}{{.nameSuffix}}'
+      build-nudges-ref:
+      - artifact-signer-ansible{{.nameSuffix}}
+      - rhtas-operator{{.nameSuffix}}
+      componentName: tuffer
+      source:
+        git:
+          dockerfileUrl: Dockerfile.tuffer
+          revision: '{{.branch}}'
+          url: https://github.com/securesign/tough
+  - apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      labels:
+        appstudio.redhat.com/component: tuffer{{.nameSuffix}}
+      name: imagerepository-for-{{.application}}{{.nameSuffix}}-tuffer
+    spec:
+      image:
+        name: rhtas-tenant/tuffer
+        visibility: public
+      notifications:
+      - config:
+          url: https://bombino.api.redhat.com/v1/sbom/quay/push
+        event: repo_push
+        method: webhook
+        title: SBOM-event-to-Bombino
+  variables:
+  - description: A version number for a new development stream
+    name: version
+  - defaultValue: develop
+    description: Git branch
+    name: branch
+  - defaultValue: -{{hyphenize .version}}
+    description: A suffix which will be added to K8s resource name
+    name: nameSuffix
+  - defaultValue: tough
+    description: The application name
+    name: application
+  - defaultValue: "false"
+    description: Whether to disable mintmaker annotation on the Component
+    name: mintmakerDisabled

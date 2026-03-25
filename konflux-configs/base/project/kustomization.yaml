@@ -19,3 +19,4 @@ resources:
   - overlay/model-transparency
   - overlay/model-transparency-go
   - overlay/cli-stacks
+  - overlay/rhtas-console

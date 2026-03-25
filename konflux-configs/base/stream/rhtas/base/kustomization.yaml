@@ -14,4 +14,3 @@ resources:
   - client-server-stream.yaml
   - cli-stacks-stream.yaml
   - rhtas-console-stream.yaml
-  - rhtas-console-ui-stream.yaml
