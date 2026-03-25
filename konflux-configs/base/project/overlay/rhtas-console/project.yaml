@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: rhtas-console
+spec:
+  displayName: "RHTAS Console"
+  description: |
+    RHTAS Console is a web application that allows users to manage RHTAS.
