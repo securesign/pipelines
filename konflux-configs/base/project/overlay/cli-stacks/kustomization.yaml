@@ -37,3 +37,7 @@ patches:
       name: cli-stacks-template
       kind: ProjectDevelopmentStreamTemplate
     path: patch/model-transparency-cli-stack.yaml
+  - target:
+      name: cli-stacks-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: patch/conforma-cli-stack.yaml
