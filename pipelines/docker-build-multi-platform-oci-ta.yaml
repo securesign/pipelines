@@ -71,6 +71,18 @@ spec:
     description: Path to a file with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
     name: build-args-file
     type: string
+  - default: ""
+    description: Optional label selector to find a dependency PipelineRun. When set, the pipeline waits for the matching PipelineRun and injects its image as a build arg.
+    name: manager-pipelinerun-selector
+    type: string
+  - default: ""
+    description: Registry URL where the dependency image will be published (e.g. registry.redhat.io/rhtas/my-image).
+    name: manager-registry-url
+    type: string
+  - default: "IMG"
+    description: Name of the Dockerfile ARG to inject with the resolved dependency image (e.g. IMG, AGENT_IMG).
+    name: manager-build-arg-name
+    type: string
   - default:
     - linux/x86_64
     description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
@@ -222,6 +234,21 @@ spec:
       - name: kind
         value: task
       resolver: bundles
+  - name: get-manager-image
+    params:
+    - name: selector
+      value: $(params.manager-pipelinerun-selector)
+    runAfter:
+    - clone-repository
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: aa617e657edc0204492f26fad667c976fb670e41
+      - name: pathInRepo
+        value: tasks/wait-for-pipelinerun.yaml
   - matrix:
       params:
       - name: PLATFORM
@@ -246,6 +273,7 @@ spec:
     - name: BUILD_ARGS
       value:
       - $(params.build-args[*])
+      - '$(params.manager-build-arg-name)=$(params.manager-registry-url)@$(tasks.get-manager-image.results.ARTIFACT_DIGEST)'
     - name: BUILD_ARGS_FILE
       value: $(params.build-args-file)
     - name: SOURCE_ARTIFACT
@@ -263,6 +291,7 @@ spec:
     runAfter:
     - prefetch-dependencies
     - generate-labels
+    - get-manager-image
     taskRef:
       params:
       - name: name
