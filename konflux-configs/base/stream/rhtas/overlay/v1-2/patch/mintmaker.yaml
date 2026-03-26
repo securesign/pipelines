@@ -2,4 +2,4 @@
   path: /spec/template/values/-
   value:
     name: mintmakerDisabled
-    value: "false"
+    value: "true"
