@@ -15,9 +15,9 @@
       componentName: "conforma-cli-stack"
       source:
         git:
-          url: https://github.com/conforma/cli
-          revision: "release-v0.8"
-          dockerfileUrl: Dockerfile.cli-stack.rh
+          url: https://github.com/securesign/cosign
+          revision: "{{.branch}}"
+          dockerfileUrl: Dockerfile.conforma-cli-stack.rh
 - op: add
   path: /spec/resources/-
   value:
