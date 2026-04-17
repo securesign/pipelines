@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - main
   - tech-preview
+  - v1-0
   - main/fbc
   - tech-preview/fbc
