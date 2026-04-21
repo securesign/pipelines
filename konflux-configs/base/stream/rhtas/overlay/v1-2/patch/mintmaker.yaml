@@ -1,5 +1,0 @@
-- op: add
-  path: /spec/template/values/-
-  value:
-    name: mintmakerDisabled
-    value: "true"
