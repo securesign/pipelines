@@ -48,7 +48,7 @@ spec:
         - name: credentials
           value: credentials
     - name: kustomize-resources
-      image: registry.k8s.io/kustomize/kustomize:v5.8.0
+      image: registry.k8s.io/kustomize/kustomize:v5.8.1
       workingDir: $(params.resourcesPath)
       script: |
         #!/bin/sh
