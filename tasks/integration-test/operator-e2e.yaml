@@ -47,7 +47,7 @@ spec:
           value: credentials
     - name: execute-operator-e2e
       onError: continue
-      image: registry.redhat.io/ubi9/go-toolset:9.7@sha256:2e6eebc0987783db7fa8274b3bb3f164228e7763205bfb8fd3ecc342f7033326
+      image: registry.redhat.io/ubi9/go-toolset@sha256:35f08031de19eb51d6b35ed62c6357d3529bc69a8db65cf623ea5f0b44051999
       results:
         - name: exit-code
       env:

@@ -115,7 +115,7 @@ spec:
   - description: The Go base image used to run the unit tests
     name: go_base_image
     type: string
-    default: registry.redhat.io/ubi9/go-toolset:9.7@sha256:71101fd9ba32aabeaec2c073e5786c91642aaee902475fce3d8280457fb19e9d
+    default: registry.redhat.io/ubi9/go-toolset@sha256:35f08031de19eb51d6b35ed62c6357d3529bc69a8db65cf623ea5f0b44051999
   - name: enable-package-registry-proxy
     default: 'true'
     description: Use the package registry proxy when prefetching dependencies
