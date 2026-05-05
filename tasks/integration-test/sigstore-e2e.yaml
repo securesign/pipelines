@@ -138,8 +138,8 @@ spec:
         echo "Run tests"
         mkdir -p $(workspaces.source-code.path)/dump/sigstore-e2e
         set -o allexport && source ./.env && set +o allexport
-        go mod vendor
         go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps
+        go mod vendor
         # exclude benchmark tests
         go test -v $(go list ./test/... | grep -v benchmark) --ginkgo.v -json \
         > $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
