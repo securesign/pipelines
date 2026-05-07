@@ -138,9 +138,24 @@ spec:
         echo "Run tests"
         mkdir -p $(workspaces.source-code.path)/dump/sigstore-e2e
         set -o allexport && source ./.env && set +o allexport
-        go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps
+
+        # Playwright officially supports only Debian/Ubuntu (--with-deps uses apt-get).
+        # On RHEL/UBI9 we install Chromium's system dependencies manually via dnf.
+        # Mapped from the ubuntu20.04 chromium list (Playwright's fallback for unsupported OS):
+        # https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts#L37-L63
+        dnf install -y \
+          alsa-lib atk at-spi2-atk at-spi2-core cairo cups-libs \
+          dbus-libs glib2 gtk3 libdrm libglvnd-egl libX11 libX11-xcb \
+          libxcb libXcomposite libXdamage libXext libXfixes libxkbcommon \
+          libXrandr libxshmfence mesa-libgbm nss nspr pango
+
+        go run github.com/playwright-community/playwright-go/cmd/playwright install chromium
         go mod vendor
-        # exclude benchmark tests
+
+        export TEST_FIREFOX=false
+        export TEST_SAFARI=false
+        export TEST_EDGE=false
+
         go test -v $(go list ./test/... | grep -v benchmark) --ginkgo.v -json \
         > $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
         status=$?
