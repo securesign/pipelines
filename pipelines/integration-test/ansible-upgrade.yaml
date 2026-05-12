@@ -168,8 +168,8 @@ spec:
                 export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /rhio-creds/rhio-password)
                 set -x
                 
-                python3.11 -m pip install --upgrade pip
-                python3.11 -m pip install -r $(workspaces.work.path)/ansible/testing-requirements.txt
+                python3.12 -m pip install --upgrade pip
+                python3.12 -m pip install -r $(workspaces.work.path)/ansible/testing-requirements.txt
         
                 ansible-galaxy install -r  $(workspaces.work.path)/ansible/molecule/requirements.yml
                 
