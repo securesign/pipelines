@@ -373,6 +373,11 @@ spec:
                   value: "$(params.TAS_DEPLOY_NAMESPACE)"
                 - name: POLICY_CONTROLLER_OPERATOR_NS
                   value: "$(params.POLICY_CONTROLLER_OPERATOR_NS)"
+                - name: CODECOV_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: codecov-token
+                      key: token
               computeResources:
                 requests:
                   cpu: "1500m"
@@ -399,7 +404,25 @@ spec:
                 go mod vendor
                 make e2e-test
                 status=$?
-                
+
+                if [ -f e2e-coverage.out ]; then
+                  echo "Uploading E2E coverage to Codecov..."
+                  COMMIT_SHA=$(git rev-parse HEAD)
+                  curl -Os https://cli.codecov.io/latest/linux/codecov
+                  chmod +x codecov
+                  ./codecov --verbose do-upload \
+                    -t "$CODECOV_TOKEN" \
+                    --git-service github \
+                    --slug "securesign/policy-controller-operator" \
+                    -C "$COMMIT_SHA" \
+                    -F e2e-tests \
+                    -f e2e-coverage.out \
+                    || echo "WARNING: Codecov upload failed (non-fatal)"
+                  rm -f codecov
+                else
+                  echo "WARNING: e2e-coverage.out not found, skipping Codecov upload"
+                fi
+
                 if [[ $status -ne 0 ]]; then
                   pods=$(oc get pods -n "$POLICY_CONTROLLER_OPERATOR_NS" -o jsonpath='{.items[*].metadata.name}')
                   for pod in $pods; do
