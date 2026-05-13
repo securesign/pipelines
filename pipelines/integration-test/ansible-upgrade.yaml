@@ -127,7 +127,7 @@ spec:
                 jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /creds/rhio-username
                 jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /creds/rhio-password
             - name: run-test
-              image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:70235ed451b9317d9b90e690ffefa6eb2cb6948faed3679b9ec257adcb91023a"
+              image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:829ab94a4f09b79d30c97688131ba85bfcbbd7854985a6c38b5ea1bb1a054f55"
               volumeMounts:
                 - name: aws-creds
                   mountPath: /aws-creds
@@ -168,8 +168,8 @@ spec:
                 export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /rhio-creds/rhio-password)
                 set -x
                 
-                python3.12 -m pip install --upgrade pip
-                python3.12 -m pip install -r $(workspaces.work.path)/ansible/testing-requirements.txt
+                python3.11 -m pip install --upgrade pip
+                python3.11 -m pip install -r $(workspaces.work.path)/ansible/testing-requirements.txt
         
                 ansible-galaxy install -r  $(workspaces.work.path)/ansible/molecule/requirements.yml
                 

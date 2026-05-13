@@ -47,7 +47,7 @@ spec:
         jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /work/rhio-username
         jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /work/rhio-password
     - name: run-test
-      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:70235ed451b9317d9b90e690ffefa6eb2cb6948faed3679b9ec257adcb91023a"
+      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:829ab94a4f09b79d30c97688131ba85bfcbbd7854985a6c38b5ea1bb1a054f55"
       volumeMounts:
         - name: aws-creds
           mountPath: /creds
@@ -90,11 +90,11 @@ spec:
         export TAS_SINGLE_NODE_REGISTRY_PASSWORD=$(cat /work/rhio-password)
         set -x
         
-        python3.12 -m venv /work/venv
+        python3.11 -m venv /work/venv
         source /work/venv/bin/activate
         
-        python3.12 -m pip install --upgrade pip
-        python3.12 -m pip install -r $(workspaces.sources.path)/artifact-signer-ansible/testing-requirements.txt
+        python3.11 -m pip install --upgrade pip
+        python3.11 -m pip install -r $(workspaces.sources.path)/artifact-signer-ansible/testing-requirements.txt
 
         ansible-galaxy install -r  $(workspaces.sources.path)/artifact-signer-ansible/molecule/requirements.yml
         ansible-galaxy collection install $(workspaces.sources.path)/releases/redhat-artifact_signer-*.tar.gz --force
