@@ -18,3 +18,25 @@
           dockerfileUrl: Dockerfile
           revision: "{{.branch}}"
           url: https://github.com/securesign/artifact-signer-ansible
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "artifact-signer-ansible{{.nameSuffix}}"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "artifact-signer-ansible{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/artifact-signer-ansible
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
