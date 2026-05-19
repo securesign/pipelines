@@ -16,7 +16,7 @@
       source:
         git:
           url: https://github.com/securesign/model-transparency-go
-          revision: "{{.branch}}"
+          revision: "{{.modelTransparencyBranch}}"
           dockerfileUrl: Containerfile.cli-stack.rh
 - op: add
   path: /spec/resources/-

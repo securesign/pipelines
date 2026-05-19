@@ -22,6 +22,9 @@ spec:
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
+    - name: modelTransparencyBranch
+      description: Git branch for the model-transparency-go component
+      defaultValue: "{{.branch}}"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application

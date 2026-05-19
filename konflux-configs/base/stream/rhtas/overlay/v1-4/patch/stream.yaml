@@ -9,3 +9,5 @@ spec:
         value: "v1.4"
       - name: branch
         value: "release-1.4"
+      - name: modelTransparencyBranch
+        value: "tech-preview"
