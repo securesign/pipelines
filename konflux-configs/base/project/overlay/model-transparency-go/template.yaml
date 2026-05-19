@@ -22,6 +22,9 @@ spec:
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
+    - name: cliStackNudgeSuffix
+      description: Name suffix for the model-transparency-cli-stack nudge target (may differ from nameSuffix when cli-stacks uses a different stream)
+      defaultValue: "{{.nameSuffix}}"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application

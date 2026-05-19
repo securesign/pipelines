@@ -15,7 +15,7 @@
       componentName: model-transparency-go
       build-nudges-ref:
         - "model-validation-operator{{.nameSuffix}}"
-        - "model-transparency-cli-stack{{.nameSuffix}}"
+        - "model-transparency-cli-stack{{.cliStackNudgeSuffix}}"
       source:
         git:
           url: https://github.com/securesign/model-transparency-go
