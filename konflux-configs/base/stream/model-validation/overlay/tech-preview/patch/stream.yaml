@@ -9,3 +9,5 @@ spec:
         value: "tech-preview"
       - name: branch
         value: "tech-preview"
+      - name: cliStackNudgeSuffix
+        value: "-v1-4"
