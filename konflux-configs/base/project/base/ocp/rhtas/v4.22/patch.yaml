@@ -11,10 +11,10 @@
         build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
         build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "{{.application}}{{.nameSuffix}}-v4-21"
+      name: "{{.application}}{{.nameSuffix}}-v4-22"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "{{.application}}{{.nameSuffix}}-v4-21"
+      componentName: "{{.application}}{{.nameSuffix}}-v4-22"
       source:
         git:
           context: "v4.22/{{.operator}}"
@@ -31,11 +31,11 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "false"
-      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-e2e"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
           name: "disabled"
       params:
         - name: OCP_VERSION
@@ -60,7 +60,7 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "true"
-      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e-fips"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-e2e-fips"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
@@ -91,11 +91,11 @@
     apiVersion: appstudio.redhat.com/v1beta2
     kind: IntegrationTestScenario
     metadata:
-      name: "{{.application}}{{.nameSuffix}}-v4-21-upgrade"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-upgrade"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
           name: "disabled"
       params:
         - name: OCP_VERSION
@@ -120,11 +120,11 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "false"
-      name: "{{.application}}{{.nameSuffix}}-v4-21-e2e-olmv1"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-e2e-olmv1"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
           name: "disabled"
       params:
         - name: OCP_VERSION
