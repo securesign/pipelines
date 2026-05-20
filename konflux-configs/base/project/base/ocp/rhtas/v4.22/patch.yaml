@@ -64,7 +64,7 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-21 updates
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
           name: "disabled"
       params:
         - name: OCP_VERSION
