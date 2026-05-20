@@ -16,7 +16,7 @@
       source:
         git:
           url: https://github.com/securesign/tough
-          revision: "develop"
+          revision: "{{.branch}}"
           dockerfileUrl: Dockerfile.cli-stack.rh
 - op: add
   path: /spec/resources/-
