@@ -17,6 +17,8 @@ spec:
       - name: SNAPSHOT
       - name: OCP_VERSION
         default: "4.19"
+      - name: RELEASE_BRANCH
+        default: "main"
       - name: OLMv1
         default: "false"
       - name: FIPS_ENABLED
@@ -60,6 +62,8 @@ spec:
             value: "$(tasks.parse-metadata.results.container-image)"
           - name: ocp-version
             value: $(params.OCP_VERSION)
+          - name: release-branch
+            value: $(params.RELEASE_BRANCH)
       - name: clone-operator-source-code
         runAfter:
           - release-info

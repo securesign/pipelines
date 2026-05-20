@@ -12,6 +12,8 @@ spec:
     - name: package-name
     - name: fbc-image
     - name: ocp-version
+    - name: release-branch
+      default: "main"
     - name: ocp-catalog-image
       default: registry.redhat.io/redhat/redhat-operator-index
   steps:
@@ -44,7 +46,12 @@ spec:
         echo -e "\nGraph diff:\n$DIFF\n\n"
         
         if [ -z "$DIFF" ]; then
-          echo "No graph changes detected."
+          echo "No graph changes detected. Using default values for testing."
+          CHANNEL="stable"
+          BRANCH="$(params.release-branch)"
+          echo "Default Selection: Channel=$CHANNEL, Branch=$BRANCH"
+          echo -n "$CHANNEL" > "$(results.channel.path)"
+          echo -n "$BRANCH"  > "$(results.release-branch.path)"
           exit 0
         fi
         
