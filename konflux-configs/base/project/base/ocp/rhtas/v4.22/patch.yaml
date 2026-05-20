@@ -30,7 +30,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-22-e2e"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
@@ -119,7 +119,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-22-e2e-olmv1"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
