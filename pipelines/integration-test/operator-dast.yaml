@@ -47,7 +47,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/4-16Hack
             - name: pathInRepo
               value: tasks/integration-test/derive-release-info.yaml
         params:
