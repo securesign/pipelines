@@ -14,3 +14,4 @@ components:
   - ../../base/ocp/rhtas/v4.19
   - ../../base/ocp/rhtas/v4.20
   - ../../base/ocp/rhtas/v4.21
+  - ../../base/ocp/rhtas/v4.22
