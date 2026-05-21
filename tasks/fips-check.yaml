@@ -36,7 +36,7 @@ spec:
       emptyDir: {}
   steps:
     - name: fetch-oci-artifact
-      image: quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
+      image: quay.io/konflux-ci/konflux-test:v1.5.0@sha256:fbd5ad045b902065990218922aa6f343e8eb5fd039ecd445bc54819b8e968c3e
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
@@ -56,28 +56,36 @@ spec:
         fi
 
     - name: fips-check
-      image: quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
+      image: quay.io/konflux-ci/konflux-test:v1.5.0@sha256:fbd5ad045b902065990218922aa6f343e8eb5fd039ecd445bc54819b8e968c3e
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
         . /utils.sh
 
-        # The check-payload tool checks the following to ensure FIPS compatibility
+        # The check-payload tool (v0.3.14) checks the following to ensure FIPS compatibility
 
         #   All
-        #     scans validate the inclusion of OpenSSL via libcrypto found in /usr/lib64 or /usr/lib. 
+        #     scans validate the inclusion of OpenSSL via libcrypto found in /usr/lib64 or /usr/lib.
         #     The OpenSSL library is also validated to include {FIPS_mode, fips_mode, or EVP_default_properties_is_fips_enabled}.
 
         #   Regular Executables
         #     Must be dynamically linked
 
-        #   Golang Executables
+        #   Golang Executables (OpenSSL backend, Go <1.26)
         #     validateGoVersion  - enumerates the golang version and compile details
         #     validateGoCgo      - ensure CGO_ENABLED=1 is set
         #     validateGoCGOInit  - ensure cgo_init is within the binary
         #     validateGoStatic   - ensure binary is dynamically linked
         #     validateGoOpenssl  - ensure openssl matches the dynamic library within the system
         #     validateGoTags     - ensure golang tags are set
+
+        #   Golang Executables (Native FIPS, Go 1.26+)
+        #     Go 1.26+ includes a native FIPS module (crypto/internal/fips140, CMVP cert #5247).
+        #     Binaries built with GOFIPS140=v1.0.0 and -tags no_openssl use the native FIPS path:
+        #       - No CGO required (CGO_ENABLED=0 works)
+        #       - No OpenSSL dependency or dynamic linking required
+        #       - FIPS activated at runtime via GODEBUG=fips140=auto
+        #     The OpenSSL backend and native FIPS module are mutually exclusive and will panic if mixed.
 
         if ! check-payload scan local --path="/var/workdir/unpacked" ; then
           echo -e "check-payload scan failed for ${IMAGE_URL}\n" >&2
