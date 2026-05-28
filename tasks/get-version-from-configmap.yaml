@@ -1,0 +1,93 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: get-version-from-configmap
+spec:
+  description: >
+    Looks up release version from ConfigMap based on git repository and branch.
+    Performs hierarchical lookup: <repo>__<branch> → <repo> → default fallback.
+  params:
+    - name: git-url
+      description: Git repository URL (e.g., https://github.com/securesign/fulcio)
+      type: string
+    - name: revision
+      description: Git branch or revision (e.g., release-1.4, main)
+      type: string
+    - name: configmap-name
+      description: Name of the ConfigMap containing version mappings
+      type: string
+      default: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      description: Namespace where the ConfigMap is located
+      type: string
+      default: rhtas-tenant
+    - name: default-version
+      description: Fallback version if lookup fails
+      type: string
+      default: "0.0.0-dev"
+  results:
+    - name: release-version
+      description: The resolved release version from ConfigMap
+    - name: lookup-key
+      description: The key used for the successful lookup (for debugging)
+  steps:
+    - name: get-version
+      image: quay.io/openshift/origin-cli:4.15
+      script: |
+        #!/bin/bash
+        set -e
+
+        GIT_URL="$(params.git-url)"
+        REVISION="$(params.revision)"
+        CM_NAME="$(params.configmap-name)"
+        CM_NAMESPACE="$(params.configmap-namespace)"
+        DEFAULT_VERSION="$(params.default-version)"
+
+        # Extract repository name from git URL
+        # Examples:
+        #   https://github.com/securesign/fulcio → fulcio
+        #   https://github.com/securesign/fulcio.git → fulcio
+        REPO_NAME=$(echo "${GIT_URL}" | sed 's|.*/||' | sed 's|\.git$||')
+
+        echo "Git URL: ${GIT_URL}"
+        echo "Repository: ${REPO_NAME}"
+        echo "Branch/Revision: ${REVISION}"
+        echo "ConfigMap: ${CM_NAMESPACE}/${CM_NAME}"
+        echo ""
+
+        # Try hierarchical lookup:
+        # 1. Exact match: <repo>__<branch>
+        # 2. Repo fallback: <repo>
+        # 3. Default fallback
+
+        LOOKUP_KEY="${REPO_NAME}__${REVISION}"
+        echo "Looking up key: ${LOOKUP_KEY}"
+
+        VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
+          -o jsonpath="{.data.${LOOKUP_KEY}}" 2>/dev/null || echo "")
+
+        if [ -n "${VERSION}" ]; then
+          echo "✅ Found exact match: ${LOOKUP_KEY} = ${VERSION}"
+          echo -n "${VERSION}" > "$(results.release-version.path)"
+          echo -n "${LOOKUP_KEY}" > "$(results.lookup-key.path)"
+          exit 0
+        fi
+
+        # Fallback to repo-only key
+        LOOKUP_KEY="${REPO_NAME}"
+        echo "Exact match not found. Trying fallback key: ${LOOKUP_KEY}"
+
+        VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
+          -o jsonpath="{.data.${LOOKUP_KEY}}" 2>/dev/null || echo "")
+
+        if [ -n "${VERSION}" ]; then
+          echo "✅ Found repo fallback: ${LOOKUP_KEY} = ${VERSION}"
+          echo -n "${VERSION}" > "$(results.release-version.path)"
+          echo -n "${LOOKUP_KEY}" > "$(results.lookup-key.path)"
+          exit 0
+        fi
+
+        # Use default fallback
+        echo "⚠️  No ConfigMap entry found. Using default: ${DEFAULT_VERSION}"
+        echo -n "${DEFAULT_VERSION}" > "$(results.release-version.path)"
+        echo -n "default" > "$(results.lookup-key.path)"
