@@ -10,8 +10,8 @@ spec:
     - name: git-url
       description: Git repository URL (e.g., https://github.com/securesign/fulcio)
       type: string
-    - name: revision
-      description: Git branch or revision (e.g., release-1.4, main)
+    - name: branch
+      description: Git branch name (e.g., release-1.4, main)
       type: string
     - name: configmap-name
       description: Name of the ConfigMap containing version mappings
@@ -38,7 +38,7 @@ spec:
         set -e
 
         GIT_URL="$(params.git-url)"
-        REVISION="$(params.revision)"
+        BRANCH="$(params.branch)"
         CM_NAME="$(params.configmap-name)"
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
@@ -51,7 +51,7 @@ spec:
 
         echo "Git URL: ${GIT_URL}"
         echo "Repository: ${REPO_NAME}"
-        echo "Branch/Revision: ${REVISION}"
+        echo "Branch: ${BRANCH}"
         echo "ConfigMap: ${CM_NAMESPACE}/${CM_NAME}"
         echo ""
 
@@ -60,7 +60,7 @@ spec:
         # 2. Repo fallback: <repo>
         # 3. Default fallback
 
-        LOOKUP_KEY="${REPO_NAME}__${REVISION}"
+        LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
         echo "Looking up key: ${LOOKUP_KEY}"
 
         VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
