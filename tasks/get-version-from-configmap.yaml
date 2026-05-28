@@ -40,7 +40,7 @@ spec:
         DEFAULT_VERSION="$(params.default-version)"
 
         # Read branch from PipelineRun annotation
-        BRANCH="$(context.pipelineRun.annotations['build\.appstudio\.redhat\.com/target_branch'])"
+        BRANCH="$(context.pipelineRun.annotations['build.appstudio.redhat.com/target_branch'])"
 
         if [ -z "${BRANCH}" ]; then
           echo "❌ ERROR: Could not read target_branch from PipelineRun annotation 'build.appstudio.redhat.com/target_branch'"
