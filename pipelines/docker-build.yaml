@@ -207,7 +207,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "main"
+        value: "tdalton/ReleaseVersionCentralisation"
       - name: pathInRepo
         value: tasks/get-version-from-configmap.yaml
     params:
@@ -228,7 +228,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: "tdalton/ReleaseVersionCentralisation"
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
