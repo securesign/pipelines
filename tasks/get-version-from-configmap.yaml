@@ -10,9 +10,6 @@ spec:
     - name: git-url
       description: Git repository URL (e.g., https://github.com/securesign/fulcio)
       type: string
-    - name: branch
-      description: Git branch name (e.g., release-1.4, main)
-      type: string
     - name: configmap-name
       description: Name of the ConfigMap containing version mappings
       type: string
@@ -38,10 +35,17 @@ spec:
         set -e
 
         GIT_URL="$(params.git-url)"
-        BRANCH="$(params.branch)"
         CM_NAME="$(params.configmap-name)"
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
+
+        # Read branch from PipelineRun annotation
+        BRANCH="$(context.pipelineRun.annotations['build\.appstudio\.redhat\.com/target_branch'])"
+
+        if [ -z "${BRANCH}" ]; then
+          echo "❌ ERROR: Could not read target_branch from PipelineRun annotation 'build.appstudio.redhat.com/target_branch'"
+          exit 1
+        fi
 
         # Extract repository name from git URL
         # Examples:
