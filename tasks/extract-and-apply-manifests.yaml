@@ -19,7 +19,7 @@ spec:
       emptyDir: {}
   steps:
     - name: extract
-      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      image: quay.io/konflux-ci/task-runner:1.7.0@sha256:5938ef0f857aa7439bb1d16ced95790becef0fd6f5652185e8f32212b863ec80
       volumeMounts:
         - name: shared-data
           mountPath: /workspace
@@ -61,7 +61,7 @@ spec:
         echo "Manifest saved to: $MANIFESTS_FILE"
         
     - name: verify
-      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      image: quay.io/konflux-ci/task-runner:1.7.0@sha256:5938ef0f857aa7439bb1d16ced95790becef0fd6f5652185e8f32212b863ec80
       volumeMounts:
         - name: shared-data
           mountPath: /workspace
@@ -94,7 +94,7 @@ spec:
       
         echo "Validation completed"
     - name: apply
-      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      image: quay.io/konflux-ci/task-runner:1.7.0@sha256:5938ef0f857aa7439bb1d16ced95790becef0fd6f5652185e8f32212b863ec80
       when:
         - input: "$(params.release)"
           operator: in
