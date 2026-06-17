@@ -1,0 +1,21 @@
+nameReference:
+- kind: Project
+  version: v1beta1
+  group: projctl.konflux.dev
+  fieldSpecs:
+  - path: spec/project
+    kind: ProjectDevelopmentStreamTemplate
+    group: projctl.konflux.dev
+    version: v1beta1
+  - path: spec/project
+    kind: ProjectDevelopmentStream
+    group: projctl.konflux.dev
+    version: v1beta1
+- kind: ProjectDevelopmentStreamTemplate
+  version: v1beta1
+  group: projctl.konflux.dev
+  fieldSpecs:
+  - path: spec/template/name
+    kind: ProjectDevelopmentStream
+    group: projctl.konflux.dev
+    version: v1beta1

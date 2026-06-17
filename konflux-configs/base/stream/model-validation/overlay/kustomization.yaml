@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - main
   - tech-preview
+  - v1-0
