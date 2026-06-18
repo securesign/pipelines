@@ -1,0 +1,117 @@
+# OCP 4.18
+
+# Component
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "{{.application}}{{.nameSuffix}}-v4-18"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "{{.application}}{{.nameSuffix}}-v4-18"
+      source:
+        git:
+          context: "v4.18/{{.operator}}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/fbc
+
+# IntegrationTestScenario
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-v4-18-e2e"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-18 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-18"
+      params:
+        - name: OCP_VERSION
+          value: "4.18"
+        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+          value: "{{.policyControllerOperatorGitRevision}}"
+        - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
+          value: "{{.installChannel}}"
+        - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
+          value: "{{.policyControllerOperatorDeploymentName}}"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/policy-controller-fbc-e2e.yaml
+        resolver: git
+        resourceKind: pipelinerun
+
+# IntegrationTestScenario Upgrade
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "false"
+      name: "{{.application}}{{.nameSuffix}}-v4-18-upgrade"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}}-v4-18 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-18"
+      params:
+        - name: OCP_VERSION
+          value: "4.18"
+        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
+          value: "{{.policyControllerOperatorGitRevision}}"
+        - name: UPGRADE_FROM_CHANNEL
+          value: "tech-preview"
+        - name: UPGRADE_TO_CHANNEL
+          value: "{{.installChannel}}"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/pco-operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+
+# ImageRepository
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "{{.application}}{{.nameSuffix}}-v4-18"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "{{.application}}{{.nameSuffix}}-v4-18"
+    spec:
+      image:
+        name: "rhtas-tenant/{{.application}}-v4-18"
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino

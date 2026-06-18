@@ -7,4 +7,11 @@ resources:
 
 components:
   - ../../base/ec
-  - ../../base/ocp/pco
+  - ../../base/branch-sync
+  - ../../base/ocp/pco/v4.16
+  - ../../base/ocp/pco/v4.17
+  - ../../base/ocp/pco/v4.18
+  - ../../base/ocp/pco/v4.19
+  - ../../base/ocp/pco/v4.20
+  - ../../base/ocp/pco/v4.21
+  - ../../base/ocp/pco/v4.22
