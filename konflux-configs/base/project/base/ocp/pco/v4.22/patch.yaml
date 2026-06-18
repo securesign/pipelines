@@ -1,3 +1,5 @@
+# OCP 4.22
+
 # Component
 - op: add
   path: /spec/resources/-
@@ -9,13 +11,13 @@
         build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
         build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
         mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
-      name: "{{.application}}{{.nameSuffix}}"
+      name: "{{.application}}{{.nameSuffix}}-v4-22"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
-      componentName: "{{.application}}{{.nameSuffix}}"
+      componentName: "{{.application}}{{.nameSuffix}}-v4-22"
       source:
         git:
-          context: "v{{.ocpVersion}}/{{.operator}}"
+          context: "v4.22/{{.operator}}"
           dockerfileUrl: catalog.Dockerfile
           revision: "{{.branch}}"
           url: https://github.com/securesign/fbc
@@ -29,15 +31,15 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "false"
-      name: "{{.application}}{{.nameSuffix}}-e2e"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-e2e"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}} updates
-          name: "component_{{.application}}{{.nameSuffix}}"
+        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
-          value: "{{.ocpVersion}}"
+          value: "4.22"
         - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
           value: "{{.policyControllerOperatorGitRevision}}"
         - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
@@ -64,15 +66,15 @@
     metadata:
       labels:
         test.appstudio.openshift.io/optional: "false"
-      name: "{{.application}}{{.nameSuffix}}-upgrade"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-upgrade"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}} updates
-          name: "component_{{.application}}{{.nameSuffix}}"
+        - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
-          value: "{{.ocpVersion}}"
+          value: "4.22"
         - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
           value: "{{.policyControllerOperatorGitRevision}}"
         - name: UPGRADE_FROM_CHANNEL
@@ -97,15 +99,15 @@
     apiVersion: appstudio.redhat.com/v1alpha1
     kind: ImageRepository
     metadata:
-      name: "{{.application}}{{.nameSuffix}}"
+      name: "{{.application}}{{.nameSuffix}}-v4-22"
       annotations:
         image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
-        appstudio.redhat.com/component: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "{{.application}}{{.nameSuffix}}-v4-22"
     spec:
       image:
-        name: rhtas-tenant/{{.application}}
+        name: "rhtas-tenant/{{.application}}-v4-22"
         visibility: public
       notifications:
         - config:

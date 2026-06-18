@@ -8,20 +8,17 @@ metadata:
 spec:
   project: pco-fbc
   variables:
-    - name: ocpVersion
-      description: OCP version for this stream (for example 4.21)
     - name: version
       description: A version number for a new development stream
-      defaultValue: "v{{.ocpVersion}}"
     - name: branch
       description: Git branch
       defaultValue: "main"
     - name: nameSuffix
       description: A suffix which will be added to K8s resource name
-      defaultValue: ""
+      defaultValue: "-{{hyphenize .version}}"
     - name: application
       description: The application name
-      defaultValue: "pco-fbc-v{{hyphenize .ocpVersion}}"
+      defaultValue: "pco-fbc"
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
