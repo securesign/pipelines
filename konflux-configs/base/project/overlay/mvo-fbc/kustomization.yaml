@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - project.yaml
+  - template.yaml
+
+components:
+  - ../../base/ec
+  - ../../base/branch-sync
+  - ../../base/release-plan
+  - ../../base/ocp/mvo/v4.16
+  - ../../base/ocp/mvo/v4.17
+  - ../../base/ocp/mvo/v4.18
+  - ../../base/ocp/mvo/v4.19
+  - ../../base/ocp/mvo/v4.20
+  - ../../base/ocp/mvo/v4.21
+  - ../../base/ocp/mvo/v4.22

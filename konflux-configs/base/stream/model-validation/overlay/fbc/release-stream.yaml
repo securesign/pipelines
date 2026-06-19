@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: mvo-fbc-release
+spec:
+  project: mvo-fbc
+  template:
+    name: mvo-fbc-template
+    values:
+      - name: version
+        value: "release"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

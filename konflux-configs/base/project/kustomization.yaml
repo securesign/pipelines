@@ -21,3 +21,4 @@ resources:
   - overlay/sigstore-a2a
   - overlay/cli-stacks
   - overlay/rhtas-console
+  - overlay/mvo-fbc
