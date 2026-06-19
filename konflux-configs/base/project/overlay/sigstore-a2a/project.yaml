@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: sigstore-a2a
+spec:
+  displayName: "Red Hat Trusted Artifact Signer sigstore-a2a"
+  description: |
+    sigstore-a2a - Keyless signing library for A2A Agent Cards using Sigstore and SLSA provenance.
