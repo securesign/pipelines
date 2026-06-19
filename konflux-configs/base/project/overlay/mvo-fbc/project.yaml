@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: mvo-fbc
+spec:
+  displayName: "Model Validation Operator FBC"
+  description: |
+    File-Based Catalogs for Red Hat Trusted Artifact Signer Model Validation Operator.

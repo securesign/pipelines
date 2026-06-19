@@ -1,0 +1,47 @@
+# OCP 4.17
+
+# Component
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "{{.application}}{{.nameSuffix}}-v4-17"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "{{.application}}{{.nameSuffix}}-v4-17"
+      source:
+        git:
+          context: "v4.17/{{.operator}}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/fbc
+
+# ImageRepository
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "{{.application}}{{.nameSuffix}}-v4-17"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
+      labels:
+        appstudio.redhat.com/application: "{{.application}}{{.nameSuffix}}"
+        appstudio.redhat.com/component: "{{.application}}{{.nameSuffix}}-v4-17"
+    spec:
+      image:
+        name: "rhtas-tenant/{{.application}}-v4-17"
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino

@@ -13,3 +13,9 @@ patches:
       kind: ProjectDevelopmentStreamTemplate
       labelSelector: "build.rhtas.com/type=component"
     path: patch/component.yaml
+
+  # For fbc-type templates (rhtas-fbc, pco-fbc, mvo-fbc)
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      labelSelector: "build.rhtas.com/type=fbc"
+    path: patch/fbc.yaml
