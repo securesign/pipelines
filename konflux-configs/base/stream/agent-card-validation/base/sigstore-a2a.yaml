@@ -1,0 +1,15 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: sigstore-a2a
+spec:
+  project: sigstore-a2a
+  template:
+    name: sigstore-a2a-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
+      - name: nameSuffix
+        value: ""

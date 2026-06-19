@@ -18,5 +18,6 @@ resources:
   - overlay/model-validation-operator
   - overlay/model-transparency
   - overlay/model-transparency-go
+  - overlay/sigstore-a2a
   - overlay/cli-stacks
   - overlay/rhtas-console

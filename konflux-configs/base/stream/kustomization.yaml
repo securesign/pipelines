@@ -5,3 +5,4 @@ resources:
   - rhtas/overlay
   - policy-controller/overlay
   - model-validation/overlay
+  - agent-card-validation/overlay
