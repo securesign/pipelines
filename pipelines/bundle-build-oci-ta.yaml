@@ -11,6 +11,14 @@ spec:
     description: Revision of the Source Repository
     name: revision
     type: string
+  - default: main
+    description: Revision of securesign/pipelines containing the version lookup task
+    name: config-task-revision
+    type: string
+  - default: ""
+    description: Target branch used to select the component release version
+    name: target-branch
+    type: string
   - description: Fully Qualified Output Image
     name: output-image
     type: string
@@ -186,6 +194,27 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: get-version-from-configmap
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: $(params.config-task-revision)
+      - name: pathInRepo
+        value: tasks/get-version-from-configmap.yaml
+    params:
+    - name: git-url
+      value: $(params.git-url)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      value: $(context.pipelineRun.namespace)
+    - name: default-version
+      value: $(params.release-version)
+    - name: target-branch
+      value: $(params.target-branch)
   - name: derive-product-version
     taskRef:
       resolver: git
@@ -198,9 +227,11 @@ spec:
         value: tasks/derive-product-version.yaml
     params:
     - name: release-version
-      value: $(params.release-version)
+      value: $(tasks.get-version-from-configmap.results.release-version)
     - name: image-version
       value: $(params.image-version)
+    runAfter:
+    - get-version-from-configmap
   - name: generate-labels
     params:
     - name: label-templates

@@ -9,3 +9,9 @@ configMapGenerator:
     literals:
       - automerge="true"
       - platformAutomerge="true"
+
+  # Release version mappings for repo+branch
+  # Versions are defined in rhtas-versions.properties
+  - name: rhtas-repo-branch-versions
+    envs:
+      - rhtas-versions.properties

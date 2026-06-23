@@ -1,0 +1,100 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: get-version-from-configmap
+spec:
+  description: >
+    Looks up a release version from a ConfigMap using the repository and target
+    branch. Lookup order is <repo>__<branch>, <repo>, then the default version.
+  params:
+    - name: git-url
+      description: Source repository URL
+      type: string
+    - name: target-branch
+      description: Target branch for the version lookup; an empty value uses the PipelineRun annotation
+      type: string
+      default: ""
+    - name: configmap-name
+      description: ConfigMap containing the version mappings
+      type: string
+      default: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      description: Namespace containing the version ConfigMap
+      type: string
+      default: rhtas-tenant
+    - name: default-version
+      description: Version to use when no mapping exists
+      type: string
+      default: "0.0.0-dev"
+  results:
+    - name: release-version
+      description: Resolved release version
+    - name: lookup-key
+      description: ConfigMap key that provided the version
+  steps:
+    - name: get-version
+      image: quay.io/openshift/origin-cli:4.15
+      env:
+        - name: TASKRUN_NAME
+          value: $(context.taskRun.name)
+        - name: TASKRUN_NAMESPACE
+          value: $(context.taskRun.namespace)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        GIT_URL="$(params.git-url)"
+        CM_NAME="$(params.configmap-name)"
+        CM_NAMESPACE="$(params.configmap-namespace)"
+        DEFAULT_VERSION="$(params.default-version)"
+        BRANCH="$(params.target-branch)"
+
+        # Pipelines-as-Code sets the target branch on the PipelineRun. Keep the
+        # lookup usable for callers that do not pass target-branch explicitly.
+        if [[ -z "${BRANCH}" ]]; then
+          PIPELINERUN_NAME=$(oc get taskrun "${TASKRUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+            -o jsonpath='{.metadata.ownerReferences[?(@.kind=="PipelineRun")].name}')
+          if [[ -z "${PIPELINERUN_NAME}" ]]; then
+            echo "Could not determine the PipelineRun owning TaskRun ${TASKRUN_NAME}" >&2
+            exit 1
+          fi
+
+          BRANCH=$(oc get pipelinerun "${PIPELINERUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+            -o jsonpath='{.metadata.annotations.build\.appstudio\.redhat\.com/target_branch}')
+        fi
+        if [[ -z "${BRANCH}" ]]; then
+          echo "Target branch is required for release-version lookup" >&2
+          exit 1
+        fi
+
+        REPO_NAME=$(basename "${GIT_URL%.git}")
+        echo "Repository: ${REPO_NAME}"
+        echo "Branch: ${BRANCH}"
+        echo "ConfigMap: ${CM_NAMESPACE}/${CM_NAME}"
+
+        get_configmap_value() {
+          local key="$1"
+          oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
+            -o go-template --template="{{index .data \"${key}\"}}"
+        }
+
+        LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
+        VERSION=$(get_configmap_value "${LOOKUP_KEY}")
+
+        if [[ -n "${VERSION}" ]]; then
+          echo "Found exact match: ${LOOKUP_KEY} = ${VERSION}"
+        else
+          LOOKUP_KEY="${REPO_NAME}"
+          VERSION=$(get_configmap_value "${LOOKUP_KEY}")
+        fi
+
+        if [[ -n "${VERSION}" ]]; then
+          echo "Found repository fallback: ${LOOKUP_KEY} = ${VERSION}"
+        else
+          LOOKUP_KEY=default
+          VERSION="${DEFAULT_VERSION}"
+          echo "No ConfigMap entry found; using default version ${VERSION}"
+        fi
+
+        printf '%s' "${VERSION}" > "$(results.release-version.path)"
+        printf '%s' "${LOOKUP_KEY}" > "$(results.lookup-key.path)"

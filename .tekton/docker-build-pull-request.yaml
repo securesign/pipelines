@@ -10,6 +10,7 @@ metadata:
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "main" && ( ".tekton/docker-build-pull-request.yaml".pathChanged() || "pipeline-tests".pathChanged()
       || "pipelines/docker-build.yaml".pathChanged()
+      || "tasks/get-version-from-configmap.yaml".pathChanged()
       )
     pipelinesascode.tekton.dev/pipeline: pipelines/docker-build.yaml
   creationTimestamp: null
@@ -25,6 +26,10 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
+  - name: config-task-revision
+    value: '{{revision}}'
+  - name: target-branch
+    value: '{{target_branch}}'
   - name: output-image
     value: quay.io/redhat-user-workloads/rhtas-tenant/docker-build:on-pr-{{revision}}
   - name: image-expires-after
