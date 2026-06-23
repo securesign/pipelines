@@ -206,6 +206,12 @@ spec:
                     - source: registry.redhat.io/rhtas/tuffer-rhel9
                       mirrors:
                       - quay.io/securesign/tuffer
+                    - source: registry.redhat.io/rhtas/rhtas-console-ui-rhel9
+                      mirrors:
+                      - quay.io/securesign/rhtas-console-ui
+                    - source: registry.redhat.io/rhtas/rhtas-console-rhel9
+                      mirrors:
+                      - quay.io/securesign/rhtas-console
       - name: download-binaries
         workspaces:
           - name: work
