@@ -93,6 +93,10 @@ spec:
     default: docker
     type: string
     description: The format for the resulting image's mediaType. Valid values are oci or docker.
+  - name: image-version
+    default: ""
+    type: string
+    description: Image metadata version label.
   - name: release-version
     default: "1.3.1"
     type: string
@@ -200,15 +204,51 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: get-version-from-configmap
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: "main"
+      - name: pathInRepo
+        value: tasks/get-version-from-configmap.yaml
+    params:
+    - name: git-url
+      value: $(params.git-url)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      value: $(context.pipelineRun.namespace)
+    - name: default-version
+      value: $(params.release-version)
+  - name: derive-product-version
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+      - name: pathInRepo
+        value: tasks/derive-product-version.yaml
+    params:
+    - name: release-version
+      value: $(tasks.get-version-from-configmap.results.release-version)
+    - name: image-version
+      value: $(params.image-version)
+    runAfter:
+    - get-version-from-configmap
   - name: generate-labels
     params:
     - name: label-templates
       value:
       - "release=$SOURCE_DATE_EPOCH"
-      - "version=$(params.release-version)"
+      - "version=$(tasks.derive-product-version.results.image-version)"
       - "vendor=Red Hat, Inc."
       - "maintainer=rhtas-support@redhat.com"
-      - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(params.product-version)::el9"
+      - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.derive-product-version.results.product-version)::el9"
       - "org.opencontainers.image.created=$SOURCE_DATE"
       - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
       - "url=https://catalog.redhat.com/en/software/container-stacks/detail/6604180e80e2fa3e4947d1d5#overview"
@@ -217,6 +257,7 @@ spec:
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     runAfter:
     - clone-repository
+    - derive-product-version
     taskRef:
       params:
       - name: name
