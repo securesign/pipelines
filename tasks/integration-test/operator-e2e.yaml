@@ -94,7 +94,7 @@ spec:
         fi
 
 
-        go test -p 1 ./test/e2e/... -tags="$TAGS" -timeout 60m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
+        go test ./test/e2e/... -tags="$TAGS" -timeout 60m -json > $(workspaces.source-code.path)/dump/operator-e2e/test-result.json
         status=$?
         printf "%s" "$status" > "$(step.results.exit-code.path)"
 
