@@ -14,7 +14,6 @@
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "updatetree"
       build-nudges-ref:
-        - "client-server{{.nameSuffix}}"
         - "trillian-cli-stack{{.nameSuffix}}"
       source:
         git:

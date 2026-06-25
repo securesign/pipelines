@@ -14,7 +14,6 @@
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "fetch-tsa-certs"
       build-nudges-ref:
-        - "client-server{{.nameSuffix}}"
         - "fetch-tsa-certs-cli-stack{{.nameSuffix}}"
       source:
         git:
