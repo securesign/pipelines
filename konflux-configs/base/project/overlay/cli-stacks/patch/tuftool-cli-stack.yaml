@@ -13,6 +13,8 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "tuftool-cli-stack"
+      build-nudges-ref:
+        - "client-server{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/tough
