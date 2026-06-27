@@ -21,7 +21,7 @@ spec:
         - input: "$(params.type)"
           operator: notin
           values: ["fbc"]
-      image: quay.io/konflux-ci/task-runner:1.8.1@sha256:38bfc93b0eacecd0aa5228225427524441c30e911b282a6b2eff9fdb0fdd021e
+      image: quay.io/konflux-ci/task-runner:2.0.0@sha256:80e5bf464f7732fb6232912a6ed4289e0773914b6ffe13f065026ba09437c790
       workingDir: /workspace/output/source
       env:
         - name: SNAPSHOT_SPEC_FILE_PATH
@@ -61,7 +61,7 @@ spec:
         echo "All matching PipelineRuns have succeeded."
 
     - name: validate-snapshot
-      image: quay.io/konflux-ci/task-runner:1.8.1@sha256:38bfc93b0eacecd0aa5228225427524441c30e911b282a6b2eff9fdb0fdd021e
+      image: quay.io/konflux-ci/task-runner:2.0.0@sha256:80e5bf464f7732fb6232912a6ed4289e0773914b6ffe13f065026ba09437c790
       workingDir: /workspace/output/source
       env:
         - name: SNAPSHOT_SPEC_FILE_PATH
