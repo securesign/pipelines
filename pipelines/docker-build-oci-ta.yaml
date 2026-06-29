@@ -107,6 +107,10 @@ spec:
     type: string
     default: .
     description: Target directories to scan with SAST tools. Multiple values should be separated with commas.
+  - name: ALLOW_CROSS_PLATFORM_IMAGES
+    type: string
+    default: "false"
+    description: Allows to use parent images that don't match the build host architecture. This option must be used with caution as it may create incompatible images.
   results:
   - description: ""
     name: IMAGE_URL
@@ -258,6 +262,8 @@ spec:
       - "short-commit=$(tasks.clone-repository.results.short-commit)"
     - name: BUILDAH_FORMAT
       value: $(params.buildah-format)
+    - name: ALLOW_CROSS_PLATFORM_IMAGES
+      value: $(params.ALLOW_CROSS_PLATFORM_IMAGES)
     runAfter:
     - prefetch-dependencies
     - generate-labels
