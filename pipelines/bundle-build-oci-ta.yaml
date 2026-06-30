@@ -188,6 +188,25 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: get-version-from-configmap
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: $(params.revision)
+      - name: pathInRepo
+        value: tasks/get-version-from-configmap.yaml
+    params:
+    - name: git-url
+      value: $(params.git-url)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      value: $(context.pipelineRun.namespace)
+    - name: default-version
+      value: $(params.release-version)
   - name: derive-product-version
     taskRef:
       resolver: git
@@ -195,14 +214,16 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
     - name: release-version
-      value: $(params.release-version)
+      value: $(tasks.get-version-from-configmap.results.release-version)
     - name: image-version
       value: $(params.image-version)
+    runAfter:
+    - get-version-from-configmap
   - name: generate-labels
     params:
     - name: label-templates
@@ -226,7 +247,7 @@ spec:
       - name: name
         value: generate-labels
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-generate-labels:0.1@sha256:73327724d44fd4974ebd849fa753b5e8e7a21e814fdc0d975ce8649b0a540dba
+        value: quay.io/konflux-ci/tekton-catalog/task-generate-labels:0.1@sha256:5d6aec894849cd580e144433b5bdcb89aece5f07e04ff7d5e8df60ae41e7efe7
       - name: kind
         value: task
       resolver: bundles
@@ -242,7 +263,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: 'bcb1f70b96585ee7d591eeef62a75eeb5a1dea55'
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - name: build-container
@@ -457,7 +478,7 @@ spec:
       - name: name
         value: ecosystem-cert-preflight-checks
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:3c4f60ebda2225eff6a6bc387d9bbd443f1264d756bf385f97cc684992e904a0
+        value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:9c300728a03f41beee9a689422d66513d32ab5f804664fe561b11cebacd07799
       - name: kind
         value: task
       resolver: bundles
