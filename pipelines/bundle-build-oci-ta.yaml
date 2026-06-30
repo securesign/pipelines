@@ -195,7 +195,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "main"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/get-version-from-configmap.yaml
     params:
@@ -214,7 +214,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
@@ -263,7 +263,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: 'bcb1f70b96585ee7d591eeef62a75eeb5a1dea55'
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - name: build-container
