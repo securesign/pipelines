@@ -34,6 +34,9 @@ spec:
   steps:
     - name: get-version
       image: quay.io/openshift/origin-cli:4.15
+      env:
+        - name: PAC_TARGET_BRANCH
+          value: $(context.pipelineRun.annotations['build.appstudio.redhat.com/target_branch'])
       script: |
         #!/bin/bash
         set -e
@@ -43,10 +46,11 @@ spec:
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
 
-        # Prefer explicit param; fall back to PipelineRun annotation set by Pipelines-as-Code
+        # Prefer explicit param; fall back to PAC annotation (via env — context refs
+        # are not substituted inside script blocks)
         BRANCH="$(params.target-branch)"
         if [ -z "${BRANCH}" ]; then
-          BRANCH="$(context.pipelineRun.annotations['build.appstudio.redhat.com/target_branch'])"
+          BRANCH="${PAC_TARGET_BRANCH}"
         fi
 
         if [ -z "${BRANCH}" ]; then

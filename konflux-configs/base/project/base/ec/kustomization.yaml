@@ -19,7 +19,6 @@ patches:
       kind: ProjectDevelopmentStreamTemplate
       labelSelector: "build.rhtas.com/ec=registry-rhtas-operator"
     path: patch/registry-rhtas-operator.yaml
-
   # For templates with build.rhtas.com/ec=fbc-standard (FBC patch)
   - target:
       kind: ProjectDevelopmentStreamTemplate
