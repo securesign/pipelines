@@ -196,7 +196,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "main"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/get-version-from-configmap.yaml
     params:
@@ -215,7 +215,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
@@ -588,7 +588,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'c84b32b14d839e41a8159ba5355cc360214562ac'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
@@ -614,7 +614,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'bbb9af6a1fd581b805afc907172e03dbb91ebeeb'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/fips-check.yaml'
     params:
