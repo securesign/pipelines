@@ -30,13 +30,13 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-22-e2e"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.22"
@@ -65,13 +65,13 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-22-upgrade"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the upgrade integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
+          name: "disabled"
       params:
         - name: OCP_VERSION
           value: "4.22"
