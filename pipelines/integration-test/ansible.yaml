@@ -78,31 +78,23 @@ spec:
           - name: output
             workspace: work
       - name: prepare-molecule-tests
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: eli/dupeCode
+            - name: pathInRepo
+              value: tasks/integration-test/prepare-molecule-tests.yaml
+        params:
+          - name: container-image
+            value: $(tasks.parse-metadata.results.container-image)
+          - name: ansible-path
+            value: "artifact-signer-ansible"
         workspaces:
           - name: work
             workspace: work
-        taskSpec:
-          workspaces:
-            - name: work
-          steps:
-            - name: extract-release-image-content
-              image: "gcr.io/go-containerregistry/crane"
-              args:
-                - export
-                - $(tasks.parse-metadata.results.container-image)
-                - $(workspaces.work.path)/image.tar
-            - name: prepare-env
-              image: "quay.io/redhat-appstudio/konflux-test:stable"
-              script: |
-                #!/bin/sh
-                set -ex
-                
-                # extract the release image content
-                tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
-                
-                # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
-                find $(workspaces.work.path)/artifact-signer-ansible/molecule -type f -name "converge.yml" \
-                -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
       - name: run-molecule-tests
         runAfter:
           - prepare-molecule-tests
@@ -121,7 +113,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeCode
             - name: pathInRepo
               value: tasks/integration-test/ansible/run-molecule-tests.yaml
       - name: run-sigstore-e2e-tests
@@ -140,7 +132,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeCode
             - name: pathInRepo
               value: tasks/integration-test/ansible/run-sigstore-e2e-tests.yaml
     finally:
