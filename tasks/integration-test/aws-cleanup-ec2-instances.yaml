@@ -31,6 +31,10 @@ spec:
         #!/bin/bash
         set -eu
 
+        echo "=========================================="
+        echo "🧹 Running REFACTORED aws-cleanup-ec2-instances task from eli/dupeCode branch"
+        echo "=========================================="
+
         set +x
         export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
         export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
