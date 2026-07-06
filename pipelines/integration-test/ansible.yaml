@@ -137,51 +137,15 @@ spec:
               value: tasks/integration-test/ansible/run-sigstore-e2e-tests.yaml
     finally:
       - name: aws-cleanup
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/aws-cleanup-ec2-instances.yaml
         params:
           - name: run-id
             value: "$(context.pipelineRun.name)"
-        taskSpec:
-          params:
-            - name: run-id
-          volumes:
-            - name: aws-creds
-              secret:
-                secretName: aws-ci-test
-          steps:
-            - name: terminate-instances
-              volumeMounts:
-                - name: aws-creds
-                  mountPath: /creds
-              image: amazon/aws-cli:latest
-              env:
-                - name: AWS_DEFAULT_REGION
-                  value: "eu-north-1"
-              script: |
-                #!/bin/bash
-                set -eu
-                
-                set +x
-                export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
-                export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
-                set -x
-                
-                # Check for credentials before proceeding (crucial step)
-                if [ -z "${AWS_ACCESS_KEY_ID}" ]; then
-                  echo "ERROR: AWS_ACCESS_KEY_ID environment variable is missing." >&2
-                  exit 1
-                fi
-                
-                INSTANCE_LIST=$(
-                  aws ec2 describe-instances \
-                  --filters "Name=tag:Name,Values=CI-$(params.run-id)*" "Name=instance-state-name,Values=running,pending" \
-                  --query 'Reservations[].Instances[].InstanceId' \
-                  --output text
-                )
-                echo "Instance IDs received for termination: ${INSTANCE_LIST} in ${AWS_DEFAULT_REGION}..."
-                
-                aws ec2 terminate-instances \
-                  --instance-ids ${INSTANCE_LIST} \
-                  --region ${AWS_DEFAULT_REGION} \
-                  --output text
-                
-                echo "Termination request sent for instance ${INSTANCE_LIST}."
