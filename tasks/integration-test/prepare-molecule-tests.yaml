@@ -20,6 +20,9 @@ spec:
   steps:
     - name: extract-release-image-content
       image: "gcr.io/go-containerregistry/crane"
+      env:
+        - name: DOCKER_CONFIG
+          value: /tmp/empty-docker-config
       args:
         - export
         - $(params.container-image)
