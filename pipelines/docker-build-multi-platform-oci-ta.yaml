@@ -83,6 +83,10 @@ spec:
     description: Name of the Dockerfile ARG to inject with the resolved dependency image (e.g. IMG, AGENT_IMG).
     name: manager-build-arg-name
     type: string
+  - default: "false"
+    description: Allow base images with a different architecture than the target platform. Required when extracting binaries from a single-arch image (e.g. cli-stack) in a multi-platform build.
+    name: ALLOW_CROSS_PLATFORM_IMAGES
+    type: string
   - default:
     - linux/x86_64
     description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
@@ -298,6 +302,8 @@ spec:
       - "short-commit=$(tasks.clone-repository.results.short-commit)"
     - name: BUILDAH_FORMAT
       value: $(params.buildah-format)
+    - name: ALLOW_CROSS_PLATFORM_IMAGES
+      value: $(params.ALLOW_CROSS_PLATFORM_IMAGES)
     runAfter:
     - prefetch-dependencies
     - generate-labels
