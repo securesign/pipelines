@@ -33,10 +33,6 @@ spec:
         #!/bin/sh
         set -ex
 
-        echo "=========================================="
-        echo "🚀 Running REFACTORED prepare-molecule-tests task from eli/dupeCode branch"
-        echo "=========================================="
-
         # Extract the release image content
         tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
 
