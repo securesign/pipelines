@@ -149,7 +149,7 @@ spec:
           libxcb libXcomposite libXdamage libXext libXfixes libxkbcommon \
           libXrandr libxshmfence mesa-libgbm nss nspr pango
 
-        go run github.com/playwright-community/playwright-go/cmd/playwright install chromium
+        go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium
         go mod vendor
 
         export TEST_FIREFOX=false
