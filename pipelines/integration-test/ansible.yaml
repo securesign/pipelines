@@ -84,7 +84,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeCode
             - name: pathInRepo
               value: tasks/integration-test/prepare-molecule-tests.yaml
         params:
