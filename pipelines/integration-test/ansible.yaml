@@ -78,23 +78,31 @@ spec:
           - name: output
             workspace: work
       - name: prepare-molecule-tests
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/prepare-molecule-tests.yaml
-        params:
-          - name: container-image
-            value: $(tasks.parse-metadata.results.container-image)
-          - name: ansible-path
-            value: "artifact-signer-ansible"
         workspaces:
           - name: work
             workspace: work
+        taskSpec:
+          workspaces:
+            - name: work
+          steps:
+            - name: extract-release-image-content
+              image: "gcr.io/go-containerregistry/crane"
+              args:
+                - export
+                - $(tasks.parse-metadata.results.container-image)
+                - $(workspaces.work.path)/image.tar
+            - name: prepare-env
+              image: "quay.io/redhat-appstudio/konflux-test:stable"
+              script: |
+                #!/bin/sh
+                set -ex
+                
+                # extract the release image content
+                tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
+                
+                # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
+                find $(workspaces.work.path)/artifact-signer-ansible/molecule -type f -name "converge.yml" \
+                -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
       - name: run-molecule-tests
         runAfter:
           - prepare-molecule-tests
@@ -137,15 +145,51 @@ spec:
               value: tasks/integration-test/ansible/run-sigstore-e2e-tests.yaml
     finally:
       - name: aws-cleanup
-        taskRef:
-          resolver: git
-          params:
-            - name: url
-              value: https://github.com/securesign/pipelines.git
-            - name: revision
-              value: main
-            - name: pathInRepo
-              value: tasks/integration-test/aws-cleanup-ec2-instances.yaml
         params:
           - name: run-id
             value: "$(context.pipelineRun.name)"
+        taskSpec:
+          params:
+            - name: run-id
+          volumes:
+            - name: aws-creds
+              secret:
+                secretName: aws-ci-test
+          steps:
+            - name: terminate-instances
+              volumeMounts:
+                - name: aws-creds
+                  mountPath: /creds
+              image: amazon/aws-cli:latest
+              env:
+                - name: AWS_DEFAULT_REGION
+                  value: "eu-north-1"
+              script: |
+                #!/bin/bash
+                set -eu
+                
+                set +x
+                export AWS_SECRET_ACCESS_KEY=$(cat /creds/AWS_ACCESS_KEY)
+                export AWS_ACCESS_KEY_ID=$(cat /creds/AWS_ACCESS_KEY_ID)
+                set -x
+                
+                # Check for credentials before proceeding (crucial step)
+                if [ -z "${AWS_ACCESS_KEY_ID}" ]; then
+                  echo "ERROR: AWS_ACCESS_KEY_ID environment variable is missing." >&2
+                  exit 1
+                fi
+                
+                INSTANCE_LIST=$(
+                  aws ec2 describe-instances \
+                  --filters "Name=tag:Name,Values=CI-$(params.run-id)*" "Name=instance-state-name,Values=running,pending" \
+                  --query 'Reservations[].Instances[].InstanceId' \
+                  --output text
+                )
+                echo "Instance IDs received for termination: ${INSTANCE_LIST} in ${AWS_DEFAULT_REGION}..."
+                
+                aws ec2 terminate-instances \
+                  --instance-ids ${INSTANCE_LIST} \
+                  --region ${AWS_DEFAULT_REGION} \
+                  --output text
+                
+                echo "Termination request sent for instance ${INSTANCE_LIST}."
