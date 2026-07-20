@@ -6,6 +6,9 @@ metadata:
   name: "pipelines-enterprise-contract"
 spec:
   application: pipelines
+  params:
+    - name: POLICY_CONFIGURATION
+      value: rhtap-releng-tenant/registry-rhtas
   resolverRef:
     params:
       - name: url
