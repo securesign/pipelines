@@ -119,6 +119,12 @@ spec:
           value: "$(steps.push-test-image.results.image)"
         - name: MANUAL_IMAGE_SETUP
           value: "true"
+        - name: HTTPS_PROXY
+          value: "http://squid.corp.redhat.com:3128"
+        - name: HTTP_PROXY
+          value: "http://squid.corp.redhat.com:3128"
+        - name: NO_PROXY
+          value: "kubernetes.default.svc,.cluster.local,localhost,172.31.0.1,127.0.0.1,.corp.redhat.com,.psi.redhat.com,quay.io"
       workingDir: $(workspaces.source-code.path)/sigstore-e2e
       resources:
         requests:

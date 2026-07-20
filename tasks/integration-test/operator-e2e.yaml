@@ -61,6 +61,12 @@ spec:
           value: "true"
         - name: FIPS_ENABLED
           value: "$(params.fips-enabled)"
+        - name: HTTPS_PROXY
+          value: "http://squid.corp.redhat.com:3128"
+        - name: HTTP_PROXY
+          value: "http://squid.corp.redhat.com:3128"
+        - name: NO_PROXY
+          value: "kubernetes.default.svc,.cluster.local,localhost,172.31.0.1,127.0.0.1,.corp.redhat.com,.psi.redhat.com,quay.io"
       volumeMounts:
         - name: credentials
           mountPath: /credentials
