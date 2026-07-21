@@ -231,54 +231,25 @@ spec:
         runAfter:
           - provision-cluster
           - clone-operator-source-code
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: eli/dupeCode
+            - name: pathInRepo
+              value: tasks/integration-test/prepare-tests.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: workdir
+            value: "operator"
         workspaces:
           - name: source-code
             workspace: work
-        taskSpec:
-          results:
-            - name: oidc-hostname
-              type: string
-              value: "$(steps.install-keycloak.results.oidc-hostname)"
-          volumes:
-            - name: credentials
-              emptyDir: { }
-          workspaces:
-            - name: source-code
-          steps:
-            - name: get-kubeconfig
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/konflux-ci/build-definitions.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-              params:
-                - name: eaasSpaceSecretRef
-                  value: $(tasks.provision-eaas-space.results.secretRef)
-                - name: clusterName
-                  value: "$(tasks.provision-cluster.results.clusterName)"
-                - name: credentials
-                  value: credentials
-            - name: install-keycloak
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/install-keycloak.yaml
-              params:
-                - name: credentials
-                  value: credentials
-                - name: KUBECONFIG
-                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: workdir
-                  value: "$(workspaces.source-code.path)/operator"
       - name: run-operator-upgrade
         runAfter:
           - prepare-tests

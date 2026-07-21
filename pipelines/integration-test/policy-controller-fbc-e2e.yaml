@@ -191,92 +191,31 @@ spec:
           - install-rhtas-operator
           - clone-tas-operator-source-code
           - install-operator-from-fbc
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: eli/dupeCode
+            - name: pathInRepo
+              value: tasks/integration-test/prepare-tests.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: "$(tasks.provision-cluster.results.clusterName)"
+          - name: workdir
+            value: "tas-operator"
+          - name: install-tas
+            value: "true"
+          - name: cluster-platform
+            value: "$(params.CLUSTER_PLATFORM)"
+          - name: tas-namespace
+            value: "$(params.TAS_DEPLOY_NAMESPACE)"
         workspaces:
           - name: source-code
             workspace: work
-        taskSpec:
-          results:
-            - name: oidc-hostname
-              type: string
-              value: "$(steps.install-keycloak.results.oidc-hostname)"
-            - name: fulcio-url
-              type: string
-              value: "$(steps.install-tas.results.fulcio-url)"
-            - name: tsa-url
-              type: string
-              value: "$(steps.install-tas.results.tsa-url)"
-            - name: tuf-url
-              type: string
-              value: "$(steps.install-tas.results.tuf-url)"
-            - name: rekor-url
-              type: string
-              value: "$(steps.install-tas.results.rekor-url)"
-            - name: rekor-ui-url
-              type: string
-              value: "$(steps.install-tas.results.rekor-ui-url)"
-          volumes:
-            - name: credentials
-              emptyDir: { }
-          workspaces:
-            - name: source-code
-          steps:
-            - name: get-kubeconfig
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/konflux-ci/build-definitions.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-              params:
-                - name: eaasSpaceSecretRef
-                  value: $(tasks.provision-eaas-space.results.secretRef)
-                - name: clusterName
-                  value: "$(tasks.provision-cluster.results.clusterName)"
-                - name: credentials
-                  value: credentials
-            - name: install-keycloak
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/install-keycloak.yaml
-              params:
-                - name: credentials
-                  value: credentials
-                - name: KUBECONFIG
-                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: workdir
-                  value: "$(workspaces.source-code.path)/tas-operator"
-                - name: cluster-platform
-                  value: "$(params.CLUSTER_PLATFORM)"
-            - name: install-tas
-              ref:
-                resolver: git
-                params:
-                  - name: url
-                    value: https://github.com/securesign/pipelines.git
-                  - name: revision
-                    value: main
-                  - name: pathInRepo
-                    value: stepactions/integration-test/install-tas.yaml
-              params:
-                - name: credentials
-                  value: credentials
-                - name: KUBECONFIG
-                  value: "$(steps.get-kubeconfig.results.kubeconfig)"
-                - name: workdir
-                  value: $(workspaces.source-code.path)/tas-operator
-                - name: tas-namespace
-                  value: "$(params.TAS_DEPLOY_NAMESPACE)"
-                - name: OIDC_ISSUER_URL
-                  value: "$(steps.install-keycloak.results.oidc-issuer-url)"
       - name: install-operator-from-fbc
         timeout: "0h5m0s"
         runAfter:
