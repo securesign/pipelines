@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: tufcli
+spec:
+  displayName: tufcli
+  description: |
+    tufcli is a Go command-line utility for generating and signing TUF repositories.
