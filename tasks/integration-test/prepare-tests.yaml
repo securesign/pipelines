@@ -15,7 +15,7 @@ spec:
       description: Name of the ephemeral cluster
     - name: workdir
       type: string
-      description: Working directory path for installation scripts (e.g., operator source code path)
+      description: Subdirectory within the source-code workspace (e.g., "operator" or "tas-operator")
     - name: cluster-platform
       type: string
       default: "hypershift"
@@ -90,7 +90,7 @@ spec:
         - name: KUBECONFIG
           value: $(steps.get-kubeconfig.results.kubeconfig)
         - name: workdir
-          value: $(params.workdir)
+          value: "$(workspaces.source-code.path)/$(params.workdir)"
         - name: cluster-platform
           value: $(params.cluster-platform)
     - name: install-tas
@@ -109,7 +109,7 @@ spec:
         - name: KUBECONFIG
           value: $(steps.get-kubeconfig.results.kubeconfig)
         - name: workdir
-          value: $(params.workdir)
+          value: "$(workspaces.source-code.path)/$(params.workdir)"
         - name: tas-namespace
           value: $(params.tas-namespace)
         - name: OIDC_ISSUER_URL
