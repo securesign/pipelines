@@ -1,0 +1,159 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: prepare-tests
+spec:
+  description: |
+    Prepares the ephemeral test environment by getting cluster credentials,
+    installing Keycloak for OIDC, and optionally installing TAS components.
+  params:
+    - name: eaasSpaceSecretRef
+      type: string
+      description: Secret reference for EaaS space credentials
+    - name: clusterName
+      type: string
+      description: Name of the ephemeral cluster
+    - name: workdir
+      type: string
+      description: Working directory path for installation scripts (e.g., operator source code path)
+    - name: cluster-platform
+      type: string
+      default: "hypershift"
+      description: Cluster platform type
+    - name: tas-namespace
+      type: string
+      default: "trusted-artifact-signer"
+      description: Namespace for TAS deployment
+    - name: install-tas
+      type: string
+      default: "false"
+      description: Whether to install TAS components (true/false)
+  results:
+    - name: oidc-hostname
+      type: string
+      description: Keycloak OIDC hostname
+    - name: oidc-issuer-url
+      type: string
+      description: Keycloak OIDC issuer URL
+    - name: fulcio-url
+      type: string
+      description: Fulcio service URL (only when install-tas=true)
+    - name: tsa-url
+      type: string
+      description: TSA service URL (only when install-tas=true)
+    - name: tuf-url
+      type: string
+      description: TUF service URL (only when install-tas=true)
+    - name: rekor-url
+      type: string
+      description: Rekor service URL (only when install-tas=true)
+    - name: rekor-ui-url
+      type: string
+      description: Rekor UI service URL (only when install-tas=true)
+  workspaces:
+    - name: source-code
+      description: Workspace containing operator source code
+  volumes:
+    - name: credentials
+      emptyDir: {}
+  steps:
+    - name: get-kubeconfig
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+      params:
+        - name: eaasSpaceSecretRef
+          value: $(params.eaasSpaceSecretRef)
+        - name: clusterName
+          value: $(params.clusterName)
+        - name: credentials
+          value: credentials
+    - name: install-keycloak
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/integration-test/install-keycloak.yaml
+      params:
+        - name: credentials
+          value: credentials
+        - name: KUBECONFIG
+          value: $(steps.get-kubeconfig.results.kubeconfig)
+        - name: workdir
+          value: $(params.workdir)
+        - name: cluster-platform
+          value: $(params.cluster-platform)
+    - name: install-tas
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/integration-test/install-tas.yaml
+      params:
+        - name: credentials
+          value: credentials
+        - name: KUBECONFIG
+          value: $(steps.get-kubeconfig.results.kubeconfig)
+        - name: workdir
+          value: $(params.workdir)
+        - name: tas-namespace
+          value: $(params.tas-namespace)
+        - name: OIDC_ISSUER_URL
+          value: $(steps.install-keycloak.results.oidc-issuer-url)
+      when:
+        - input: "$(params.install-tas)"
+          operator: in
+          values: ["true"]
+    - name: set-results
+      image: quay.io/redhat-appstudio/konflux-test:stable
+      env:
+        - name: OIDC_HOSTNAME
+          value: "$(steps.install-keycloak.results.oidc-hostname)"
+        - name: OIDC_ISSUER_URL
+          value: "$(steps.install-keycloak.results.oidc-issuer-url)"
+        - name: INSTALL_TAS
+          value: "$(params.install-tas)"
+        - name: FULCIO_URL
+          value: "$(steps.install-tas.results.fulcio-url)"
+        - name: TSA_URL
+          value: "$(steps.install-tas.results.tsa-url)"
+        - name: TUF_URL
+          value: "$(steps.install-tas.results.tuf-url)"
+        - name: REKOR_URL
+          value: "$(steps.install-tas.results.rekor-url)"
+        - name: REKOR_UI_URL
+          value: "$(steps.install-tas.results.rekor-ui-url)"
+      script: |
+        #!/bin/sh
+        set -e
+
+        echo -n "$OIDC_HOSTNAME" > $(results.oidc-hostname.path)
+        echo -n "$OIDC_ISSUER_URL" > $(results.oidc-issuer-url.path)
+
+        if [ "$INSTALL_TAS" = "true" ]; then
+          echo -n "$FULCIO_URL" > $(results.fulcio-url.path)
+          echo -n "$TSA_URL" > $(results.tsa-url.path)
+          echo -n "$TUF_URL" > $(results.tuf-url.path)
+          echo -n "$REKOR_URL" > $(results.rekor-url.path)
+          echo -n "$REKOR_UI_URL" > $(results.rekor-ui-url.path)
+        else
+          echo -n "" > $(results.fulcio-url.path)
+          echo -n "" > $(results.tsa-url.path)
+          echo -n "" > $(results.tuf-url.path)
+          echo -n "" > $(results.rekor-url.path)
+          echo -n "" > $(results.rekor-ui-url.path)
+        fi
