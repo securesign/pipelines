@@ -1,0 +1,41 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+        git-provider: github
+        git-provider-url: https://github.com
+        mintmaker.appstudio.redhat.com/disabled: "{{.mintmakerDisabled}}"
+      name: "tufcli-init{{.nameSuffix}}"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      componentName: "tufcli-init"
+      build-nudges-ref:
+        - "rhtas-operator{{.nameSuffix}}"
+      source:
+        git:
+          url: https://github.com/securesign/tufcli
+          revision: "{{.branch}}"
+          dockerfileUrl: Dockerfile.tufcli-init
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: ImageRepository
+    metadata:
+      name: "imagerepository-for-{{.application}}{{.nameSuffix}}-tufcli-init"
+      labels:
+        appstudio.redhat.com/component: "tufcli-init{{.nameSuffix}}"
+    spec:
+      image:
+        name: rhtas-tenant/tufcli-init
+        visibility: public
+      notifications:
+        - config:
+            url: https://bombino.api.redhat.com/v1/sbom/quay/push
+          event: repo_push
+          method: webhook
+          title: SBOM-event-to-Bombino
