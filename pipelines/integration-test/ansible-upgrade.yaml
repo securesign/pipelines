@@ -228,11 +228,16 @@ spec:
                   --query 'Reservations[].Instances[].InstanceId' \
                   --output text
                 )
+                if [ -z "${INSTANCE_LIST}" ]; then
+                  echo "No instances found to terminate."
+                  exit 0
+                fi
+
                 echo "Instance IDs received for termination: ${INSTANCE_LIST} in ${AWS_DEFAULT_REGION}..."
-                
+
                 aws ec2 terminate-instances \
                   --instance-ids ${INSTANCE_LIST} \
                   --region ${AWS_DEFAULT_REGION} \
                   --output text
-                
+
                 echo "Termination request sent for instance ${INSTANCE_LIST}."
