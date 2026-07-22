@@ -96,7 +96,8 @@ spec:
               script: |
                 #!/bin/sh
                 set -ex
-                
+                echo "Running from eli/dupeTest branch"
+
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
                 
