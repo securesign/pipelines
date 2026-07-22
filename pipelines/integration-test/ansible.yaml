@@ -100,7 +100,11 @@ spec:
 
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
-                
+
+                echo "=== Listing extracted contents ==="
+                find $(workspaces.work.path) -maxdepth 3 -type d | head -50
+                echo "=== End listing ==="
+
                 # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
                 find $(workspaces.work.path)/ansible/molecule -type f -name "converge.yml" \
                 -exec sed -i  's@name: tas_single_node@name: redhat.artifact_signer.tas_single_node@g' {} +
