@@ -78,6 +78,8 @@ spec:
           - name: output
             workspace: work
       - name: prepare-molecule-tests
+        runAfter:
+          - clone-source-code
         workspaces:
           - name: work
             workspace: work
@@ -87,6 +89,9 @@ spec:
           steps:
             - name: extract-release-image-content
               image: "gcr.io/go-containerregistry/crane"
+              env:
+                - name: DOCKER_CONFIG
+                  value: /tmp/empty-docker-config
               args:
                 - export
                 - $(tasks.parse-metadata.results.container-image)
@@ -185,11 +190,16 @@ spec:
                   --query 'Reservations[].Instances[].InstanceId' \
                   --output text
                 )
+                if [ -z "${INSTANCE_LIST}" ]; then
+                  echo "No instances found to terminate."
+                  exit 0
+                fi
+
                 echo "Instance IDs received for termination: ${INSTANCE_LIST} in ${AWS_DEFAULT_REGION}..."
-                
+
                 aws ec2 terminate-instances \
                   --instance-ids ${INSTANCE_LIST} \
                   --region ${AWS_DEFAULT_REGION} \
                   --output text
-                
+
                 echo "Termination request sent for instance ${INSTANCE_LIST}."
