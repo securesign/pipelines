@@ -53,7 +53,7 @@ spec:
           - name: revision
             value: $(tasks.parse-metadata.results.git-revision)
           - name: subdirectory
-            value: "artifact-signer-ansible"
+            value: "ansible"
         workspaces:
           - name: output
             workspace: work
@@ -78,6 +78,8 @@ spec:
           - name: output
             workspace: work
       - name: prepare-molecule-tests
+        runAfter:
+          - clone-source-code
         workspaces:
           - name: work
             workspace: work
@@ -99,14 +101,9 @@ spec:
               script: |
                 #!/bin/sh
                 set -ex
-                echo "Running from eli/dupeTest branch"
 
                 # extract the release image content
                 tar xf $(workspaces.work.path)/image.tar -C $(workspaces.work.path)
-
-                echo "=== Listing extracted contents ==="
-                find $(workspaces.work.path) -maxdepth 3 -type d | head -50
-                echo "=== End listing ==="
 
                 # replace the tas_single_node name with the redhat.artifact_signer.tas_single_node name
                 find $(workspaces.work.path)/ansible/molecule -type f -name "converge.yml" \
