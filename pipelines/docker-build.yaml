@@ -100,7 +100,7 @@ spec:
   - description: The Go base image used to run the unit tests
     name: go_base_image
     type: string
-    default: registry.redhat.io/ubi9/go-toolset@sha256:bed6eea46459b3afbe9c46de513172ab08001a8a846ad29c0d7b124d6f81eeba
+    default: registry.redhat.io/ubi9/go-toolset@sha256:35f08031de19eb51d6b35ed62c6357d3529bc69a8db65cf623ea5f0b44051999
   - name: buildah-format
     default: docker
     type: string
@@ -200,6 +200,25 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: get-version-from-configmap
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: $(params.revision)
+      - name: pathInRepo
+        value: tasks/get-version-from-configmap.yaml
+    params:
+    - name: git-url
+      value: $(params.git-url)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      value: $(context.pipelineRun.namespace)
+    - name: default-version
+      value: $(params.release-version)
   - name: derive-product-version
     taskRef:
       resolver: git
@@ -207,14 +226,16 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
     - name: release-version
-      value: $(params.release-version)
+      value: $(tasks.get-version-from-configmap.results.release-version)
     - name: image-version
       value: $(params.image-version)
+    runAfter:
+    - get-version-from-configmap
   - name: generate-labels
     params:
     - name: label-templates
@@ -570,7 +591,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: '2a9cf4de126d5da1de45c6bd2bb15ed66652f8b6'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/go-unit-test.yaml'
     params:
@@ -595,7 +616,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'bbb9af6a1fd581b805afc907172e03dbb91ebeeb'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/fips-check.yaml'
     params:

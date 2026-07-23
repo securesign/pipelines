@@ -20,6 +20,13 @@ patches:
       labelSelector: "build.rhtas.com/ec=registry-rhtas-operator"
     path: patch/registry-rhtas-operator.yaml
 
+  # For operator monorepos that inject cross-component digests into BUILD_ARGS.
+  # EC must run on the group snapshot so dependency digests are trusted.
+  - target:
+      kind: ProjectDevelopmentStreamTemplate
+      labelSelector: "build.rhtas.com/ec=registry-rhtas-operator-group-only"
+    path: patch/registry-rhtas-operator-group-only.yaml
+
   # For templates with build.rhtas.com/ec=fbc-standard (FBC patch)
   - target:
       kind: ProjectDevelopmentStreamTemplate

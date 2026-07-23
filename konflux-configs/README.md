@@ -265,6 +265,48 @@ konflux-configs/
 └── README.md                   # This file
 ```
 
+
+## Release Version Mappings
+
+Container image `version` labels are resolved centrally from the
+`rhtas-repo-branch-versions` ConfigMap instead of per-repo Tekton params.
+This allows bumping versions for all components and branches in a single PR
+to this repository.
+
+### Source of truth
+
+Version mappings live in
+[`base/config/rhtas-versions.properties`](base/config/rhtas-versions.properties)
+and are deployed as ConfigMap `rhtas-repo-branch-versions` via the
+configuration-as-code pipeline.
+
+**Key format:**
+
+| Pattern | Example | When used |
+|---------|---------|-----------|
+| `<repo>__<branch>` | `fulcio__release-1.4=1.4.2` | Exact repo + branch match |
+| `<repo>` | `fulcio=1.5.0-dev` | Fallback when branch-specific key is missing |
+
+The repo name is derived from the component `git-url` (e.g.
+`https://github.com/securesign/fulcio` → `fulcio`). The branch comes from
+the Pipelines-as-Code `target_branch` annotation on each PipelineRun.
+
+### Bumping versions for a release
+
+1. Edit `base/config/rhtas-versions.properties` with the new semver values
+2. Open a PR — only this repo needs to change (no per-component-repo PRs)
+3. On merge to `main`, the CAC pipeline builds and deploys the updated ConfigMap
+4. Subsequent builds on any branch pick up the new version automatically
+
+### Verifying a build
+
+Check the `get-version-from-configmap` task log for the resolved lookup key,
+then confirm the built image label:
+
+```bash
+skopeo inspect docker://quay.io/.../component@sha256:... | jq '.Labels.version'
+```
+
 ## Customization
 
 See [Directory Structure](#directory-structure) for file locations

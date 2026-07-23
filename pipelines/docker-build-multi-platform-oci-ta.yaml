@@ -119,7 +119,7 @@ spec:
   - description: The Go base image used to run the unit tests
     name: go_base_image
     type: string
-    default: registry.redhat.io/ubi9/go-toolset@sha256:bed6eea46459b3afbe9c46de513172ab08001a8a846ad29c0d7b124d6f81eeba
+    default: registry.redhat.io/ubi9/go-toolset@sha256:35f08031de19eb51d6b35ed62c6357d3529bc69a8db65cf623ea5f0b44051999
   - name: enable-package-registry-proxy
     default: 'true'
     description: Use the package registry proxy when prefetching dependencies
@@ -206,6 +206,25 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
+  - name: get-version-from-configmap
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: $(params.revision)
+      - name: pathInRepo
+        value: tasks/get-version-from-configmap.yaml
+    params:
+    - name: git-url
+      value: $(params.git-url)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: configmap-namespace
+      value: $(context.pipelineRun.namespace)
+    - name: default-version
+      value: $(params.release-version)
   - name: derive-product-version
     taskRef:
       resolver: git
@@ -213,14 +232,16 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
     - name: release-version
-      value: $(params.release-version)
+      value: $(tasks.get-version-from-configmap.results.release-version)
     - name: image-version
       value: $(params.image-version)
+    runAfter:
+    - get-version-from-configmap
   - name: generate-labels
     params:
     - name: label-templates
@@ -260,7 +281,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: aa617e657edc0204492f26fad667c976fb670e41
+        value: $(params.revision)
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - matrix:
@@ -618,7 +639,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'c96409257daa43e5bfb36eed71e2f5421e9e651f'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
@@ -644,7 +665,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'bbb9af6a1fd581b805afc907172e03dbb91ebeeb'
+        value: $(params.revision)
       - name: pathInRepo
         value: 'tasks/fips-check.yaml'
     params:
