@@ -20,7 +20,7 @@
           value: "fbc"
         - name: file-name
           value: "{{.operator}}-fbc.json"
-        serviceAccountName: rhtas-build-bot
+        serviceAccountName: konflux-bot-0
         pipelineRef:
           resolver: git
           params:

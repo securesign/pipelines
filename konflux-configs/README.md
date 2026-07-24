@@ -86,7 +86,7 @@ oc get applications -n $NAMESPACE
 oc get components -n $NAMESPACE
 
 # Check service accounts
-oc get sa -n $NAMESPACE konflux-configuration-as-code-deployer
+oc get sa -n $NAMESPACE konflux-bot-1
 ```
 
 ### Step 4: Upgrade to Custom Build Pipeline
@@ -223,8 +223,8 @@ environment-specific overlays (dev/prod).
 - **Trigger**: ReleasePlan with `auto-release: true` in
   `base/release-plan/konflux-manifests/base/releaseplan.yaml`
 - **Pipeline**: `pipelines/konflux/deploy-config.yaml`
-- **Service Account**: `konflux-configuration-as-code-deployer`
-  (defined in `base/release-plan/konflux-manifests/base/rbac.yaml`)
+- **Service Account**: `konflux-bot-1`
+  (defined in `base/release-plan/konflux-manifests/base/konflux-bot-1.yaml`)
 - **Process**:
   - Task `extract-and-apply-manifests` extracts `/manifests.yaml`
     from built image
@@ -252,8 +252,7 @@ konflux-configs/
 │   ├── release-plan/           # Release automation
 │   │   └── konflux-manifests/  # CAC deployment release plan
 │   └── service-account/        # RBAC for automation
-│       ├── promote-to-candidate-sa.yaml
-│       └── release-sa.yaml
+│       └── konflux-bot-0.yaml
 ├── overlay/                    # Environment-specific configs
 │   ├── dev/                    # Development environment
 │   │   └── kustomization.yaml  # namespace: rhtas-dev-tenant

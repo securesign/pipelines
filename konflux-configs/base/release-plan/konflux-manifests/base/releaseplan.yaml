@@ -8,7 +8,7 @@ metadata:
 spec:
   application: konflux
   tenantPipeline:
-    serviceAccountName: konflux-configuration-as-code-deployer
+    serviceAccountName: konflux-bot-1
     pipelineRef:
       resolver: git
       params:
