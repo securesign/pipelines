@@ -20,7 +20,7 @@
           value: "false"
         - name: type
           value: "operator"
-        serviceAccountName: rhtas-build-bot
+        serviceAccountName: konflux-bot-0
         pipelineRef:
           resolver: git
           params:
