@@ -212,6 +212,9 @@ spec:
                     - source: registry.redhat.io/rhtas/rhtas-console-rhel9
                       mirrors:
                       - quay.io/securesign/rhtas-console
+                    - source: registry.redhat.io/rhtas/tufcli-init-rhel9
+                      mirrors:
+                      - quay.io/securesign/tufcli-init
       - name: download-binaries
         workspaces:
           - name: work
