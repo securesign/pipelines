@@ -78,8 +78,11 @@ spec:
         LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
         echo "Looking up key: ${LOOKUP_KEY}"
 
+        # Use go-template index — JSONPath dot-notation breaks on keys with '.'
+        # (e.g. fulcio__release-1.4).
         VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-          -o jsonpath="{.data.${LOOKUP_KEY}}" 2>/dev/null || echo "")
+          -o go-template='{{ if index .data "'"${LOOKUP_KEY}"'" }}{{ index .data "'"${LOOKUP_KEY}"'" }}{{ end }}' \
+          2>/dev/null || true)
 
         if [ -n "${VERSION}" ]; then
           echo "✅ Found exact match: ${LOOKUP_KEY} = ${VERSION}"
@@ -93,7 +96,8 @@ spec:
         echo "Exact match not found. Trying fallback key: ${LOOKUP_KEY}"
 
         VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-          -o jsonpath="{.data.${LOOKUP_KEY}}" 2>/dev/null || echo "")
+          -o go-template='{{ if index .data "'"${LOOKUP_KEY}"'" }}{{ index .data "'"${LOOKUP_KEY}"'" }}{{ end }}' \
+          2>/dev/null || true)
 
         if [ -n "${VERSION}" ]; then
           echo "✅ Found repo fallback: ${LOOKUP_KEY} = ${VERSION}"
