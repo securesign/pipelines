@@ -35,6 +35,10 @@ spec:
     - name: get-version
       image: quay.io/openshift/origin-cli:4.15
       env:
+    - name: TASKRUN_NAME
+      value: $(context.taskRun.name)
+    - name: TASKRUN_NAMESPACE
+      value: $(context.taskRun.namespace)
         - name: PAC_TARGET_BRANCH
           value: $(context.pipelineRun.annotations['build.appstudio.redhat.com/target_branch'])
       script: |
@@ -76,13 +80,13 @@ spec:
         # 3. Default fallback
 
         LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
+        JSONPATH_KEY="${LOOKUP_KEY//./\\.}"
         echo "Looking up key: ${LOOKUP_KEY}"
 
         # Use go-template index — JSONPath dot-notation breaks on keys with '.'
         # (e.g. fulcio__release-1.4).
         VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-          -o go-template='{{ if index .data "'"${LOOKUP_KEY}"'" }}{{ index .data "'"${LOOKUP_KEY}"'" }}{{ end }}' \
-          2>/dev/null || true)
+          -o jsonpath="{.data['${JSONPATH_KEY}']}" 2>/dev/null || echo "")
 
         if [ -n "${VERSION}" ]; then
           echo "✅ Found exact match: ${LOOKUP_KEY} = ${VERSION}"
@@ -93,11 +97,11 @@ spec:
 
         # Fallback to repo-only key
         LOOKUP_KEY="${REPO_NAME}"
+         JSONPATH_KEY="${LOOKUP_KEY//./\\.}"
         echo "Exact match not found. Trying fallback key: ${LOOKUP_KEY}"
 
         VERSION=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-          -o go-template='{{ if index .data "'"${LOOKUP_KEY}"'" }}{{ index .data "'"${LOOKUP_KEY}"'" }}{{ end }}' \
-          2>/dev/null || true)
+         -o jsonpath="{.data['${JSONPATH_KEY}']}" 2>/dev/null || echo "")
 
         if [ -n "${VERSION}" ]; then
           echo "✅ Found repo fallback: ${LOOKUP_KEY} = ${VERSION}"
