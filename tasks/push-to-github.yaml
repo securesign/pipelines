@@ -24,20 +24,98 @@ spec:
     env:
       - name: HOME
         value: /workspace
-      - name: GH_TOKEN
-        valueFrom:
-          secretKeyRef:
-            name: git-auth
-            key: token
   steps:
+    - name: generate-access-token
+      env:
+        - name: GITHUB_APP_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: git-auth-app
+              key: client-id
+        - name: GITHUB_APP_INSTALLATION_ID
+          valueFrom:
+            secretKeyRef:
+              name: git-auth-app
+              key: installation-id
+        - name: GITHUB_APP_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: git-auth-app
+              key: private-key
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [ -z "${GITHUB_APP_CLIENT_ID:-}" ] || [ -z "${GITHUB_APP_INSTALLATION_ID:-}" ] || [ -z "${GITHUB_APP_PRIVATE_KEY:-}" ]; then
+          echo "GitHub App credentials are not set!"
+          exit 1
+        fi
+
+        pem_file="$(mktemp)"
+        trap 'rm -f "${pem_file}"' EXIT
+        printf '%s' "${GITHUB_APP_PRIVATE_KEY}" > "${pem_file}"
+
+        client_id="${GITHUB_APP_CLIENT_ID}" # Client ID (test.sh arg 1)
+        pem="$(cat "${pem_file}")" # Private key contents loaded from file (test.sh arg 2)
+
+        now=$(date +%s)
+        iat=$((${now} - 60)) # Issues 60 seconds in the past
+        exp=$((${now} + 600)) # Expires 10 minutes in the future
+
+        b64enc() { openssl base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n'; }
+
+        header_json='{
+            "typ":"JWT",
+            "alg":"RS256"
+        }'
+        # Header encode
+        header=$( echo -n "${header_json}" | b64enc )
+
+        payload_json="{
+            \"iat\":${iat},
+            \"exp\":${exp},
+            \"iss\":\"${client_id}\"
+        }"
+        # Payload encode
+        payload=$( echo -n "${payload_json}" | b64enc )
+
+        # Signature
+        header_payload="${header}"."${payload}"
+        signature=$(
+            openssl dgst -sha256 -sign <(echo -n "${pem}") \
+            <(echo -n "${header_payload}") | b64enc
+        )
+
+        # Create JWT
+        JWT="${header_payload}"."${signature}"
+        TOKEN_RESPONSE="$(curl --silent --show-error --fail \
+          --request POST \
+          --url "https://api.github.com/app/installations/${GITHUB_APP_INSTALLATION_ID}/access_tokens" \
+          --header "Accept: application/vnd.github+json" \
+          --header "Authorization: Bearer $JWT" \
+          --header "X-GitHub-Api-Version: 2022-11-28")"
+
+        GH_TOKEN="$(echo "${TOKEN_RESPONSE}" | jq -r '.token')"
+        if [ -z "${GH_TOKEN}" ] || [ "${GH_TOKEN}" = "null" ]; then
+          echo "Failed to generate GH_TOKEN"
+          echo "${TOKEN_RESPONSE}" | jq .
+          exit 1
+        fi
+
+        printf 'https://x-access-token:%s@github.com\n' "${GH_TOKEN}" > /workspace/credentials
+        chmod 0600 /workspace/credentials
+
+        # https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
+        # https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
+
     - name: configure-and-clone
       script: |
         #!/usr/bin/env sh
         set +x  # so we don't echo our token
         set -e
 
-        if [ -z "$GH_TOKEN" ]; then
-          echo "GH_TOKEN is not set!"
+        if [ ! -s /workspace/credentials ]; then
+          echo "Git credentials are not set!"
           exit 1
         fi
 
@@ -46,7 +124,6 @@ spec:
         git config --global user.name "RHTAS-build-bot"
 
         git config --global credential.helper "store --file=/workspace/credentials" 
-        echo "https://${GH_TOKEN}:x-oauth-basic@github.com" > /workspace/credentials
         
         git clone "$(params.git-url)" repo
 
@@ -76,7 +153,7 @@ spec:
         fi
 
         echo -n "$FILE_NAME"
-        echo "FILE_NAME=$FILE_NAME" >> "$HOME/.env"
+        printf '%s\n' "$FILE_NAME" > /workspace/file_name
 
     - name: push-snapshot
       env:
@@ -87,10 +164,10 @@ spec:
         set -e
         SNAPSHOT_SPEC=$(cat "${SNAPSHOT_SPEC_FILE_PATH}")
 
-        if [ -f "$HOME/.env" ]; then
-          source "$HOME/.env"
+        if [ -f /workspace/file_name ]; then
+          FILE_NAME="$(cat /workspace/file_name)"
         else
-          echo "Error: .env file not found!"
+          echo "Error: file_name not found!"
           exit 1
         fi
 
