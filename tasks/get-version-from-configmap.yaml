@@ -35,8 +35,10 @@ spec:
     - name: get-version
       image: quay.io/openshift/origin-cli:4.15
       env:
-        - name: PAC_TARGET_BRANCH
-          value: $(context.pipelineRun.annotations['build.appstudio.redhat.com/target_branch'])
+        - name: TASKRUN_NAME
+          value: $(context.taskRun.name)
+        - name: TASKRUN_NAMESPACE
+          value: $(context.taskRun.namespace)
       script: |
         #!/bin/bash
         set -e
@@ -46,15 +48,19 @@ spec:
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
 
-        # Prefer explicit param; fall back to PAC annotation (via env — context refs
-        # are not substituted inside script blocks)
+        # Prefer explicit param; fall back to resolving from PipelineRun annotation
         BRANCH="$(params.target-branch)"
-        if [ -z "${BRANCH}" ]; then
-          BRANCH="${PAC_TARGET_BRANCH}"
+        if [ -z "${BRANCH}" ] && [ -n "${TASKRUN_NAME}" ]; then
+          PIPELINERUN_NAME=$(oc get taskrun "${TASKRUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+            -o jsonpath='{.metadata.ownerReferences[?(@.kind=="PipelineRun")].name}' 2>/dev/null || echo "")
+          if [ -n "${PIPELINERUN_NAME}" ]; then
+            BRANCH=$(oc get pipelinerun "${PIPELINERUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+              -o jsonpath="{.metadata.annotations['build\.appstudio\.redhat\.com/target_branch']}" 2>/dev/null || echo "")
+          fi
         fi
 
         if [ -z "${BRANCH}" ]; then
-          echo "❌ ERROR: target-branch param is empty and PipelineRun annotation 'build.appstudio.redhat.com/target_branch' is not set"
+          echo "❌ ERROR: target-branch param is empty and could not resolve branch from PipelineRun annotation"
           exit 1
         fi
 
