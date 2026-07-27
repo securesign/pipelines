@@ -183,7 +183,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: $(params.revision)
+        value: jkopriva/SECURESIGN-4640
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
