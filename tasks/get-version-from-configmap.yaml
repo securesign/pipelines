@@ -52,15 +52,15 @@ spec:
 
         # Prefer explicit param; fall back to PAC annotation (via env — context refs
         # are not substituted inside script blocks)
-        BRANCH="$(params.target-branch)"
-        if [ -z "${BRANCH}" ]; then
-          BRANCH="${PAC_TARGET_BRANCH}"
-        fi
-
-        if [ -z "${BRANCH}" ]; then
-          echo "❌ ERROR: target-branch param is empty and PipelineRun annotation 'build.appstudio.redhat.com/target_branch' is not set"
-          exit 1
-        fi
+  BRANCH="$(params.target-branch)"
+  if [ -z "${BRANCH}" ] && [ -n "${TASKRUN_NAME}" ]; then
+    PIPELINERUN_NAME=$(oc get taskrun "${TASKRUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+      -o jsonpath='{.metadata.ownerReferences[?(@.kind=="PipelineRun")].name}' 2>/dev/null || echo "")
+    if [ -n "${PIPELINERUN_NAME}" ]; then
+      BRANCH=$(oc get pipelinerun "${PIPELINERUN_NAME}" -n "${TASKRUN_NAMESPACE}" \
+        -o jsonpath="{.metadata.annotations['build\.appstudio\.redhat\.com/target_branch']}" 2>/dev/null || echo "")
+    fi
+  fi
 
         # Extract repository name from git URL
         # Examples:
