@@ -50,7 +50,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/derive-release-info.yaml
         params:
@@ -251,7 +251,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
@@ -278,7 +278,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc-olm-v1.yaml
         params:
@@ -305,7 +305,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/prepare-tests.yaml
         params:
@@ -350,7 +350,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/operator-e2e.yaml
         params:
@@ -380,7 +380,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/sigstore-e2e.yaml
         params:

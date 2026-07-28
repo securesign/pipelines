@@ -45,7 +45,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/derive-release-info.yaml
         params:
@@ -237,7 +237,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/prepare-tests.yaml
         params:
@@ -333,7 +333,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: eli/dupeTest
                   - name: pathInRepo
                     value: stepactions/integration-test/process-go-test-results.yaml
               params:

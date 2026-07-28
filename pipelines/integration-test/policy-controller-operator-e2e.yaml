@@ -43,7 +43,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
@@ -170,7 +170,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
@@ -191,7 +191,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/prepare-tests.yaml
         params:
@@ -220,7 +220,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: eli/dupeTest
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
