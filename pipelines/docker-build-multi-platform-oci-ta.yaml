@@ -225,7 +225,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: jkopriva/SECURESIGN-4640
+        value: main
       - name: pathInRepo
         value: tasks/get-version-from-configmap.yaml
     params:
@@ -244,7 +244,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: jkopriva/SECURESIGN-4640
+        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
       - name: pathInRepo
         value: tasks/derive-product-version.yaml
     params:
@@ -293,7 +293,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: jkopriva/SECURESIGN-4640
+        value: aa617e657edc0204492f26fad667c976fb670e41
       - name: pathInRepo
         value: tasks/wait-for-pipelinerun.yaml
   - matrix:
@@ -657,7 +657,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: jkopriva/SECURESIGN-4640
+        value: 'c96409257daa43e5bfb36eed71e2f5421e9e651f'
       - name: pathInRepo
         value: 'tasks/go-unit-test-oci-ta.yaml'
     params:
@@ -683,7 +683,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: jkopriva/SECURESIGN-4640
+        value: 'bbb9af6a1fd581b805afc907172e03dbb91ebeeb'
       - name: pathInRepo
         value: 'tasks/fips-check.yaml'
     params:
