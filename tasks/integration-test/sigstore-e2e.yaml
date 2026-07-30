@@ -156,7 +156,13 @@ spec:
         export TEST_SAFARI=false
         export TEST_EDGE=false
 
-        go test -v $(go list ./test/... | grep -v benchmark) --ginkgo.v -json \
+        EXCLUDE="benchmark"
+        if [ -z "$SIGSTORE_REKOR_UI_URL" ]; then
+          echo "SIGSTORE_REKOR_UI_URL is not set, skipping rekorsearchui tests"
+          EXCLUDE="benchmark|rekorsearchui"
+        fi
+
+        go test -v $(go list ./test/... | grep -vE "$EXCLUDE") --ginkgo.v -json \
         > $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
         status=$?
         printf "%s" "$status" > "$(step.results.exit-code.path)"
