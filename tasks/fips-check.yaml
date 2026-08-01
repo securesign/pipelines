@@ -36,7 +36,7 @@ spec:
       emptyDir: {}
   steps:
     - name: fetch-oci-artifact
-      image: quay.io/konflux-ci/konflux-test:v1.5.4@sha256:dae74bf0d6fc349d3ae140d9e3a921ad5009fdf8dade3186bfd9b65fbe3a365b
+      image: quay.io/konflux-ci/konflux-test:v1.5.5@sha256:affed3aa04d6b27a0d2eacb99062b9060a82c2336a1db5acd4640a5043e08257
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
@@ -56,7 +56,7 @@ spec:
         fi
 
     - name: fips-check
-      image: quay.io/konflux-ci/konflux-test:v1.5.4@sha256:dae74bf0d6fc349d3ae140d9e3a921ad5009fdf8dade3186bfd9b65fbe3a365b
+      image: quay.io/konflux-ci/konflux-test:v1.5.5@sha256:affed3aa04d6b27a0d2eacb99062b9060a82c2336a1db5acd4640a5043e08257
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
