@@ -62,7 +62,12 @@ spec:
           memory: 4Gi
         requests:
           memory: 512Mi
+      volumeMounts:
+        - name: quay-creds
+          mountPath: /quay-auth
       env:
+        - name: DOCKER_CONFIG
+          value: "/quay-auth"
         - name: OIDC_HOST
           value: "dex-idp"
         - name: CLI_STRATEGY
