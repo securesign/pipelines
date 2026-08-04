@@ -116,8 +116,12 @@ spec:
       volumeMounts:
         - name: credentials
           mountPath: /credentials
+        - name: quay-creds
+          mountPath: /quay-auth
       onError: continue
       env:
+        - name: DOCKER_CONFIG
+          value: "/quay-auth"
         - name: OIDC_HOST
           value: "$(params.oidcHostname)"
         - name: KUBECONFIG
