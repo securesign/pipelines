@@ -27,6 +27,12 @@ spec:
   volumes:
     - name: credentials
       emptyDir: {}
+    - name: quay-creds
+      secret:
+        secretName: quay-e2e-test-creds
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   steps:
     - name: get-kubeconfig
       ref:
@@ -61,9 +67,13 @@ spec:
           value: "true"
         - name: FIPS_ENABLED
           value: "$(params.fips-enabled)"
+        - name: DOCKER_CONFIG
+          value: /quay-auth
       volumeMounts:
         - name: credentials
           mountPath: /credentials
+        - name: quay-creds
+          mountPath: /quay-auth
       workingDir: $(workspaces.source-code.path)/operator
       resources:
         requests:

@@ -30,6 +30,12 @@ spec:
   volumes:
     - name: credentials
       emptyDir: {}
+    - name: quay-creds
+      secret:
+        secretName: quay-e2e-test-creds
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   steps:
     - name: get-kubeconfig
       ref:
@@ -77,13 +83,16 @@ spec:
       securityContext:
         capabilities:
           add: ["SETFCAP"]
+      volumeMounts:
+        - name: quay-creds
+          mountPath: /quay-auth
       script: |
         #!/bin/sh
-        IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
+        IMAGE=quay.io/securesign/e2e-test:$(date +%Y%m%d%H%M%S%N)
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
         buildah pull alpine:latest
         buildah tag alpine:latest $IMAGE
-        buildah push $IMAGE
+        buildah push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
       image: registry.redhat.io/openshift4/ose-cli
       volumeMounts:
