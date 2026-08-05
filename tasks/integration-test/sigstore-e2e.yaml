@@ -90,8 +90,9 @@ spec:
         #!/bin/sh
         IMAGE=quay.io/securesign/e2e-tests:$(date +%Y%m%d%H%M%S%N)
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
-        buildah pull alpine:latest
-        buildah tag alpine:latest $IMAGE
+        CONTAINER=$(buildah from alpine:latest)
+        buildah run "$CONTAINER" sh -c "echo $(date +%s%N) > /unique-marker"
+        buildah commit "$CONTAINER" $IMAGE
         buildah push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
       image: registry.redhat.io/openshift4/ose-cli
