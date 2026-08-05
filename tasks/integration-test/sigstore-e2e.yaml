@@ -92,6 +92,7 @@ spec:
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
         CONTAINER=$(buildah from alpine:latest)
         buildah run "$CONTAINER" sh -c "echo $(date +%s%N) > /unique-marker"
+        buildah config --label quay.expires-after=1h "$CONTAINER"
         buildah commit "$CONTAINER" $IMAGE
         buildah push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
