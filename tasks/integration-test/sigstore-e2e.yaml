@@ -88,6 +88,7 @@ spec:
           mountPath: /quay-auth
       script: |
         #!/bin/sh
+        set -e
         IMAGE=quay.io/securesign/e2e-tests:$(date +%Y%m%d%H%M%S%N)
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
         CONTAINER=$(buildah from alpine:latest)
