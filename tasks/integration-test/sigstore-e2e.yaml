@@ -91,11 +91,11 @@ spec:
         set -e
         IMAGE=quay.io/securesign/e2e-tests:$(date +%Y%m%d%H%M%S%N)
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
-        CONTAINER=$(buildah from alpine:latest)
-        buildah run "$CONTAINER" sh -c "echo $(date +%s%N) > /unique-marker"
-        buildah config --label quay.expires-after=1h "$CONTAINER"
-        buildah commit "$CONTAINER" $IMAGE
-        buildah push --authfile /quay-auth/config.json $IMAGE
+        CONTAINER=$(buildah --storage-driver=vfs from alpine:latest)
+        buildah --storage-driver=vfs run "$CONTAINER" sh -c "echo $(date +%s%N) > /unique-marker"
+        buildah --storage-driver=vfs config --label quay.expires-after=1h "$CONTAINER"
+        buildah --storage-driver=vfs commit "$CONTAINER" $IMAGE
+        buildah --storage-driver=vfs push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
       image: registry.redhat.io/openshift4/ose-cli
       volumeMounts:
