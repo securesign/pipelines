@@ -40,10 +40,6 @@
       params:
         - name: OCP_VERSION
           value: "4.18"
-        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
-          value: "{{.policyControllerOperatorGitRevision}}"
-        - name: POLICY_CONTROLLER_OPERATOR_INSTALL_CHANNEL
-          value: "{{.installChannel}}"
         - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
           value: "{{.policyControllerOperatorDeploymentName}}"
       resolverRef:
@@ -75,12 +71,6 @@
       params:
         - name: OCP_VERSION
           value: "4.18"
-        - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
-          value: "{{.policyControllerOperatorGitRevision}}"
-        - name: UPGRADE_FROM_CHANNEL
-          value: "stable"
-        - name: UPGRADE_TO_CHANNEL
-          value: "{{.installChannel}}"
       resolverRef:
         params:
           - name: url

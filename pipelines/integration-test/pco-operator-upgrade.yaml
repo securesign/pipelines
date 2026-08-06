@@ -26,11 +26,7 @@ spec:
         default: tas
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
-      - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
-        default: main
       - name: UPGRADE_FROM_CHANNEL
-        default: stable
-      - name: UPGRADE_TO_CHANNEL
         default: stable
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
@@ -52,6 +48,25 @@ spec:
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
+      - name: release-info
+        runAfter:
+          - parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/derive-release-info.yaml
+        params:
+          - name: package-name
+            value: "policy-controller-operator"
+          - name: fbc-image
+            value: "$(tasks.parse-metadata.results.container-image)"
+          - name: ocp-version
+            value: $(params.OCP_VERSION)
       - name: clone-tas-operator-source-code
         runAfter:
           - parse-metadata
@@ -76,7 +91,7 @@ spec:
             workspace: work
       - name: clone-operator-source-code
         runAfter:
-          - parse-metadata
+          - release-info
         taskRef:
           params:
             - name: name
@@ -90,7 +105,7 @@ spec:
           - name: url
             value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_URL)
           - name: revision
-            value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_REVISION)
+            value: "$(tasks.release-info.results.release-branch)"
           - name: subdirectory
             value: "operator"
         workspaces:
@@ -356,7 +371,7 @@ spec:
                 - name: UPGRADE_FROM_CHANNEL
                   value: "$(params.UPGRADE_FROM_CHANNEL)"
                 - name: UPGRADE_TO_CHANNEL
-                  value: "$(params.UPGRADE_TO_CHANNEL)"
+                  value: "$(tasks.release-info.results.channel)"
                 - name: DOCKER_CONFIG
                   value: /quay-auth
               computeResources:
