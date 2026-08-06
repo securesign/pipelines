@@ -25,12 +25,6 @@ spec:
     - name: operator
       description: The operator name
       defaultValue: "policy-controller-operator"
-    - name: policyControllerOperatorGitRevision
-      description: Git revision of policy-controller-operator repo used by PCO FBC e2e
-      defaultValue: "main"
-    - name: installChannel
-      description: The operator install channel used for e2e
-      defaultValue: "stable"
     - name: policyControllerOperatorDeploymentName
       description: The operator deployment name to wait for in e2e install
       defaultValue: "policy-controller-manager"
