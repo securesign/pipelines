@@ -78,7 +78,7 @@
         - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
           value: "{{.policyControllerOperatorGitRevision}}"
         - name: UPGRADE_FROM_CHANNEL
-          value: "tech-preview"
+          value: "stable"
         - name: UPGRADE_TO_CHANNEL
           value: "{{.installChannel}}"
       resolverRef:
