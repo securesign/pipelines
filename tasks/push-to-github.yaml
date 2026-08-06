@@ -19,7 +19,7 @@ spec:
     - name: file-name
       description: Name of file to push to in $(params.git-url)
   stepTemplate:
-    image: quay.io/konflux-ci/task-runner:2.1.0@sha256:1d57720b2d1730ff2bb52b93d458eb14bfed759ec5267c2b532f776ff0bf8fab
+    image: quay.io/konflux-ci/task-runner:3.0.0@sha256:e18dd21fa58f4e4dd5cbeba0fedf3c748d2069b90f9909dedaaf00c4af047d0b
     workingDir: /workspace/output/source
     env:
       - name: HOME
