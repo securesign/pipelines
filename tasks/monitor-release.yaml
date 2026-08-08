@@ -9,7 +9,7 @@ spec:
     env:
       - name: HOME
         value: /workspace
-    image: quay.io/konflux-ci/task-runner:3.0.0@sha256:e18dd21fa58f4e4dd5cbeba0fedf3c748d2069b90f9909dedaaf00c4af047d0b
+    image: quay.io/konflux-ci/task-runner:3.1.1@sha256:f0ad156b1f7cb369a8aa9bae5fae3ffc9cc0b8a2ecb5774365188e99237cbf3f
     workingDir: /workspace/output/source
   params:
     - name: manifest
