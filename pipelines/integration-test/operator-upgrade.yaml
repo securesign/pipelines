@@ -63,7 +63,7 @@ spec:
             - name: name
               value: git-clone
             - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2.5
             - name: kind
               value: task
           resolver: bundles
@@ -212,6 +212,9 @@ spec:
                     - source: registry.redhat.io/rhtas/rhtas-console-rhel9
                       mirrors:
                       - quay.io/securesign/rhtas-console
+                    - source: registry.redhat.io/rhtas/tufcli-init-rhel9
+                      mirrors:
+                      - quay.io/securesign/tufcli-init
       - name: download-binaries
         workspaces:
           - name: work
@@ -286,7 +289,7 @@ spec:
                   value: credentials
             - name: execute-test
               onError: continue
-              image: registry.redhat.io/ubi9/go-toolset@sha256:b2bc0c6c92c56dce575ed1b2dec1ec9f8b345a80ef5e74d9bfd530b6b354feeb
+              image: registry.redhat.io/ubi9/go-toolset@sha256:5d26ff5606bd6590930e7cfc202b510e3fe2c7a7a1720860f444ab49c45128cb
               results:
                 - name: exit-code
               env:

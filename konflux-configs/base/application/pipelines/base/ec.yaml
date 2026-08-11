@@ -6,6 +6,41 @@ metadata:
   name: "pipelines-enterprise-contract"
 spec:
   application: pipelines
+  contexts:
+    - description: "execute the integration test when component docker-build updates"
+      name: "component_docker-build"
+    - description: "execute the integration test when component docker-build-oci-ta updates"
+      name: "component_docker-build-oci-ta"
+    - description: "execute the integration test when component docker-build-multi-platform-oci-ta updates"
+      name: "component_docker-build-multi-platform-oci-ta"
+  params:
+    - name: POLICY_CONFIGURATION
+      value: rhtap-releng-tenant/registry-rhtas
+  resolverRef:
+    params:
+      - name: url
+        value: https://github.com/konflux-ci/build-definitions
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: pipelines/enterprise-contract.yaml
+    resolver: git
+    resourceKind: pipeline
+---
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  annotations:
+    test.appstudio.openshift.io/kind: enterprise-contract
+  name: "pipelines-fbc-enterprise-contract"
+spec:
+  application: pipelines
+  contexts:
+    - description: "execute the integration test when component fbc-builder updates"
+      name: "component_fbc-builder"
+  params:
+    - name: POLICY_CONFIGURATION
+      value: rhtap-releng-tenant/fbc-standard
   resolverRef:
     params:
       - name: url

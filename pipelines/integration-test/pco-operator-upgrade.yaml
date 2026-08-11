@@ -26,11 +26,7 @@ spec:
         default: tas
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
-      - name: POLICY_CONTROLLER_OPERATOR_GIT_REVISION
-        default: main
       - name: UPGRADE_FROM_CHANNEL
-        default: stable
-      - name: UPGRADE_TO_CHANNEL
         default: stable
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
@@ -52,6 +48,25 @@ spec:
         params:
           - name: SNAPSHOT
             value: $(params.SNAPSHOT)
+      - name: release-info
+        runAfter:
+          - parse-metadata
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/derive-release-info.yaml
+        params:
+          - name: package-name
+            value: "policy-controller-operator"
+          - name: fbc-image
+            value: "$(tasks.parse-metadata.results.container-image)"
+          - name: ocp-version
+            value: $(params.OCP_VERSION)
       - name: clone-tas-operator-source-code
         runAfter:
           - parse-metadata
@@ -60,7 +75,7 @@ spec:
             - name: name
               value: git-clone
             - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2.5
             - name: kind
               value: task
           resolver: bundles
@@ -76,13 +91,13 @@ spec:
             workspace: work
       - name: clone-operator-source-code
         runAfter:
-          - parse-metadata
+          - release-info
         taskRef:
           params:
             - name: name
               value: git-clone
             - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2.5
             - name: kind
               value: task
           resolver: bundles
@@ -90,7 +105,7 @@ spec:
           - name: url
             value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_URL)
           - name: revision
-            value: $(params.POLICY_CONTROLLER_OPERATOR_GIT_REVISION)
+            value: "$(tasks.release-info.results.release-branch)"
           - name: subdirectory
             value: "operator"
         workspaces:
@@ -240,6 +255,12 @@ spec:
           volumes:
             - name: credentials
               emptyDir: { }
+            - name: quay-creds
+              secret:
+                secretName: quay-e2e-test-creds
+                items:
+                  - key: .dockerconfigjson
+                    path: config.json
           workspaces:
             - name: source-code
           steps:
@@ -262,7 +283,7 @@ spec:
                   value: credentials
             - name: execute-test
               onError: continue
-              image: registry.redhat.io/ubi9/go-toolset@sha256:b2bc0c6c92c56dce575ed1b2dec1ec9f8b345a80ef5e74d9bfd530b6b354feeb
+              image: registry.redhat.io/ubi9/go-toolset@sha256:5d26ff5606bd6590930e7cfc202b510e3fe2c7a7a1720860f444ab49c45128cb
               results:
                 - name: exit-code
               env:
@@ -289,7 +310,9 @@ spec:
                 - name: UPGRADE_FROM_CHANNEL
                   value: "$(params.UPGRADE_FROM_CHANNEL)"
                 - name: UPGRADE_TO_CHANNEL
-                  value: "$(params.UPGRADE_TO_CHANNEL)"
+                  value: "$(tasks.release-info.results.channel)"
+                - name: DOCKER_CONFIG
+                  value: /quay-auth
               computeResources:
                 requests:
                   cpu: "1"
@@ -300,6 +323,8 @@ spec:
               volumeMounts:
                 - name: credentials
                   mountPath: /credentials
+                - name: quay-creds
+                  mountPath: /quay-auth
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh

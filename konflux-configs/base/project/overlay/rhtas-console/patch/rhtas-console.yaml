@@ -13,11 +13,14 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "rhtas-console"
+      build-nudges-ref:
+        - "artifact-signer-ansible{{.nameSuffix}}"
+        - "rhtas-operator{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/rhtas-console
           revision: "{{.branch}}"
-          dockerfileUrl: Dockerfile.rhtas-console.rh
+          dockerfileUrl: Dockerfile.rh
 - op: add
   path: /spec/resources/-
   value:
@@ -33,11 +36,14 @@
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       componentName: "rhtas-console-ui"
+      build-nudges-ref:
+        - "artifact-signer-ansible{{.nameSuffix}}"
+        - "rhtas-operator{{.nameSuffix}}"
       source:
         git:
           url: https://github.com/securesign/rhtas-console-ui
           revision: "{{.branch}}"
-          dockerfileUrl: Dockerfile.rhtas-console-ui.rh
+          dockerfileUrl: Dockerfile
 - op: add
   path: /spec/resources/-
   value:

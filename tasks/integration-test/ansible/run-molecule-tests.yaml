@@ -47,7 +47,7 @@ spec:
         jq -r '.auths["registry.redhat.io"].username' /dockerfile/.dockerconfigjson > /work/rhio-username
         jq -r '.auths["registry.redhat.io"].password' /dockerfile/.dockerconfigjson > /work/rhio-password
     - name: run-test
-      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:5192526aa33b8a7f80bd76442a794b747a2637a1ab35822c2ad465224a02895f"
+      image: "registry.redhat.io/ansible-automation-platform-26/ansible-dev-tools-rhel9@sha256:cbd8a53ae86a117840d3db9e58b5aa783def2cf4b80ff013650668238dbf7b22"
       volumeMounts:
         - name: aws-creds
           mountPath: /creds

@@ -1,12 +1,12 @@
 apiVersion: projctl.konflux.dev/v1beta1
 kind: ProjectDevelopmentStreamTemplate
 metadata:
-  name: pco-fbc-template
+  name: tufcli-template
   labels:
-    build.rhtas.com/ec: fbc-standard
-    build.rhtas.com/type: fbc
+    build.rhtas.com/ec: registry-rhtas
+    build.rhtas.com/type: component
 spec:
-  project: pco-fbc
+  project: tufcli
   variables:
     - name: version
       description: A version number for a new development stream
@@ -18,16 +18,10 @@ spec:
       defaultValue: "-{{hyphenize .version}}"
     - name: application
       description: The application name
-      defaultValue: "pco-fbc"
+      defaultValue: "tufcli"
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
-    - name: operator
-      description: The operator name
-      defaultValue: "policy-controller-operator"
-    - name: policyControllerOperatorDeploymentName
-      description: The operator deployment name to wait for in e2e install
-      defaultValue: "policy-controller-manager"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application
@@ -36,4 +30,4 @@ spec:
           application.thumbnail: "5"
         name: "{{.application}}{{.nameSuffix}}"
       spec:
-        displayName: "{{.application}} ({{.version}})"
+        displayName: "tufcli ({{.version}})"

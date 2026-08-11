@@ -49,7 +49,7 @@ spec:
             - name: name
               value: git-clone
             - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2.5
             - name: kind
               value: task
           resolver: bundles
@@ -71,7 +71,7 @@ spec:
             - name: name
               value: git-clone
             - name: bundle
-              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2
+              value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.2.5
             - name: kind
               value: task
           resolver: bundles
@@ -221,6 +221,9 @@ spec:
                     - source: registry.redhat.io/rhtas/rhtas-console-rhel9
                       mirrors:
                       - quay.io/securesign/rhtas-console
+                    - source: registry.redhat.io/rhtas/tufcli-init-rhel9
+                      mirrors:
+                      - quay.io/securesign/tufcli-init
       - name: install-operator-from-bundle
         runAfter:
           - provision-cluster
