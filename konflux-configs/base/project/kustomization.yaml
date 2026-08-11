@@ -13,6 +13,7 @@ resources:
   - overlay/create-tree
   - overlay/client-server
   - overlay/tough
+  - overlay/tufcli
   - overlay/policy-controller
   - overlay/policy-controller-operator
   - overlay/model-validation-operator

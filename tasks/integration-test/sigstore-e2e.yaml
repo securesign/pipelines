@@ -30,6 +30,12 @@ spec:
   volumes:
     - name: credentials
       emptyDir: {}
+    - name: quay-creds
+      secret:
+        secretName: quay-e2e-test-creds
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   steps:
     - name: get-kubeconfig
       ref:
@@ -77,13 +83,19 @@ spec:
       securityContext:
         capabilities:
           add: ["SETFCAP"]
+      volumeMounts:
+        - name: quay-creds
+          mountPath: /quay-auth
       script: |
         #!/bin/sh
-        IMAGE=ttl.sh/test-$(date +%Y%m%d%H%M%S%N):latest
+        set -e
+        IMAGE=quay.io/securesign/e2e-tests:$(date +%Y%m%d%H%M%S%N)
         printf "%s" "$IMAGE" > "$(step.results.image.path)"
-        buildah pull alpine:latest
-        buildah tag alpine:latest $IMAGE
-        buildah push $IMAGE
+        CONTAINER=$(buildah --storage-driver=vfs from alpine:latest)
+        buildah --storage-driver=vfs run "$CONTAINER" sh -c "echo $(date +%s%N) > /unique-marker"
+        buildah --storage-driver=vfs config --label quay.expires-after=1h "$CONTAINER"
+        buildah --storage-driver=vfs commit "$CONTAINER" $IMAGE
+        buildah --storage-driver=vfs push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
       image: registry.redhat.io/openshift4/ose-cli
       volumeMounts:
@@ -101,14 +113,18 @@ spec:
         oc project $TASNAMESPACE
         ./tas-env-variables.sh > .env
     - name: execute-tas-e2e
-      image: registry.redhat.io/ubi9/go-toolset@sha256:b2bc0c6c92c56dce575ed1b2dec1ec9f8b345a80ef5e74d9bfd530b6b354feeb
+      image: registry.redhat.io/ubi9/go-toolset@sha256:5d26ff5606bd6590930e7cfc202b510e3fe2c7a7a1720860f444ab49c45128cb
       results:
         - name: exit-code
       volumeMounts:
         - name: credentials
           mountPath: /credentials
+        - name: quay-creds
+          mountPath: /quay-auth
       onError: continue
       env:
+        - name: DOCKER_CONFIG
+          value: "/quay-auth"
         - name: OIDC_HOST
           value: "$(params.oidcHostname)"
         - name: KUBECONFIG
@@ -156,7 +172,13 @@ spec:
         export TEST_SAFARI=false
         export TEST_EDGE=false
 
-        go test -v $(go list ./test/... | grep -v benchmark) --ginkgo.v -json \
+        EXCLUDE="benchmark"
+        if [ -z "$SIGSTORE_REKOR_UI_URL" ]; then
+          echo "SIGSTORE_REKOR_UI_URL is not set, skipping rekorsearchui tests"
+          EXCLUDE="benchmark|rekorsearchui"
+        fi
+
+        go test -v $(go list ./test/... | grep -vE "$EXCLUDE") --ginkgo.v -json \
         > $(workspaces.source-code.path)/dump/sigstore-e2e/test-result.json
         status=$?
         printf "%s" "$status" > "$(step.results.exit-code.path)"

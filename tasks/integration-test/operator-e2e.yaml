@@ -27,6 +27,12 @@ spec:
   volumes:
     - name: credentials
       emptyDir: {}
+    - name: quay-creds
+      secret:
+        secretName: quay-e2e-test-creds
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   steps:
     - name: get-kubeconfig
       ref:
@@ -47,7 +53,7 @@ spec:
           value: credentials
     - name: execute-operator-e2e
       onError: continue
-      image: registry.redhat.io/ubi9/go-toolset@sha256:b2bc0c6c92c56dce575ed1b2dec1ec9f8b345a80ef5e74d9bfd530b6b354feeb
+      image: registry.redhat.io/ubi9/go-toolset@sha256:5d26ff5606bd6590930e7cfc202b510e3fe2c7a7a1720860f444ab49c45128cb
       results:
         - name: exit-code
       env:
@@ -61,9 +67,13 @@ spec:
           value: "true"
         - name: FIPS_ENABLED
           value: "$(params.fips-enabled)"
+        - name: DOCKER_CONFIG
+          value: /quay-auth
       volumeMounts:
         - name: credentials
           mountPath: /credentials
+        - name: quay-creds
+          mountPath: /quay-auth
       workingDir: $(workspaces.source-code.path)/operator
       resources:
         requests:

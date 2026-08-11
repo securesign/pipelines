@@ -1,29 +1,38 @@
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: rhtas-release
+  name: konflux-bot-0
   namespace: rhtas-tenant
+  labels:
+    rhtas.redhat.com/sa-group: build-ci-release
+imagePullSecrets:
+  - name: registry-redhat-io-pull-secret
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: rhtas-release-role
+  name: konflux-bot-0-role
   namespace: rhtas-tenant
 rules:
   - apiGroups: ["appstudio.redhat.com"]
-    resources: ["releaseplans", "releases"]
+    resources: ["releases", "releaseplans", "snapshots"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["list", "get", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: rhtas-release-rolebinding
+  name: konflux-bot-0-rolebinding
   namespace: rhtas-tenant
 subjects:
   - kind: ServiceAccount
-    name: rhtas-release
+    name: konflux-bot-0
     namespace: rhtas-tenant
 roleRef:
   kind: Role
-  name: rhtas-release-role
+  name: konflux-bot-0-role
   apiGroup: rbac.authorization.k8s.io
+---
