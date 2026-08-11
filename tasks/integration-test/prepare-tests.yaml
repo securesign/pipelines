@@ -127,16 +127,6 @@ spec:
           value: "$(steps.install-keycloak.results.oidc-issuer-url)"
         - name: INSTALL_TAS
           value: "$(params.install-tas)"
-        - name: FULCIO_URL
-          value: "$(steps.install-tas.results.fulcio-url)"
-        - name: TSA_URL
-          value: "$(steps.install-tas.results.tsa-url)"
-        - name: TUF_URL
-          value: "$(steps.install-tas.results.tuf-url)"
-        - name: REKOR_URL
-          value: "$(steps.install-tas.results.rekor-url)"
-        - name: REKOR_UI_URL
-          value: "$(steps.install-tas.results.rekor-ui-url)"
       script: |
         #!/bin/sh
         set -e
@@ -145,11 +135,11 @@ spec:
         echo -n "$OIDC_ISSUER_URL" > $(results.oidc-issuer-url.path)
 
         if [ "$INSTALL_TAS" = "true" ]; then
-          echo -n "$FULCIO_URL" > $(results.fulcio-url.path)
-          echo -n "$TSA_URL" > $(results.tsa-url.path)
-          echo -n "$TUF_URL" > $(results.tuf-url.path)
-          echo -n "$REKOR_URL" > $(results.rekor-url.path)
-          echo -n "$REKOR_UI_URL" > $(results.rekor-ui-url.path)
+          cat /tekton/steps/step-install-tas/results/fulcio-url > $(results.fulcio-url.path)
+          cat /tekton/steps/step-install-tas/results/tsa-url > $(results.tsa-url.path)
+          cat /tekton/steps/step-install-tas/results/tuf-url > $(results.tuf-url.path)
+          cat /tekton/steps/step-install-tas/results/rekor-url > $(results.rekor-url.path)
+          cat /tekton/steps/step-install-tas/results/rekor-ui-url > $(results.rekor-ui-url.path)
         else
           echo -n "" > $(results.fulcio-url.path)
           echo -n "" > $(results.tsa-url.path)
