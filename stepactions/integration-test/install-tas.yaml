@@ -43,10 +43,15 @@ spec:
       value: "$(params.OIDC_ISSUER_URL)"
   script: |
     cd $WORKDIR
-    sed -i "s#https://your-oidc-issuer-url#$OIDC_ISSUER_URL#" config/samples/rhtas_v1_securesign.yaml
-    sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' config/samples/rhtas_v1_securesign.yaml
+    if [ -f config/samples/rhtas_v1_securesign.yaml ]; then
+      SAMPLE=config/samples/rhtas_v1_securesign.yaml
+    else
+      SAMPLE=config/samples/rhtas_v1alpha1_securesign.yaml
+    fi
+    sed -i "s#https://your-oidc-issuer-url#$OIDC_ISSUER_URL#" "$SAMPLE"
+    sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' "$SAMPLE"
     oc create ns $TASNAMESPACE || true
-    oc create -f config/samples/rhtas_v1_securesign.yaml -n $TASNAMESPACE
+    oc create -f "$SAMPLE" -n $TASNAMESPACE
     sleep 1
     oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n $TASNAMESPACE
     
