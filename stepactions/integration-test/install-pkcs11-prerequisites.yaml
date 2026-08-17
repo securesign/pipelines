@@ -1,0 +1,255 @@
+apiVersion: tekton.dev/v1alpha1
+kind: StepAction
+metadata:
+  name: install-pkcs11-prerequisites
+spec:
+  description: >-
+    Sets up SoftHSM PKCS#11 prerequisites: ConfigMap, PIN Secret, PVCs,
+    key ceremony Jobs (Fulcio CA + CTLog key pair), and derived Secrets.
+  image: registry.redhat.io/openshift4/ose-cli
+  params:
+    - name: credentials
+      type: string
+      description: Name of the volume with credentials.
+    - name: KUBECONFIG
+      type: string
+      description: KUBECONFIG path.
+    - name: tas-namespace
+      description: Namespace for PKCS#11 TAS deployment.
+      type: string
+    - name: SOFTHSM_IMAGE
+      description: SoftHSM init image with Fulcio createca tooling.
+      type: string
+      default: "quay.io/rh-ee-sacm/softhsm-init:v3"
+  volumeMounts:
+    - name: "$(params.credentials)"
+      mountPath: /credentials
+  env:
+    - name: KUBECONFIG
+      value: "/credentials/$(params.KUBECONFIG)"
+    - name: NS
+      value: "$(params.tas-namespace)"
+    - name: SOFTHSM_IMAGE
+      value: "$(params.SOFTHSM_IMAGE)"
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+
+    HSM_PIN="testpin123"
+    TOKEN_LABEL="PKCS11CA"
+
+    oc create ns "$NS" || true
+
+    # --- ConfigMap: softhsm-config ---
+    oc apply -n "$NS" -f - <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: softhsm-config
+    data:
+      softhsm2.conf: |
+        directories.tokendir = /var/run/hsm-tokens
+        objectstore.backend = file
+        log.level = INFO
+    EOF
+
+    # --- Secret: hsm-credentials (PIN) ---
+    oc create secret generic hsm-credentials \
+      --from-literal=pin="$HSM_PIN" \
+      -n "$NS" --dry-run=client -o yaml | oc apply -n "$NS" -f -
+
+    # --- PVCs for Fulcio and CTLog token stores ---
+    for PVC_NAME in hsm-tokens-pvc ctlog-hsm-tokens-pvc; do
+      oc apply -n "$NS" -f - <<EOF
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: $PVC_NAME
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 100Mi
+    EOF
+    done
+
+    # --- Fulcio key ceremony Job ---
+    oc apply -n "$NS" -f - <<EOF
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: fulcio-kc
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            fsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: ca
+              image: $SOFTHSM_IMAGE
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  softhsm2-util --init-token --free --label $TOKEN_LABEL \
+                    --pin \$HSM_PIN --so-pin \$HSM_PIN
+                  pkcs11-tool --module /usr/lib64/pkcs11/libsofthsm2.so \
+                    --login --pin \$HSM_PIN --token-label $TOKEN_LABEL \
+                    --keypairgen --key-type EC:prime256v1 \
+                    --id 63 --label $TOKEN_LABEL
+                  cat > /tmp/c.conf <<C
+                  {"Path":"/usr/lib64/pkcs11/libsofthsm2.so","TokenLabel":"$TOKEN_LABEL","Pin":"\$HSM_PIN"}
+                  C
+                  fulcio createca --org RHTAS --country US --province NC \
+                    --locality Raleigh --hsm-caroot-id 99 \
+                    --pkcs11-config-path /tmp/c.conf --out /tmp/r.pem
+                  echo ===S=== && cat /tmp/r.pem && echo ===E===
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: HSM_PIN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hsm-credentials
+                      key: pin
+                - name: SOFTHSM2_CONF
+                  value: /etc/softhsm/softhsm2.conf
+              volumeMounts:
+                - name: sc
+                  mountPath: /etc/softhsm
+                  readOnly: true
+                - name: ht
+                  mountPath: /var/run/hsm-tokens
+          volumes:
+            - name: sc
+              configMap:
+                name: softhsm-config
+            - name: ht
+              persistentVolumeClaim:
+                claimName: hsm-tokens-pvc
+    EOF
+
+    # --- CTLog key ceremony Job ---
+    oc apply -n "$NS" -f - <<EOF
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: ctlog-kc
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            fsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: kc
+              image: $SOFTHSM_IMAGE
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  softhsm2-util --init-token --free --label $TOKEN_LABEL \
+                    --pin \$HSM_PIN --so-pin \$HSM_PIN
+                  pkcs11-tool --module /usr/lib64/pkcs11/libsofthsm2.so \
+                    --login --pin \$HSM_PIN --token-label $TOKEN_LABEL \
+                    --keypairgen --key-type EC:prime256v1 \
+                    --id 63 --label $TOKEN_LABEL
+                  pkcs11-tool --module /usr/lib64/pkcs11/libsofthsm2.so \
+                    --login --pin \$HSM_PIN --token-label $TOKEN_LABEL \
+                    --read-object --type pubkey --label $TOKEN_LABEL \
+                    -o /tmp/pk.der
+                  openssl ec -inform DER -pubin -in /tmp/pk.der \
+                    -outform PEM -out /tmp/pk.pem
+                  echo ===PK=== && cat /tmp/pk.pem && echo ===PKE===
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: HSM_PIN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hsm-credentials
+                      key: pin
+                - name: SOFTHSM2_CONF
+                  value: /etc/softhsm/softhsm2.conf
+              volumeMounts:
+                - name: sc
+                  mountPath: /etc/softhsm
+                  readOnly: true
+                - name: ht
+                  mountPath: /var/run/hsm-tokens
+          volumes:
+            - name: sc
+              configMap:
+                name: softhsm-config
+            - name: ht
+              persistentVolumeClaim:
+                claimName: ctlog-hsm-tokens-pvc
+    EOF
+
+    # --- Wait for both Jobs to complete ---
+    echo "Waiting for Fulcio key ceremony..."
+    oc wait --for=condition=Complete job/fulcio-kc --timeout=5m -n "$NS"
+    echo "Waiting for CTLog key ceremony..."
+    oc wait --for=condition=Complete job/ctlog-kc --timeout=5m -n "$NS"
+
+    # --- Extract Fulcio root CA cert from Job logs ---
+    FULCIO_POD=$(oc get pods -l job-name=fulcio-kc -n "$NS" -o jsonpath='{.items[0].metadata.name}')
+    FULCIO_CERT=$(oc logs "$FULCIO_POD" -c ca -n "$NS" | sed -n '/===S===/,/===E===/p' | grep -v '===')
+
+    if [ -z "$FULCIO_CERT" ]; then
+      echo "ERROR: Failed to extract Fulcio root CA certificate"
+      exit 1
+    fi
+
+    # --- Extract CTLog public key from Job logs ---
+    CTLOG_POD=$(oc get pods -l job-name=ctlog-kc -n "$NS" -o jsonpath='{.items[0].metadata.name}')
+    CTLOG_PUBKEY=$(oc logs "$CTLOG_POD" -c kc -n "$NS" | sed -n '/===PK===/,/===PKE===/p' | grep -v '===')
+
+    if [ -z "$CTLOG_PUBKEY" ]; then
+      echo "ERROR: Failed to extract CTLog public key"
+      exit 1
+    fi
+
+    # --- Create Secrets from ceremony output ---
+    oc create secret generic fulcio-root-ca \
+      --from-literal=cert.pem="$FULCIO_CERT" \
+      -n "$NS" --dry-run=client -o yaml | oc apply -n "$NS" -f -
+
+    HSM_PIN_VALUE=$(oc get secret hsm-credentials -n "$NS" -o jsonpath='{.data.pin}' | base64 -d)
+    PKCS11_CONFIG=$(cat <<CONF
+    {
+      "Path": "/var/run/hsm-lib/libsofthsm2.so",
+      "TokenLabel": "$TOKEN_LABEL",
+      "Pin": "$HSM_PIN_VALUE"
+    }
+    CONF
+    )
+    oc create secret generic fulcio-pkcs11-config \
+      --from-literal=crypto11.conf="$PKCS11_CONFIG" \
+      -n "$NS" --dry-run=client -o yaml | oc apply -n "$NS" -f -
+
+    oc create secret generic ctlog-public-key \
+      --from-literal=public.pem="$CTLOG_PUBKEY" \
+      -n "$NS" --dry-run=client -o yaml | oc apply -n "$NS" -f -
+
+    # --- Cleanup ceremony Jobs ---
+    oc delete job fulcio-kc ctlog-kc -n "$NS" --ignore-not-found
+
+    echo "PKCS#11 prerequisites ready in namespace $NS"
