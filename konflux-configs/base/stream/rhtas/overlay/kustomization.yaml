@@ -3,6 +3,6 @@ kind: Kustomization
 
 resources:
   - fbc
-  - main
+  - sachin/test-pkcs11-e2e
   - v1-3
   - v1-4

@@ -29,7 +29,7 @@ spec:
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
-        default: main
+        default: sachin/test-pkcs11-e2e
       - name: CLUSTER_PLATFORM
         description: "Target environment for Keycloak installation: openshift or kind"
         default: "openshift"
@@ -43,7 +43,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/parse-metadata.yaml
         params:
@@ -125,7 +125,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
               params:
@@ -138,7 +138,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
               params:
@@ -170,7 +170,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
@@ -221,7 +221,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
               params:
@@ -238,7 +238,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -257,7 +257,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-tas.yaml
               params:
@@ -281,7 +281,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-bundle.yaml
         params:
@@ -329,7 +329,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
               params:

@@ -10,13 +10,13 @@ spec:
       - name: ocpVersion
         value: "4.16"
       - name: version
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: branch
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: nameSuffix
         value: ""
       - name: policyControllerOperatorGitRevision
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: installChannel
         value: "stable"
       - name: policyControllerOperatorDeploymentName

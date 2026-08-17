@@ -15,7 +15,7 @@ spec:
       defaultValue: "v{{.ocpVersion}}"
     - name: branch
       description: Git branch
-      defaultValue: "main"
+      defaultValue: "sachin/test-pkcs11-e2e"
     - name: nameSuffix
       description: A suffix which will be added to K8s resource name
       defaultValue: ""
@@ -30,7 +30,7 @@ spec:
       defaultValue: "policy-controller-operator"
     - name: policyControllerOperatorGitRevision
       description: Git revision of policy-controller-operator repo used by PCO FBC e2e
-      defaultValue: "main"
+      defaultValue: "sachin/test-pkcs11-e2e"
     - name: installChannel
       description: The operator install channel used for e2e
       defaultValue: "stable"

@@ -61,7 +61,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/parse-release-config.yaml
       workspaces:
@@ -88,7 +88,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/process-release-plans.yaml
       workspaces:
@@ -115,7 +115,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/process-releases.yaml
       workspaces:
@@ -143,7 +143,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/apply-manifest.yaml
       workspaces:
@@ -165,7 +165,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/apply-manifest.yaml
       workspaces:
@@ -187,7 +187,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/monitor-release.yaml
       timeout: "1h"
@@ -210,7 +210,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/apply-manifest.yaml
       workspaces:
@@ -232,7 +232,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/apply-manifest.yaml
       workspaces:
@@ -254,7 +254,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/monitor-release.yaml
       timeout: "1h"

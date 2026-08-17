@@ -38,7 +38,7 @@ spec:
           - name: url
             value: "https://github.com/securesign/pipelines.git"
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/parse-snapshot.yaml
       params:
@@ -61,7 +61,7 @@ spec:
           - name: url
             value: "https://github.com/securesign/pipelines.git"
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/validate-latest-snapshot.yaml
       params:
@@ -86,7 +86,7 @@ spec:
           - name: url
             value: "https://github.com/securesign/pipelines.git"
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: tasks/push-to-github.yaml
       params:

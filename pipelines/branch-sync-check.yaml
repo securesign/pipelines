@@ -12,7 +12,7 @@ spec:
       type: string
     - description: The target branch that the source revision must be up to date with
       name: TARGET_BRANCH
-      default: main
+      default: sachin/test-pkcs11-e2e
       type: string
   tasks:
     - name: check-branch-sync

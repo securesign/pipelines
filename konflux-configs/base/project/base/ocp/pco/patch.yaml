@@ -49,7 +49,7 @@
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: pipelines/integration-test/policy-controller-fbc-e2e.yaml
         resolver: git
@@ -84,7 +84,7 @@
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: pipelines/integration-test/pco-operator-upgrade.yaml
         resolver: git

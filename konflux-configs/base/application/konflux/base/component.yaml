@@ -12,6 +12,6 @@ spec:
   source:
     git:
       url: https://github.com/securesign/pipelines.git
-      revision: main
+      revision: sachin/test-pkcs11-e2e
       context: konflux-configs
       dockerfileUrl: Dockerfile

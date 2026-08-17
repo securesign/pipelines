@@ -30,7 +30,7 @@ spec:
             - name: url
               value: https://github.com/konflux-ci/tekton-integration-catalog
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/test-metadata/0.4/test-metadata.yaml
         params:
@@ -45,7 +45,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/derive-release-info.yaml
         params:
@@ -108,7 +108,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
               params:
@@ -121,7 +121,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
               params:
@@ -217,7 +217,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
@@ -266,7 +266,7 @@ spec:
                   - name: url
                     value: https://github.com/konflux-ci/build-definitions.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
               params:
@@ -283,7 +283,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-keycloak.yaml
               params:
@@ -300,7 +300,7 @@ spec:
                   - name: url
                     value: https://github.com/securesign/pipelines.git
                   - name: revision
-                    value: main
+                    value: sachin/test-pkcs11-e2e
                   - name: pathInRepo
                     value: stepactions/integration-test/install-tas.yaml
               params:
@@ -324,14 +324,14 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/rapidast.yaml
         params:
           - name: app_name
             value: Fulcio
           - name: api_url
-            value: "https://raw.githubusercontent.com/sigstore/fulcio/main/fulcio.swagger.json"
+            value: "https://raw.githubusercontent.com/sigstore/fulcio/sachin/test-pkcs11-e2e/fulcio.swagger.json"
           - name: app_url
             value: $(tasks.prepare-tests.results.fulcio-url)
 # REKOR DAST testing
@@ -351,7 +351,7 @@ spec:
           - name: url
             value: "https://github.com/sigstore/rekor.git"
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: subdirectory
             value: "rekor"
         workspaces:
@@ -394,7 +394,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: sachin/test-pkcs11-e2e
             - name: pathInRepo
               value: tasks/integration-test/rapidast.yaml
         params:

@@ -203,7 +203,7 @@ spec:
       - "release=$SOURCE_DATE_EPOCH"
       - "version=$(tasks.derive-product-version.results.image-version)"
       - "vendor=Red Hat, Inc."
-      - "maintainer=rhtas-support@redhat.com"
+      - "sachin/test-pkcs11-e2etainer=rhtas-support@redhat.com"
       - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.derive-product-version.results.product-version)::el9"
       - "org.opencontainers.image.created=$SOURCE_DATE"
       - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"

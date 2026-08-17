@@ -49,7 +49,7 @@ spec:
         fi
         
         CHANNEL="stable"
-        BRANCH="main"
+        BRANCH="sachin/test-pkcs11-e2e"
         
         # Categorize using sdiff symbols
         UPDATES=$(echo "$DIFF" | grep "|" || true)
@@ -71,7 +71,7 @@ spec:
         elif echo "$UPDATES" | grep -q "^stable:"; then
           echo "Identified: General Stable channel upgrade."
           CHANNEL="stable"
-          BRANCH="main"
+          BRANCH="sachin/test-pkcs11-e2e"
         
           [[ -n "$ADDITIONS" ]] && echo -e "\tNOTE: New channels detected: $(echo "$ADDITIONS" | xargs)"
           [[ -n "$REMOVALS" ]]  && echo -e "\tNOTE: Channels removed: $(echo "$REMOVALS" | xargs)"

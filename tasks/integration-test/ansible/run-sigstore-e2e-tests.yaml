@@ -71,18 +71,18 @@ spec:
         #!/bin/bash
         set -x
         
-        DOMAIN='myrhtas'
-        # backup_restore_migrate scenario changes the domain name
+        DOsachin/test-pkcs11-e2e='myrhtas'
+        # backup_restore_migrate scenario changes the dosachin/test-pkcs11-e2e name
         if [[ "$(echo $SCENARIO | tr -d '\n')" == 'backup_restore_migrate' ]]; then
-          DOMAIN='yourrhtas'
+          DOsachin/test-pkcs11-e2e='yourrhtas'
         fi
         
-        export FULCIO_HOST="fulcio.${DOMAIN}"
-        export REKOR_HOST="rekor.${DOMAIN}"
-        export TSA_HOST="tsa.${DOMAIN}"
-        export TUF_HOST="tuf.${DOMAIN}"
-        export REKOR_SEARCH_HOST="rekor-search.${DOMAIN}"
-        export CLI_SERVER_HOST="cli-server.${DOMAIN}"
+        export FULCIO_HOST="fulcio.${DOsachin/test-pkcs11-e2e}"
+        export REKOR_HOST="rekor.${DOsachin/test-pkcs11-e2e}"
+        export TSA_HOST="tsa.${DOsachin/test-pkcs11-e2e}"
+        export TUF_HOST="tuf.${DOsachin/test-pkcs11-e2e}"
+        export REKOR_SEARCH_HOST="rekor-search.${DOsachin/test-pkcs11-e2e}"
+        export CLI_SERVER_HOST="cli-server.${DOsachin/test-pkcs11-e2e}"
         
         INSTANCE_IP=$(echo $IP | tr -d '\n')
         SERVICES="${FULCIO_HOST} ${REKOR_HOST} ${TSA_HOST} ${TUF_HOST} ${REKOR_SEARCH_HOST} ${CLI_SERVER_HOST} ${OIDC_HOST}"
@@ -95,7 +95,7 @@ spec:
         newname="$(openssl x509 -noout -subject -in "$cert" | sed -nE 's/.*CN ?= ?(.*)/\1/; s/[ ,.*]/_/g; s/__/_/g; s/_-_/-/; s/^_//g;p' | tr '[:upper:]' '[:lower:]')".pem
         echo "${newname}"; mv "${cert}" "${temp_dir}/${newname}"
         done
-        cp "${temp_dir}/${DOMAIN}.pem" "/etc/pki/ca-trust/source/anchors/"
+        cp "${temp_dir}/${DOsachin/test-pkcs11-e2e}.pem" "/etc/pki/ca-trust/source/anchors/"
         update-ca-trust extract
         
         export OIDC_TOKEN="$(curl -s -X POST https://${OIDC_HOST}:5556/dex/token -k \

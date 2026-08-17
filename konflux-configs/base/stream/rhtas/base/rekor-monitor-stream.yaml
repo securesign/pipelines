@@ -8,8 +8,8 @@ spec:
     name: rekor-monitor-template
     values:
       - name: version
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: branch
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: nameSuffix
         value: ""

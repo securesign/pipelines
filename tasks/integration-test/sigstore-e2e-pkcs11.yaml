@@ -44,7 +44,7 @@ spec:
           - name: url
             value: https://github.com/konflux-ci/build-definitions.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
       params:
@@ -62,7 +62,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: stepactions/integration-test/install-pkcs11-prerequisites.yaml
       params:
@@ -80,7 +80,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: stepactions/integration-test/install-tas-pkcs11.yaml
       params:
@@ -204,7 +204,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: stepactions/integration-test/process-go-test-results.yaml
       params:

@@ -1,4 +1,4 @@
-package main
+package sachin/test-pkcs11-e2e
 
 import "testing"
 

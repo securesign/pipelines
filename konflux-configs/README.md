@@ -101,7 +101,7 @@ the default build pipeline to the custom pipelines.
   configuration-as-code"
 - The PR updates the component to use:
   - `.tekton/configuration-as-code-pull-request.yaml` for PR builds
-  - `.tekton/configuration-as-code-push.yaml` for main branch builds
+  - `.tekton/configuration-as-code-push.yaml` for sachin/test-pkcs11-e2e branch builds
 
 **Action required**: Close the automated PR without merging. This
 repository already contains the correct custom pipeline definitions in
@@ -124,7 +124,7 @@ oc get pipelineruns -n $NAMESPACE \
 ### Making Configuration Changes
 
 **Important**: All changes must go through the Pull Request workflow.
-Direct pushes to `main` should be avoided except for emergencies.
+Direct pushes to `sachin/test-pkcs11-e2e` should be avoided except for emergencies.
 
 1. **Create a Feature Branch**:
    ```bash
@@ -182,7 +182,7 @@ runs, release pipeline deploys to cluster. See
 points.
 
 **Rollback**: If issues occur, use `git revert <commit-hash>` and
-push to main for immediate rollback, or create a revert PR for review.
+push to sachin/test-pkcs11-e2e for immediate rollback, or create a revert PR for review.
 Then investigate root cause.
 
 **Emergencies**: Still create a PR for audit trail, get expedited
@@ -193,7 +193,7 @@ must go through Git for auditability.
 
 ### Design Principles
 
-Git as single source of truth (`main` branch = desired state), no
+Git as single source of truth (`sachin/test-pkcs11-e2e` branch = desired state), no
 manual UI changes, all changes via Pull Requests with mandatory
 review, automated deployment on merge, Kustomize for
 environment-specific overlays (dev/prod).
@@ -202,14 +202,14 @@ environment-specific overlays (dev/prod).
 
 **1. Pull Request & Validation**
 - **Trigger**: `.tekton/configuration-as-code-pull-request.yaml`  (on pull-request to
-  main when `konflux-configs/***` changes)
+  sachin/test-pkcs11-e2e when `konflux-configs/***` changes)
 - **Pipeline**: `docker-build-oci-ta`
 - **Action**: Validates Kustomize build, runs YAML linting, builds
   test image
 
-**2. Build on Merge to Main**
+**2. Build on Merge to sachin/test-pkcs11-e2e**
 - **Trigger**: `.tekton/configuration-as-code-push.yaml` (on push to
-  main when `konflux-configs/***` changes)
+  sachin/test-pkcs11-e2e when `konflux-configs/***` changes)
 - **Pipeline**: `docker-build-oci-ta`
 - **Component**: `configuration-as-code` in
   `base/application/konflux/base/component.yaml`
@@ -340,7 +340,7 @@ ensure consistent project configuration.
 The following are explicitly NOT managed in this repository:
 
 1. **Tekton Pipelines Definitions**: Pipeline YAML files defined
-   via `pipelinesascode.tekton.dev` annotations remain in their
+   via `pipelinesascode.tekton.dev` annotations resachin/test-pkcs11-e2e in their
    respective component source code repositories. This aligns with
    Pipelines-as-Code methodology where pipelines live alongside code.
 
@@ -365,7 +365,7 @@ outlined above.
 All changes to this configuration repository **must**:
 
 1. **Follow PR Workflow**: Create a feature branch and submit a Pull
-   Request. Direct pushes to `main` are discouraged.
+   Request. Direct pushes to `sachin/test-pkcs11-e2e` are discouraged.
 
 2. **Get Peer Review**: At least one team member must review and
    approve changes before merging.
@@ -377,7 +377,7 @@ All changes to this configuration repository **must**:
    [Conventional Commits](https://www.conventionalcommits.org/):
    - `feat:` for new features or resources
    - `fix:` for bug fixes or corrections
-   - `chore:` for maintenance tasks
+   - `chore:` for sachin/test-pkcs11-e2etenance tasks
    - `docs:` for documentation updates
 
 5. **Test Locally**: Preview changes with `kustomize build` before

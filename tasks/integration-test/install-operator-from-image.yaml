@@ -37,7 +37,7 @@ spec:
           - name: url
             value: https://github.com/konflux-ci/build-definitions.git
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
       params:

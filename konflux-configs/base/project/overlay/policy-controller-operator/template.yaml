@@ -12,7 +12,7 @@ spec:
       description: A version number for a new development stream
     - name: branch
       description: Git branch
-      defaultValue: "main"
+      defaultValue: "sachin/test-pkcs11-e2e"
     - name: nameSuffix
       description: A suffix which will be added to K8s resource name
       defaultValue: "-{{hyphenize .version}}"

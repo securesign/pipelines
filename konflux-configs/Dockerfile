@@ -14,7 +14,7 @@ RUN oc kustomize -o /tmp/manifests.yaml ./overlay/$ENVIRONMENT
 
 FROM scratch
 
-LABEL maintainer="Red Hat, Inc."
+LABEL sachin/test-pkcs11-e2etainer="Red Hat, Inc."
 LABEL vendor="Red Hat, Inc."
 LABEL url="https://www.redhat.com"
 LABEL distribution-scope="private"

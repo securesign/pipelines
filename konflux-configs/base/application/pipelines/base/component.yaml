@@ -15,7 +15,7 @@ spec:
   source:
     git:
       url: https://github.com/securesign/pipelines
-      revision: main
+      revision: sachin/test-pkcs11-e2e
       dockerfileUrl: pipeline-tests/Dockerfile
 
 ---
@@ -35,7 +35,7 @@ spec:
   source:
     git:
       url: https://github.com/securesign/pipelines
-      revision: main
+      revision: sachin/test-pkcs11-e2e
       dockerfileUrl: pipeline-tests/Dockerfile
 
 ---
@@ -56,7 +56,7 @@ spec:
   source:
     git:
       url: https://github.com/securesign/pipelines
-      revision: main
+      revision: sachin/test-pkcs11-e2e
       dockerfileUrl: pipeline-tests/Dockerfile
 
 ---
@@ -77,7 +77,7 @@ spec:
   source:
     git:
       url: https://github.com/securesign/pipelines
-      revision: main
+      revision: sachin/test-pkcs11-e2e
       context: pipeline-tests/fbc
       dockerfileUrl: pipeline-tests/fbc/catalog.Dockerfile
 

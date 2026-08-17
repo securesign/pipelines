@@ -10,6 +10,6 @@ spec:
       - name: version
         value: "release"
       - name: branch
-        value: "main"
+        value: "sachin/test-pkcs11-e2e"
       - name: nameSuffix
         value: ""

@@ -9,7 +9,7 @@ pipelineRef:
     - name: url
       value: 'https://github.com/securesign/pipelines.git'
     - name: revision
-      value: 'main'
+      value: 'sachin/test-pkcs11-e2e'
     - name: pathInRepo
       value: 'pipelines/<pipeline>.yaml'
 ```

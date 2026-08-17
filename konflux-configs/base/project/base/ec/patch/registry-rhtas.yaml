@@ -17,7 +17,7 @@
           - name: url
             value: https://github.com/konflux-ci/build-definitions
           - name: revision
-            value: main
+            value: sachin/test-pkcs11-e2e
           - name: pathInRepo
             value: pipelines/enterprise-contract.yaml
         resolver: git
