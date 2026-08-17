@@ -364,6 +364,31 @@ spec:
             value: $(tasks.prepare-tests.results.oidc-hostname)
           - name: oidc-issuer-url
             value: $(tasks.prepare-tests.results.oidc-issuer-url)
+      - name: run-tas-pkcs11-e2e
+        runAfter:
+          - prepare-tests
+          - clone-e2e-test-source-code
+        workspaces:
+          - name: source-code
+            workspace: work
+        taskRef:
+          resolver: git
+          params:
+            - name: url
+              value: https://github.com/securesign/pipelines.git
+            - name: revision
+              value: main
+            - name: pathInRepo
+              value: tasks/integration-test/sigstore-e2e-pkcs11.yaml
+        params:
+          - name: eaasSpaceSecretRef
+            value: $(tasks.provision-eaas-space.results.secretRef)
+          - name: clusterName
+            value: $(tasks.provision-cluster.results.clusterName)
+          - name: oidcHostname
+            value: $(tasks.prepare-tests.results.oidc-hostname)
+          - name: oidc-issuer-url
+            value: $(tasks.prepare-tests.results.oidc-issuer-url)
     finally:
       - name: secure-push-test-dump
         workspaces:
