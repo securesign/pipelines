@@ -20,7 +20,7 @@ spec:
     - name: SOFTHSM_IMAGE
       description: SoftHSM init image with Fulcio createca tooling.
       type: string
-      default: "quay.io/rh-ee-sacm/softhsm-init:v3"
+      default: "quay.io/securesign/softhsm-init:1.0-test"
   volumeMounts:
     - name: "$(params.credentials)"
       mountPath: /credentials
