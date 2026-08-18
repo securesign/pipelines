@@ -215,6 +215,9 @@ spec:
                     - source: registry.redhat.io/rhtas/tuffer-rhel9
                       mirrors:
                       - quay.io/securesign/tuffer
+                    - source: registry.redhat.io/rhtas/tufcli-init-rhel9
+                      mirrors:
+                      - quay.io/securesign/tufcli-init
       - name: install-operator-from-bundle
         runAfter:
           - provision-cluster
