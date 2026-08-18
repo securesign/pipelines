@@ -125,9 +125,13 @@ spec:
           value: "$(params.TAS_DEPLOY_NAMESPACE)"
         - name: OIDC_ISSUER_URL
           value: "$(params.oidc-issuer-url)"
-      workingDir: $(workspaces.source-code.path)/sigstore-e2e
+      workingDir: $(workspaces.source-code.path)/sigstore-e2e-pkcs11
       script: |
         set -e
+        # Copy sigstore-e2e to a separate directory to avoid conflicts with parallel file-mode test
+        if [ ! -d "$(workspaces.source-code.path)/sigstore-e2e-pkcs11" ]; then
+          cp -a "$(workspaces.source-code.path)/sigstore-e2e" "$(workspaces.source-code.path)/sigstore-e2e-pkcs11"
+        fi
         echo "--- PKCS#11 Stack Status ---"
         echo "=== SecureSign ==="
         oc get securesign -n "$TASNAMESPACE" -o jsonpath='{range .items[0].status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}' 2>/dev/null || echo "not found"
@@ -165,7 +169,7 @@ spec:
           value: "$(steps.push-test-image.results.image)"
         - name: MANUAL_IMAGE_SETUP
           value: "true"
-      workingDir: $(workspaces.source-code.path)/sigstore-e2e
+      workingDir: $(workspaces.source-code.path)/sigstore-e2e-pkcs11
       resources:
         requests:
           memory: "4Gi"
@@ -191,7 +195,7 @@ spec:
           libxcb libXcomposite libXdamage libXext libXfixes libxkbcommon \
           libXrandr libxshmfence mesa-libgbm nss nspr pango
 
-        go run github.com/mxschmitt/playwright-go/cmd/playwright install chromium
+        go run github.com/playwright-community/playwright-go/cmd/playwright install chromium
         go mod vendor
 
         export TEST_FIREFOX=false
