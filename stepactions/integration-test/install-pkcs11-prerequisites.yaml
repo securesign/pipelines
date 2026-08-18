@@ -205,9 +205,32 @@ spec:
 
     # --- Wait for both Jobs to complete ---
     echo "Waiting for Fulcio key ceremony..."
-    oc wait --for=condition=Complete job/fulcio-kc --timeout=5m -n "$NS"
+    echo "--- Pod status before wait ---"
+    oc get pods -n "$NS" -l job-name=fulcio-kc -o wide 2>/dev/null || true
+    oc get pods -n "$NS" -l job-name=ctlog-kc -o wide 2>/dev/null || true
+    if ! oc wait --for=condition=Complete job/fulcio-kc --timeout=5m -n "$NS"; then
+      echo "ERROR: Fulcio key ceremony timed out. Dumping debug info:"
+      oc describe job/fulcio-kc -n "$NS" || true
+      oc get pods -n "$NS" -l job-name=fulcio-kc -o wide || true
+      FPOD=$(oc get pods -l job-name=fulcio-kc -n "$NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+      if [ -n "$FPOD" ]; then
+        oc describe pod "$FPOD" -n "$NS" || true
+        oc logs "$FPOD" --all-containers -n "$NS" || true
+      fi
+      exit 1
+    fi
     echo "Waiting for CTLog key ceremony..."
-    oc wait --for=condition=Complete job/ctlog-kc --timeout=5m -n "$NS"
+    if ! oc wait --for=condition=Complete job/ctlog-kc --timeout=5m -n "$NS"; then
+      echo "ERROR: CTLog key ceremony timed out. Dumping debug info:"
+      oc describe job/ctlog-kc -n "$NS" || true
+      oc get pods -n "$NS" -l job-name=ctlog-kc -o wide || true
+      CPOD=$(oc get pods -l job-name=ctlog-kc -n "$NS" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+      if [ -n "$CPOD" ]; then
+        oc describe pod "$CPOD" -n "$NS" || true
+        oc logs "$CPOD" --all-containers -n "$NS" || true
+      fi
+      exit 1
+    fi
 
     # --- Extract Fulcio root CA cert from Job logs ---
     FULCIO_POD=$(oc get pods -l job-name=fulcio-kc -n "$NS" -o jsonpath='{.items[0].metadata.name}')
