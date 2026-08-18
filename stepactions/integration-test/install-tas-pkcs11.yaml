@@ -153,7 +153,21 @@ spec:
 
     sleep 1
     echo "Waiting for SecureSign to become Ready..."
-    oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n "$NS"
+    if ! oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n "$NS"; then
+      echo "ERROR: SecureSign CR not Ready. Dumping debug info:"
+      echo "--- SecureSign conditions ---"
+      oc get securesign securesign-sample -n "$NS" -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}' || true
+      echo "--- Component conditions ---"
+      for comp in fulcio ctlog rekor tuf trillian timestampauthority; do
+        echo "=== $comp ==="
+        oc get "$comp" -n "$NS" -o jsonpath='{range .items[0].status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}' 2>/dev/null || echo "not found"
+      done
+      echo "--- Pods ---"
+      oc get pods -n "$NS" -o wide || true
+      echo "--- Events ---"
+      oc get events -n "$NS" --sort-by='.lastTimestamp' | tail -30 || true
+      exit 1
+    fi
 
     oc get fulcio -o jsonpath='{.items[0].status.url}' -n "$NS" > "$(step.results.fulcio-url.path)"
     oc get tuf -o jsonpath='{.items[0].status.url}' -n "$NS" > "$(step.results.tuf-url.path)"
