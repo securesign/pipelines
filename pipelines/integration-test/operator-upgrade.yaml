@@ -296,6 +296,9 @@ spec:
           volumes:
             - name: credentials
               emptyDir: { }
+            - name: push-creds
+              secret:
+                secretName: securesign-test-dump-oci
           workspaces:
             - name: source-code
           steps:
@@ -334,9 +337,13 @@ spec:
                   value: "$(tasks.parse-metadata.results.container-image)"
                 - name: TEST_UPGRADE_CHANNEL
                   value: "$(tasks.release-info.results.channel)"
+                - name: DOCKER_CONFIG
+                  value: /push-creds
               volumeMounts:
                 - name: credentials
                   mountPath: /credentials
+                - name: push-creds
+                  mountPath: /push-creds
               workingDir: $(workspaces.source-code.path)/operator
               script: |
                 #!/bin/sh
