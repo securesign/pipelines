@@ -354,7 +354,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: testkpkcs11
+              value: main
             - name: pathInRepo
               value: tasks/integration-test/sigstore-e2e-pkcs11.yaml
         params:
