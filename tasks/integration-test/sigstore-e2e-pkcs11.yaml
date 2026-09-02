@@ -86,6 +86,8 @@ spec:
       params:
         - name: credentials
           value: credentials
+        - name: workdir
+          value: "$(workspaces.source-code.path)/operator"
         - name: KUBECONFIG
           value: "$(steps.get-kubeconfig.results.kubeconfig)"
         - name: tas-namespace

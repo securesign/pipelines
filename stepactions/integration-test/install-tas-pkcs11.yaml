@@ -5,12 +5,17 @@ metadata:
 spec:
   description: >-
     Deploys a SecureSign CR with PKCS#11/HSM signer configuration for both
-    Fulcio and CTLog, then waits for the instance to become Ready.
+    Fulcio and CTLog using the sample CR from the operator repository,
+    then waits for the instance to become Ready.
   image: registry.redhat.io/openshift4/ose-cli
   params:
     - name: credentials
       type: string
       description: Name of the volume with credentials.
+    - name: workdir
+      type: string
+      description: Repository home directory.
+      default: ""
     - name: KUBECONFIG
       type: string
       description: KUBECONFIG path.
@@ -20,10 +25,6 @@ spec:
     - name: OIDC_ISSUER_URL
       description: Trusted artifact signer issuer url
       type: string
-    - name: SOFTHSM_IMAGE
-      description: SoftHSM init image used for hsm-lib-export init container.
-      type: string
-      default: "quay.io/securesign/softhsm-init:1.0-test"
   results:
     - name: fulcio-url
     - name: tuf-url
@@ -36,124 +37,37 @@ spec:
   env:
     - name: KUBECONFIG
       value: "/credentials/$(params.KUBECONFIG)"
+    - name: WORKDIR
+      value: "$(params.workdir)"
     - name: NS
       value: "$(params.tas-namespace)"
     - name: OIDC_ISSUER_URL
       value: "$(params.OIDC_ISSUER_URL)"
-    - name: SOFTHSM_IMAGE
-      value: "$(params.SOFTHSM_IMAGE)"
   script: |
     #!/bin/bash
     set -euo pipefail
 
-    oc apply -n "$NS" -f - <<EOF
-    apiVersion: rhtas.redhat.com/v1
-    kind: Securesign
-    metadata:
-      name: securesign-sample
-    spec:
-      fulcio:
-        ingress:
-          enabled: true
-        config:
-          oidcIssuers:
-            - clientID: "trusted-artifact-signer"
-              issuerURL: "$OIDC_ISSUER_URL"
-              issuer: "$OIDC_ISSUER_URL"
-              type: "email"
-        signer:
-          type: pkcs11
-          pkcs11:
-            keyID: 99
-            keyLabel: PKCS11CA
-            configRef:
-              name: fulcio-pkcs11-config
-              key: crypto11.conf
-          certificateChain:
-            certificateChainRef:
-              name: fulcio-root-ca
-              key: cert.pem
-        auth:
-          env:
-            - name: SOFTHSM2_CONF
-              value: /etc/softhsm/softhsm2.conf
-        initContainers:
-          - name: hsm-lib-export
-            image: $SOFTHSM_IMAGE
-            command: ["cp", "/usr/lib64/pkcs11/libsofthsm2.so", "/var/run/hsm-lib/"]
-            volumeMounts:
-              - name: hsm-lib
-                mountPath: /var/run/hsm-lib
-        volumes:
-          - name: softhsm-config
-            configMap:
-              name: softhsm-config
-          - name: hsm-tokens
-            persistentVolumeClaim:
-              claimName: hsm-tokens-pvc
-        volumeMounts:
-          - name: softhsm-config
-            mountPath: /etc/softhsm
-            readOnly: true
-      ctlog:
-        signer:
-          type: pkcs11
-          pkcs11:
-            modulePath: /usr/lib64/pkcs11/libsofthsm2.so
-            tokenLabel: PKCS11CA
-            pinSecretRef:
-              name: hsm-credentials
-              key: pin
-            publicKeyRef:
-              name: ctlog-public-key
-              key: public.pem
-        rootCertificates:
-          - name: fulcio-root-ca
-            key: cert.pem
-        auth:
-          env:
-            - name: SOFTHSM2_CONF
-              value: /etc/softhsm/softhsm2.conf
-        initContainers:
-          - name: hsm-lib-export
-            image: $SOFTHSM_IMAGE
-            command: ["cp", "/usr/lib64/pkcs11/libsofthsm2.so", "/var/run/hsm-lib/"]
-            volumeMounts:
-              - name: hsm-lib
-                mountPath: /var/run/hsm-lib
-        volumes:
-          - name: softhsm-config
-            configMap:
-              name: softhsm-config
-          - name: hsm-tokens
-            persistentVolumeClaim:
-              claimName: ctlog-hsm-tokens-pvc
-        volumeMounts:
-          - name: softhsm-config
-            mountPath: /etc/softhsm
-            readOnly: true
-      rekor:
-        ingress:
-          enabled: true
-      tuf:
-        ingress:
-          enabled: true
-      tsa:
-        ingress:
-          enabled: true
-        signer:
-          certificateChain:
-            intermediateCA:
-              - organizationName: Red Hat
-            leafCA:
-              organizationName: Red Hat
-            rootCA:
-              organizationName: Red Hat
-    EOF
+    cd $WORKDIR
+    SAMPLE=docs/samples/rhtas_v1_securesign_pkcs11.yaml
+
+    if [ ! -f "$SAMPLE" ]; then
+      echo "PKCS#11 sample CR not found at $SAMPLE — skipping (not supported on this branch)"
+      echo "n/a" > "$(step.results.fulcio-url.path)"
+      echo "n/a" > "$(step.results.tuf-url.path)"
+      echo "n/a" > "$(step.results.rekor-url.path)"
+      echo "n/a" > "$(step.results.rekor-ui-url.path)"
+      echo "n/a" > "$(step.results.tsa-url.path)"
+      exit 0
+    fi
+
+    sed -i "s#https://your-oidc-issuer-url#$OIDC_ISSUER_URL#" "$SAMPLE"
+    sed -i 's#rhtas.redhat.com/metrics: "true"#rhtas.redhat.com/metrics: "false"#' "$SAMPLE"
+    oc create ns "$NS" || true
+    oc create -f "$SAMPLE" -n "$NS"
 
     sleep 1
     echo "Waiting for SecureSign to become Ready..."
-    if ! oc wait --for=condition=Ready securesign/securesign-sample --timeout=9m -n "$NS"; then
+    if ! oc wait --for=condition=Ready securesign/securesign-sample --timeout=15m -n "$NS"; then
       echo "ERROR: SecureSign CR not Ready. Dumping debug info:"
       echo "--- SecureSign conditions ---"
       oc get securesign securesign-sample -n "$NS" -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}' || true

@@ -341,10 +341,36 @@ spec:
             value: $(tasks.prepare-tests.results.oidc-hostname)
           - name: oidc-issuer-url
             value: $(tasks.prepare-tests.results.oidc-issuer-url)
+      - name: check-pkcs11-support
+        runAfter:
+          - clone-operator-source-code
+        workspaces:
+          - name: source-code
+            workspace: work
+        taskSpec:
+          workspaces:
+            - name: source-code
+          results:
+            - name: supported
+              type: string
+          steps:
+            - name: check
+              image: registry.redhat.io/ubi9/ubi-minimal
+              script: |
+                if [ -f "$(workspaces.source-code.path)/operator/docs/samples/rhtas_v1_securesign_pkcs11.yaml" ]; then
+                  printf "true" > "$(results.supported.path)"
+                else
+                  printf "false" > "$(results.supported.path)"
+                fi
       - name: run-tas-pkcs11-e2e
+        when:
+          - input: "$(tasks.check-pkcs11-support.results.supported)"
+            operator: in
+            values: ["true"]
         runAfter:
           - prepare-tests
           - clone-e2e-test-source-code
+          - check-pkcs11-support
         workspaces:
           - name: source-code
             workspace: work
