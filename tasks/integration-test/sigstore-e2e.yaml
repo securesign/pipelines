@@ -5,12 +5,9 @@ metadata:
 spec:
   description: "Deploys TAS, pushes a test image, and executes Sigstore E2E tests."
   params:
-    - name: eaasSpaceSecretRef
+    - name: clusterCredentialsSecretRef
       type: string
-      description: "Secret reference for EaaS space"
-    - name: clusterName
-      type: string
-      description: "Name of the ephemeral cluster"
+      description: Name of the secret containing the cluster admin kubeconfig.
     - name: oidcHostname
       type: string
       description: "The hostname for the OIDC provider"
@@ -29,7 +26,8 @@ spec:
       description: "Full JSON summary of test results"
   volumes:
     - name: credentials
-      emptyDir: {}
+      secret:
+        secretName: $(params.clusterCredentialsSecretRef)
     - name: quay-creds
       secret:
         secretName: quay-e2e-test-creds
@@ -37,24 +35,6 @@ spec:
           - key: .dockerconfigjson
             path: config.json
   steps:
-    - name: get-kubeconfig
-      ref:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/konflux-ci/build-definitions.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-      params:
-        - name: eaasSpaceSecretRef
-          value: $(params.eaasSpaceSecretRef)
-        - name: clusterName
-          value: "$(params.clusterName)"
-        - name: credentials
-          value: credentials
-
     - name: install-tas
       ref:
         resolver: git
@@ -69,7 +49,7 @@ spec:
         - name: credentials
           value: credentials
         - name: KUBECONFIG
-          value: "$(steps.get-kubeconfig.results.kubeconfig)"
+          value: kubeconfig
         - name: workdir
           value: $(workspaces.source-code.path)/operator
         - name: tas-namespace
@@ -103,7 +83,7 @@ spec:
           mountPath: /credentials
       env:
         - name: KUBECONFIG
-          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+          value: "/credentials/kubeconfig"
         - name: TASNAMESPACE
           value: "$(params.TAS_DEPLOY_NAMESPACE)"
         - name: OIDC_ISSUER_URL
@@ -128,7 +108,7 @@ spec:
         - name: OIDC_HOST
           value: "$(params.oidcHostname)"
         - name: KUBECONFIG
-          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+          value: "/credentials/kubeconfig"
         - name: CLI_STRATEGY
           value: "openshift"
         - name: TARGET_IMAGE_NAME

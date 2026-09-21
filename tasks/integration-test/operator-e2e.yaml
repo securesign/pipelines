@@ -5,12 +5,9 @@ metadata:
 spec:
   description: "Runs E2E integration tests for the operator and processes results."
   params:
-    - name: eaasSpaceSecretRef
+    - name: clusterCredentialsSecretRef
       type: string
-      description: "Secret reference for EaaS space"
-    - name: clusterName
-      type: string
-      description: "Name of the ephemeral cluster"
+      description: Name of the secret containing the cluster admin kubeconfig.
     - name: oidcHostname
       type: string
       description: "The hostname for the OIDC provider"
@@ -26,7 +23,8 @@ spec:
       description: "Full JSON summary of test results"
   volumes:
     - name: credentials
-      emptyDir: {}
+      secret:
+        secretName: $(params.clusterCredentialsSecretRef)
     - name: quay-creds
       secret:
         secretName: quay-e2e-test-creds
@@ -34,23 +32,6 @@ spec:
           - key: .dockerconfigjson
             path: config.json
   steps:
-    - name: get-kubeconfig
-      ref:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/konflux-ci/build-definitions.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-      params:
-        - name: eaasSpaceSecretRef
-          value: $(params.eaasSpaceSecretRef)
-        - name: clusterName
-          value: "$(params.clusterName)"
-        - name: credentials
-          value: credentials
     - name: execute-operator-e2e
       onError: continue
       image: registry.redhat.io/ubi9/go-toolset@sha256:685ccca486cc2c82b0818d835abecb1aed7a396e76ba416cfc47c28067f5d365
@@ -62,7 +43,7 @@ spec:
         - name: OIDC_ISSUER_URL
           value: "$(params.oidc-issuer-url)"
         - name: KUBECONFIG
-          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+          value: "/credentials/kubeconfig"
         - name: CI
           value: "true"
         - name: FIPS_ENABLED
