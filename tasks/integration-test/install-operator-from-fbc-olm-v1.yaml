@@ -4,12 +4,9 @@ metadata:
   name: install-operator-from-fbc-olm-v1
 spec:
   params:
-    - name: eaasSpaceSecretRef
+    - name: clusterCredentialsSecretRef
       type: string
-      description: Name of a secret containing credentials for accessing an EaaS space.
-    - name: clusterName
-      type: string
-      description: The name of a ClusterTemplateInstance.
+      description: Name of the secret containing the cluster admin kubeconfig.
     - name: fbcImage
       type: string
       description: Fbc image to be installed from
@@ -27,30 +24,14 @@ spec:
       description: Name of the controller manager deployment
   volumes:
     - name: credentials
-      emptyDir: { }
+      secret:
+        secretName: $(params.clusterCredentialsSecretRef)
   steps:
-    - name: get-kubeconfig
-      ref:
-        resolver: git
-        params:
-          - name: url
-            value: https://github.com/konflux-ci/build-definitions.git
-          - name: revision
-            value: main
-          - name: pathInRepo
-            value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-      params:
-        - name: eaasSpaceSecretRef
-          value: "$(params.eaasSpaceSecretRef)"
-        - name: clusterName
-          value: "$(params.clusterName)"
-        - name: credentials
-          value: credentials
     - name: run-operator
       image: registry.redhat.io/openshift4/ose-cli-rhel9
       env:
         - name: KUBECONFIG
-          value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+          value: "/credentials/kubeconfig"
       volumeMounts:
         - name: credentials
           mountPath: /credentials
