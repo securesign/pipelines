@@ -20,7 +20,7 @@ spec:
       secret:
         secretName: $(params.clusterCredentialsSecretRef)
   steps:
-    - name: run-operator
+    - name: run-bundle
       image: quay.io/operator-framework/operator-sdk:latest
       env:
         - name: KUBECONFIG
@@ -28,11 +28,39 @@ spec:
       volumeMounts:
         - name: credentials
           mountPath: /credentials
-      args:
-        - run
-        - bundle
-        - --namespace
-        - "$(params.namespace)"
-        - --timeout
-        - "$(params.timeout)"
-        - "$(params.bundleImage)"
+      script: |
+        #!/bin/bash
+        set -e
+
+        KUBE_CMD="kubectl"
+        command -v oc &>/dev/null && KUBE_CMD="oc"
+
+        echo "Installing bundle $(params.bundleImage) into $(params.namespace)"
+
+        operator-sdk run bundle \
+          --namespace "$(params.namespace)" \
+          --timeout "$(params.timeout)" \
+          "$(params.bundleImage)" &
+        SDK_PID=$!
+
+        while kill -0 $SDK_PID 2>/dev/null; do
+          sleep 30
+          echo "--- Status at $(date -u +%H:%M:%S) ---"
+          $KUBE_CMD get pods -n "$(params.namespace)" -o wide 2>/dev/null || true
+          $KUBE_CMD get csv -n "$(params.namespace)" 2>/dev/null || true
+        done
+
+        wait $SDK_PID
+        EXIT_CODE=$?
+
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "=== Bundle install failed (exit $EXIT_CODE) ==="
+          $KUBE_CMD get events -n "$(params.namespace)" --sort-by='.lastTimestamp' 2>/dev/null | tail -30
+          $KUBE_CMD get pods,catalogsource,subscription,installplan,csv -n "$(params.namespace)" -o wide 2>/dev/null
+          for pod in $($KUBE_CMD get pods -n "$(params.namespace)" --no-headers 2>/dev/null | grep -v Running | awk '{print $1}'); do
+            echo "--- $pod ---"
+            $KUBE_CMD describe pod "$pod" -n "$(params.namespace)" 2>/dev/null | grep -A5 "State:\|Reason:\|Message:" || true
+            $KUBE_CMD logs "$pod" -n "$(params.namespace)" --all-containers --tail=20 2>/dev/null || true
+          done
+          exit $EXIT_CODE
+        fi
