@@ -51,7 +51,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/KFLUXVNGD-1363
             - name: pathInRepo
               value: tasks/integration-test/derive-release-info.yaml
         params:
@@ -222,7 +222,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/KFLUXVNGD-1363
             - name: pathInRepo
               value: tasks/integration-test/install-operator-from-fbc.yaml
         params:
@@ -242,7 +242,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/KFLUXVNGD-1363
             - name: pathInRepo
               value: tasks/integration-test/prepare-tests.yaml
         params:
@@ -267,7 +267,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/KFLUXVNGD-1363
             - name: pathInRepo
               value: tasks/integration-test/rapidast.yaml
         params:
@@ -337,7 +337,7 @@ spec:
             - name: url
               value: https://github.com/securesign/pipelines.git
             - name: revision
-              value: main
+              value: tdalton/KFLUXVNGD-1363
             - name: pathInRepo
               value: tasks/integration-test/rapidast.yaml
         params:
