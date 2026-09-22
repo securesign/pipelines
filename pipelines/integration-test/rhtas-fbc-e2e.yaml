@@ -128,6 +128,7 @@ spec:
                     - quay.io/securesign/rhtas-operator-bundle-v1-1
                     - quay.io/securesign/rhtas-operator-bundle-v1-2
                     - quay.io/securesign/rhtas-operator-bundle-v1-3
+                    - quay.io/securesign/rhtas-operator-bundle-v1-4
                 - source: registry.redhat.io/rhtas/rhtas-rhel9-operator
                   mirrors:
                     - quay.io/securesign/rhtas-operator
@@ -135,6 +136,7 @@ spec:
                     - quay.io/securesign/rhtas-operator-v1-1
                     - quay.io/securesign/rhtas-operator-v1-2
                     - quay.io/securesign/rhtas-operator-v1-3
+                    - quay.io/securesign/rhtas-operator-v1-4
                 - source: registry.redhat.io/rhtas/trillian-logsigner-rhel9
                   mirrors:
                   - quay.io/securesign/trillian-logsigner
