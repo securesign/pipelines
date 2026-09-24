@@ -37,7 +37,7 @@ spec:
         - use
         - $(params.SOURCE_ARTIFACT)=/var/workdir/source
     - name: validate-sync
-      image: brew.registry.redhat.io/rh-osbs/openshift-ose-operator-registry-rhel9:v4.21
+      image: registry.redhat.io/openshift4/ose-operator-registry-rhel9:v4.21
       workingDir: /var/workdir/source
       env:
         - name: PATH_CONTEXT
