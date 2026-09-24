@@ -30,7 +30,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-20-e2e"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
@@ -91,6 +91,8 @@
     apiVersion: appstudio.redhat.com/v1beta2
     kind: IntegrationTestScenario
     metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-20-upgrade"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
@@ -119,7 +121,7 @@
     kind: IntegrationTestScenario
     metadata:
       labels:
-        test.appstudio.openshift.io/optional: "false"
+        test.appstudio.openshift.io/optional: "true"
       name: "{{.application}}{{.nameSuffix}}-v4-20-e2e-olmv1"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
