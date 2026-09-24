@@ -1,0 +1,104 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: validate-fbc-graph-sync
+spec:
+  description: >-
+    Verifies the committed FBC catalog is valid and stays in sync with the
+    graph template before the image build starts.
+  params:
+    - name: SOURCE_ARTIFACT
+      type: string
+      description: Trusted artifact URI containing the source tree.
+    - name: path-context
+      type: string
+      description: Path to the FBC content in the source tree.
+    - name: ocp-release-version
+      type: string
+      description: Target OCP version used to select compatible render options.
+  results:
+    - name: SOURCE_ARTIFACT
+      type: string
+      description: Trusted artifact URI for the validated source tree.
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  stepTemplate:
+    volumeMounts:
+      - name: workdir
+        mountPath: /var/workdir
+    securityContext:
+      # This Task mixes images that may use different user IDs across steps.
+      runAsUser: 0
+  steps:
+    - name: use-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+    - name: validate-sync
+      image: brew.registry.redhat.io/rh-osbs/openshift-ose-operator-registry-rhel9:v4.21
+      workingDir: /var/workdir/source
+      env:
+        - name: PATH_CONTEXT
+          value: $(params.path-context)
+        - name: OCP_VERSION
+          value: $(params.ocp-release-version)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        package=$(basename "${PATH_CONTEXT}")
+        graph_file="${PATH_CONTEXT}/graph.yaml"
+        catalog_dir="${PATH_CONTEXT}/catalog/${package}"
+        catalog_file="${catalog_dir}/catalog.json"
+
+        if [[ ! -f "${graph_file}" ]]; then
+          echo "No graph.yaml found at ${graph_file}; skipping graph sync validation."
+          exit 0
+        fi
+
+        if [[ ! -f "${catalog_file}" ]]; then
+          echo "No catalog.json found at ${catalog_file}; skipping graph sync validation."
+          exit 0
+        fi
+
+        echo "Validating ${PATH_CONTEXT}"
+
+        echo "Running opm validate on committed catalog..."
+        opm validate "${catalog_dir}"
+
+        echo "Checking catalog.json is in sync with graph.yaml..."
+        ver="${OCP_VERSION#v}"
+        major="${ver%%.*}"
+        minor="${ver#*.}"
+        minor="${minor%%.*}"
+        migrate_flag=()
+        if (( major > 4 || (major == 4 && minor >= 17) )); then
+          migrate_flag=(--migrate-level=bundle-object-to-csv-metadata)
+        fi
+
+        rendered="$(mktemp)"
+        committed_norm="$(mktemp)"
+        rendered_norm="$(mktemp)"
+        trap 'rm -f "${rendered}" "${committed_norm}" "${rendered_norm}"' EXIT
+
+        opm alpha render-template "${migrate_flag[@]}" basic "${graph_file}" > "${rendered}"
+
+        jq -S 'del(.relatedImages)' "${catalog_file}" > "${committed_norm}"
+        jq -S 'del(.relatedImages)' "${rendered}" > "${rendered_norm}"
+
+        if ! diff -q "${committed_norm}" "${rendered_norm}" >/dev/null 2>&1; then
+          echo "catalog.json is out of sync with graph.yaml"
+          diff -u "${committed_norm}" "${rendered_norm}" | head -50
+          exit 1
+        fi
+
+        echo "Committed catalog is valid and in sync."
+    - name: pass-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - create
+        - --store
+        - $(params.SOURCE_ARTIFACT)
+        - $(results.SOURCE_ARTIFACT.path)=/var/workdir/source
