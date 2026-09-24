@@ -5,7 +5,7 @@ metadata:
 spec:
   description: >-
     This StepAction installs and configures a Keycloak instance on either OpenShift or kind clusters.
-  image: registry.redhat.io/openshift4/ose-cli
+  image: registry.redhat.io/openshift4/ose-cli-rhel9
   params:
     - name: credentials
       type: string
