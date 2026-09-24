@@ -48,22 +48,52 @@ spec:
         #!/usr/bin/env bash
         set -euo pipefail
 
-        package=$(basename "${PATH_CONTEXT}")
         graph_file="${PATH_CONTEXT}/graph.yaml"
+
+        if [[ ! -f "${graph_file}" ]]; then
+          echo "Required graph file ${graph_file} does not exist."
+          exit 1
+        fi
+
+        package="$(
+          awk '
+            $1 == "name:" {
+              value = $2
+              gsub(/["'\''"]/, "", value)
+              last_name = value
+            }
+            $1 == "schema:" && $2 == "olm.package" {
+              print last_name
+              exit
+            }
+            $1 == "package:" {
+              value = $2
+              gsub(/["'\''"]/, "", value)
+              print value
+              exit
+            }
+          ' "${graph_file}"
+        )"
+
+        if [[ -z "${package}" ]]; then
+          echo "Failed to resolve package name from ${graph_file}."
+          exit 1
+        fi
+
         catalog_dir="${PATH_CONTEXT}/catalog/${package}"
         catalog_file="${catalog_dir}/catalog.json"
 
-        if [[ ! -f "${graph_file}" ]]; then
-          echo "No graph.yaml found at ${graph_file}; skipping graph sync validation."
-          exit 0
+        if [[ ! -d "${catalog_dir}" ]]; then
+          echo "Resolved package ${package}, but catalog directory ${catalog_dir} does not exist."
+          exit 1
         fi
 
         if [[ ! -f "${catalog_file}" ]]; then
-          echo "No catalog.json found at ${catalog_file}; skipping graph sync validation."
-          exit 0
+          echo "Resolved package ${package}, but catalog file ${catalog_file} does not exist."
+          exit 1
         fi
 
-        echo "Validating ${PATH_CONTEXT}"
+        echo "Validating ${PATH_CONTEXT} for package ${package}"
 
         echo "Running opm validate on committed catalog..."
         opm validate "${catalog_dir}"
