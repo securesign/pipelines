@@ -97,7 +97,7 @@ spec:
         buildah --storage-driver=vfs commit "$CONTAINER" $IMAGE
         buildah --storage-driver=vfs push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
-      image: registry.redhat.io/openshift4/ose-cli
+      image: registry.redhat.io/openshift4/ose-cli-rhel9
       volumeMounts:
         - name: credentials
           mountPath: /credentials

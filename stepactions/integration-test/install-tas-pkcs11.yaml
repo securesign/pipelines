@@ -7,7 +7,7 @@ spec:
     Deploys a SecureSign CR with PKCS#11/HSM signer configuration for both
     Fulcio and CTLog using the sample CR from the operator repository,
     then waits for the instance to become Ready.
-  image: registry.redhat.io/openshift4/ose-cli
+  image: registry.redhat.io/openshift4/ose-cli-rhel9
   params:
     - name: credentials
       type: string

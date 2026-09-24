@@ -5,7 +5,7 @@ metadata:
 spec:
   description: >-
     This StepAction install trusted artifact signer.
-  image: registry.redhat.io/openshift4/ose-cli
+  image: registry.redhat.io/openshift4/ose-cli-rhel9
   params:
     - name: credentials
       type: string
