@@ -93,7 +93,7 @@ spec:
         echo "Running opm validate on committed catalog..."
         opm validate "${catalog_dir}"
 
-        echo "Checking catalog.json is in sync with graph.yaml..."
+        echo "Checking graph.yaml and catalog.json stay in sync..."
         graph_norm="$(mktemp)"
         converted_template="$(mktemp)"
         committed_norm="$(mktemp)"
@@ -143,9 +143,9 @@ spec:
         normalize_template "${converted_template}" > "${committed_norm}"
 
         if ! diff -q "${graph_norm}" "${committed_norm}" >/dev/null 2>&1; then
-          echo "catalog.json is out of sync with graph.yaml"
+          echo "graph.yaml and catalog.json are out of sync"
           diff -u "${graph_norm}" "${committed_norm}" | head -50
           exit 1
         fi
 
-        echo "Committed catalog is valid and in sync."
+        echo "Committed catalog is valid and graph.yaml is in sync."
