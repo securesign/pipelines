@@ -94,41 +94,45 @@ spec:
         opm validate "${catalog_dir}"
 
         echo "Checking catalog.json is in sync with graph.yaml..."
-        ver="${OCP_VERSION#v}"
-        major="${ver%%.*}"
-        minor="${ver#*.}"
-        minor="${minor%%.*}"
-        migrate_flag=()
-        if (( major > 4 || (major == 4 && minor >= 17) )); then
-          migrate_flag=(--migrate-level=bundle-object-to-csv-metadata)
-        fi
-
-        rendered="$(mktemp)"
+        graph_norm="$(mktemp)"
         committed_norm="$(mktemp)"
-        rendered_norm="$(mktemp)"
-        trap 'rm -f "${rendered}" "${committed_norm}" "${rendered_norm}"' EXIT
+        trap 'rm -f "${graph_norm}" "${committed_norm}"' EXIT
 
-        if [[ ! -f /root/.config/containers/policy.json && ! -f /etc/containers/policy.json ]]; then
-          mkdir -p /root/.config/containers
-          cat >/root/.config/containers/policy.json <<'EOF'
-        {
-          "default": [
-            {
-              "type": "insecureAcceptAnything"
-            }
-          ]
-        }
-        EOF
-        fi
+        ruby -ryaml -rjson -e '
+          obj = YAML.load_file(ARGV[0])
+          entries = obj.fetch("entries").map do |entry|
+            if entry["schema"] == "olm.bundle"
+              {
+                "schema" => entry["schema"],
+                "image" => entry["image"],
+              }
+            else
+              entry
+            end
+          end
+          entries = entries.sort_by { |entry| [entry["schema"].to_s, entry["name"].to_s, entry["image"].to_s] }
+          puts JSON.generate(entries)
+        ' "${graph_file}" | jq -S . > "${graph_norm}"
 
-        opm alpha render-template "${migrate_flag[@]}" basic "${graph_file}" > "${rendered}"
+        jq -Ss '
+          map(
+            if .schema == "olm.bundle" then
+              {
+                "schema": .schema,
+                "image": .image
+              }
+            elif .schema == "olm.package" or .schema == "olm.channel" or .schema == "olm.deprecations" then
+              .
+            else
+              empty
+            end
+          )
+          | sort_by(.schema, (.name // ""), (.image // ""))
+        ' "${catalog_file}" > "${committed_norm}"
 
-        jq -S 'del(.relatedImages)' "${catalog_file}" > "${committed_norm}"
-        jq -S 'del(.relatedImages)' "${rendered}" > "${rendered_norm}"
-
-        if ! diff -q "${committed_norm}" "${rendered_norm}" >/dev/null 2>&1; then
+        if ! diff -q "${graph_norm}" "${committed_norm}" >/dev/null 2>&1; then
           echo "catalog.json is out of sync with graph.yaml"
-          diff -u "${committed_norm}" "${rendered_norm}" | head -50
+          diff -u "${graph_norm}" "${committed_norm}" | head -50
           exit 1
         fi
 
