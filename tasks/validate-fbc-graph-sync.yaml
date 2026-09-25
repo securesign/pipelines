@@ -33,12 +33,22 @@ spec:
         #!/usr/bin/env bash
         set -euo pipefail
 
-        graph_file="${PATH_CONTEXT}/graph.yaml"
+        repo_root=""
+        for candidate in "." ./*; do
+          if [[ -d "${candidate}" && -f "${candidate}/${PATH_CONTEXT}/graph.yaml" ]]; then
+            repo_root="${candidate}"
+            break
+          fi
+        done
 
-        if [[ ! -f "${graph_file}" ]]; then
-          echo "Required graph file ${graph_file} does not exist."
+        if [[ -z "${repo_root}" ]]; then
+          echo "Required graph file ${PATH_CONTEXT}/graph.yaml does not exist under $(pwd)."
+          echo "Top-level workspace entries:"
+          find . -maxdepth 2 -mindepth 1 | sort | head -50
           exit 1
         fi
+
+        graph_file="${repo_root}/${PATH_CONTEXT}/graph.yaml"
 
         package="$(
           awk '
@@ -65,7 +75,7 @@ spec:
           exit 1
         fi
 
-        catalog_dir="${PATH_CONTEXT}/catalog/${package}"
+        catalog_dir="${repo_root}/${PATH_CONTEXT}/catalog/${package}"
         catalog_file="${catalog_dir}/catalog.json"
 
         if [[ ! -d "${catalog_dir}" ]]; then
