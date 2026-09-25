@@ -7,48 +7,46 @@ spec:
     Verifies the committed FBC catalog is valid and stays in sync with the
     graph template before the image build starts.
   params:
+    - name: SOURCE_ARTIFACT
+      type: string
+      description: Trusted artifact URI containing the FBC source tree to validate.
     - name: path-context
       type: string
       description: Path to the FBC content in the source tree.
-    - name: ocp-release-version
-      type: string
-      description: Target OCP version used to select compatible render options.
+  results:
+    - name: SOURCE_ARTIFACT
+      description: Pass-through trusted artifact URI after validation succeeds.
   stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
     securityContext:
       # This Task mixes images that may use different user IDs across steps.
       runAsUser: 0
-  workspaces:
-    - name: source
-      description: Checked-out source tree to validate.
+  volumes:
+    - name: workdir
+      emptyDir: {}
   steps:
+    - name: use-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.SOURCE_ARTIFACT)=/var/workdir/source
     - name: validate-sync
       image: registry.redhat.io/openshift4/ose-operator-registry-rhel9:v4.21
-      workingDir: $(workspaces.source.path)
+      workingDir: /var/workdir/source
       env:
         - name: PATH_CONTEXT
           value: $(params.path-context)
-        - name: OCP_VERSION
-          value: $(params.ocp-release-version)
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
 
-        repo_root=""
-        for candidate in "." ./*; do
-          if [[ -d "${candidate}" && -f "${candidate}/${PATH_CONTEXT}/graph.yaml" ]]; then
-            repo_root="${candidate}"
-            break
-          fi
-        done
-
-        if [[ -z "${repo_root}" ]]; then
-          echo "Required graph file ${PATH_CONTEXT}/graph.yaml does not exist under $(pwd)."
-          echo "Top-level workspace entries:"
-          find . -maxdepth 2 -mindepth 1 | sort | head -50
+        graph_file="${PATH_CONTEXT}/graph.yaml"
+        if [[ ! -f "${graph_file}" ]]; then
+          echo "Required graph file ${graph_file} does not exist under $(pwd)."
           exit 1
         fi
-
-        graph_file="${repo_root}/${PATH_CONTEXT}/graph.yaml"
 
         package="$(
           awk '
@@ -75,7 +73,7 @@ spec:
           exit 1
         fi
 
-        catalog_dir="${repo_root}/${PATH_CONTEXT}/catalog/${package}"
+        catalog_dir="${PATH_CONTEXT}/catalog/${package}"
         catalog_file="${catalog_dir}/catalog.json"
 
         if [[ ! -d "${catalog_dir}" ]]; then
@@ -148,4 +146,5 @@ spec:
           exit 1
         fi
 
+        printf '%s' "$(params.SOURCE_ARTIFACT)" > "$(results.SOURCE_ARTIFACT.path)"
         echo "Committed catalog is valid and graph.yaml is in sync."
