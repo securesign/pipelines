@@ -95,40 +95,52 @@ spec:
 
         echo "Checking catalog.json is in sync with graph.yaml..."
         graph_norm="$(mktemp)"
+        converted_template="$(mktemp)"
         committed_norm="$(mktemp)"
-        trap 'rm -f "${graph_norm}" "${committed_norm}"' EXIT
+        trap 'rm -f "${graph_norm}" "${converted_template}" "${committed_norm}"' EXIT
 
-        ruby -ryaml -rjson -e '
-          obj = YAML.load_file(ARGV[0])
-          entries = obj.fetch("entries").map do |entry|
-            if entry["schema"] == "olm.bundle"
-              {
-                "schema" => entry["schema"],
-                "image" => entry["image"],
+        normalize_template() {
+          awk '
+            function flush() {
+              if (current != "") {
+                if (!(previous ~ /^image:/ && current ~ /^name: /)) {
+                  print current
+                }
+                previous = current
+                current = ""
               }
-            else
-              entry
-            end
-          end
-          entries = entries.sort_by { |entry| [entry["schema"].to_s, entry["name"].to_s, entry["image"].to_s] }
-          puts JSON.generate(entries)
-        ' "${graph_file}" | jq -S . > "${graph_norm}"
+            }
+            {
+              sub(/[[:space:]]+$/, "", $0)
+              if ($0 ~ /^[[:space:]]*$/ || $0 == "---") {
+                next
+              }
 
-        jq -Ss '
-          map(
-            if .schema == "olm.bundle" then
-              {
-                "schema": .schema,
-                "image": .image
+              line = $0
+              sub(/^[[:space:]]+/, "", line)
+
+              if (line ~ /^- / || line ~ /^[A-Za-z0-9_.-]+:/) {
+                flush()
+                sub(/^- /, "", line)
+                current = line
+              } else {
+                if (current == "") {
+                  current = line
+                } else {
+                  current = current " " line
+                }
               }
-            elif .schema == "olm.package" or .schema == "olm.channel" or .schema == "olm.deprecations" then
-              .
-            else
-              empty
-            end
-          )
-          | sort_by(.schema, (.name // ""), (.image // ""))
-        ' "${catalog_file}" > "${committed_norm}"
+            }
+            END {
+              flush()
+            }
+          ' "$1" | sort
+        }
+
+        opm alpha convert-template basic "${catalog_file}" -o yaml > "${converted_template}"
+
+        normalize_template "${graph_file}" > "${graph_norm}"
+        normalize_template "${converted_template}" > "${committed_norm}"
 
         if ! diff -q "${graph_norm}" "${committed_norm}" >/dev/null 2>&1; then
           echo "catalog.json is out of sync with graph.yaml"
