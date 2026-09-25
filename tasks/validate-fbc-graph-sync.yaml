@@ -108,6 +108,19 @@ spec:
         rendered_norm="$(mktemp)"
         trap 'rm -f "${rendered}" "${committed_norm}" "${rendered_norm}"' EXIT
 
+        if [[ ! -f /root/.config/containers/policy.json && ! -f /etc/containers/policy.json ]]; then
+          mkdir -p /root/.config/containers
+          cat >/root/.config/containers/policy.json <<'EOF'
+        {
+          "default": [
+            {
+              "type": "insecureAcceptAnything"
+            }
+          ]
+        }
+        EOF
+        fi
+
         opm alpha render-template "${migrate_flag[@]}" basic "${graph_file}" > "${rendered}"
 
         jq -S 'del(.relatedImages)' "${catalog_file}" > "${committed_norm}"
