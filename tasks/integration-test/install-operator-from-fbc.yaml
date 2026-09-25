@@ -49,7 +49,7 @@ spec:
         - name: credentials
           value: credentials
     - name: run-operator
-      image: registry.redhat.io/openshift4/ose-cli
+      image: registry.redhat.io/openshift4/ose-cli-rhel9
       env:
         - name: KUBECONFIG
           value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"

@@ -97,7 +97,7 @@ spec:
         buildah --storage-driver=vfs commit "$CONTAINER" $IMAGE
         buildah --storage-driver=vfs push --authfile /quay-auth/config.json $IMAGE
     - name: prepare-tas-e2e
-      image: registry.redhat.io/openshift4/ose-cli
+      image: registry.redhat.io/openshift4/ose-cli-rhel9
       volumeMounts:
         - name: credentials
           mountPath: /credentials
@@ -113,7 +113,7 @@ spec:
         oc project $TASNAMESPACE
         ./tas-env-variables.sh > .env
     - name: execute-tas-e2e
-      image: registry.redhat.io/ubi9/go-toolset@sha256:1a755651ffe1a438f137418d183f18ebad527ec929206c17804f93490a97869e
+      image: registry.redhat.io/ubi9/go-toolset@sha256:685ccca486cc2c82b0818d835abecb1aed7a396e76ba416cfc47c28067f5d365
       results:
         - name: exit-code
       volumeMounts:

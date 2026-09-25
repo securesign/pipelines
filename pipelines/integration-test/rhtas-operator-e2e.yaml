@@ -282,6 +282,19 @@ spec:
               script: |
                 mkdir -p $(workspaces.work.path)/binaries
                 cp /usr/bin/tuftool $(workspaces.work.path)/binaries/
+            - name: get-tufcli
+              image: quay.io/securesign/tufcli@sha256:aac28072341cc8d24c2d4444ae1a058a6736898e9577e883fc469981043bcc88
+              securityContext:
+                runAsUser: 0
+              script: |
+                mkdir -p $(workspaces.work.path)/binaries
+                cp /tufcli $(workspaces.work.path)/binaries/tufcli-bin
+                cp /usr/lib64/libpcsclite.so.1 $(workspaces.work.path)/binaries/
+                cat > $(workspaces.work.path)/binaries/tufcli <<'WRAPPER'
+                #!/bin/sh
+                LD_LIBRARY_PATH="${0%/*}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" exec "${0%/*}/tufcli-bin" "$@"
+                WRAPPER
+                chmod 0755 $(workspaces.work.path)/binaries/tufcli
             - name: get-cosign
               image: registry.redhat.io/rhtas/cosign-rhel9:1.3.1
               securityContext:

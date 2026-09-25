@@ -6,7 +6,7 @@ spec:
   description: >-
     Sets up SoftHSM PKCS#11 prerequisites: ConfigMap, PIN Secret, PVCs,
     key ceremony Jobs (Fulcio CA + CTLog key pair), and derived Secrets.
-  image: registry.redhat.io/openshift4/ose-cli
+  image: registry.redhat.io/openshift4/ose-cli-rhel9
   params:
     - name: credentials
       type: string
