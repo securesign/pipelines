@@ -1,0 +1,150 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: validate-fbc-graph-sync
+spec:
+  description: >-
+    Verifies the committed FBC catalog is valid and stays in sync with the
+    graph template before the image build starts.
+  params:
+    - name: SOURCE_ARTIFACT
+      type: string
+      description: Trusted artifact URI containing the FBC source tree to validate.
+    - name: path-context
+      type: string
+      description: Path to the FBC content in the source tree.
+  results:
+    - name: SOURCE_ARTIFACT
+      description: Pass-through trusted artifact URI after validation succeeds.
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+    securityContext:
+      # This Task mixes images that may use different user IDs across steps.
+      runAsUser: 0
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  steps:
+    - name: use-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+    - name: validate-sync
+      image: registry.redhat.io/openshift4/ose-operator-registry-rhel9:v4.21
+      workingDir: /var/workdir/source
+      env:
+        - name: PATH_CONTEXT
+          value: $(params.path-context)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        graph_file="${PATH_CONTEXT}/graph.yaml"
+        if [[ ! -f "${graph_file}" ]]; then
+          echo "Required graph file ${graph_file} does not exist under $(pwd)."
+          exit 1
+        fi
+
+        package="$(
+          awk '
+            $1 == "name:" {
+              value = $2
+              gsub(/["'\''"]/, "", value)
+              last_name = value
+            }
+            $1 == "schema:" && $2 == "olm.package" {
+              print last_name
+              exit
+            }
+            $1 == "package:" {
+              value = $2
+              gsub(/["'\''"]/, "", value)
+              print value
+              exit
+            }
+          ' "${graph_file}"
+        )"
+
+        if [[ -z "${package}" ]]; then
+          echo "Failed to resolve package name from ${graph_file}."
+          exit 1
+        fi
+
+        catalog_dir="${PATH_CONTEXT}/catalog/${package}"
+        catalog_file="${catalog_dir}/catalog.json"
+
+        if [[ ! -d "${catalog_dir}" ]]; then
+          echo "Resolved package ${package}, but catalog directory ${catalog_dir} does not exist."
+          exit 1
+        fi
+
+        if [[ ! -f "${catalog_file}" ]]; then
+          echo "Resolved package ${package}, but catalog file ${catalog_file} does not exist."
+          exit 1
+        fi
+
+        echo "Validating ${PATH_CONTEXT} for package ${package}"
+
+        echo "Running opm validate on committed catalog..."
+        opm validate "${catalog_dir}"
+
+        echo "Checking graph.yaml and catalog.json stay in sync..."
+        graph_norm="$(mktemp)"
+        converted_template="$(mktemp)"
+        committed_norm="$(mktemp)"
+        trap 'rm -f "${graph_norm}" "${converted_template}" "${committed_norm}"' EXIT
+
+        normalize_template() {
+          awk '
+            function flush() {
+              if (current != "") {
+                if (!(previous ~ /^image:/ && current ~ /^name: /)) {
+                  print current
+                }
+                previous = current
+                current = ""
+              }
+            }
+            {
+              sub(/[[:space:]]+$/, "", $0)
+              if ($0 ~ /^[[:space:]]*$/ || $0 == "---") {
+                next
+              }
+
+              line = $0
+              sub(/^[[:space:]]+/, "", line)
+
+              if (line ~ /^- / || line ~ /^[A-Za-z0-9_.-]+:/) {
+                flush()
+                sub(/^- /, "", line)
+                current = line
+              } else {
+                if (current == "") {
+                  current = line
+                } else {
+                  current = current " " line
+                }
+              }
+            }
+            END {
+              flush()
+            }
+          ' "$1" | sort
+        }
+
+        opm alpha convert-template basic "${catalog_file}" -o yaml > "${converted_template}"
+
+        normalize_template "${graph_file}" > "${graph_norm}"
+        normalize_template "${converted_template}" > "${committed_norm}"
+
+        if ! diff -q "${graph_norm}" "${committed_norm}" >/dev/null 2>&1; then
+          echo "graph.yaml and catalog.json are out of sync"
+          diff -u "${graph_norm}" "${committed_norm}" | head -50
+          exit 1
+        fi
+
+        printf '%s' "$(params.SOURCE_ARTIFACT)" > "$(results.SOURCE_ARTIFACT.path)"
+        echo "Committed catalog is valid and graph.yaml is in sync."
