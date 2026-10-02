@@ -19,7 +19,7 @@ spec:
       - name: OCP_VERSION
         default: "4.19"
       - name: COMPUTE_NODE_TYPE
-        default: m5.large
+        default: m5.xlarge
         description: Instance type for HyperShift compute nodes.
       - name: HOSTED_MANAGEMENT_CLUSTER
         default: hosted-mgmt2
