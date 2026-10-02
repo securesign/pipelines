@@ -3,7 +3,7 @@ kind: ProjectDevelopmentStreamTemplate
 metadata:
   name: model-validation-operator-template
   labels:
-    build.rhtas.com/ec: registry-rhtas-operator
+    build.rhtas.com/ec: registry-rhtas-operator-group-only
     build.rhtas.com/type: operator
 spec:
   project: model-validation-operator
