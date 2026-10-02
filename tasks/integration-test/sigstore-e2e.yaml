@@ -90,6 +90,9 @@ spec:
           value: "$(params.oidc-issuer-url)"
       workingDir: $(workspaces.source-code.path)/sigstore-e2e
       script: |
+        # Secret volume mounts are read-only; oc project writes to kubeconfig
+        cp /credentials/kubeconfig /tmp/kubeconfig
+        export KUBECONFIG=/tmp/kubeconfig
         oc project $TASNAMESPACE
         ./tas-env-variables.sh > .env
     - name: execute-tas-e2e
