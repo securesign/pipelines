@@ -109,6 +109,9 @@ spec:
           value: "$(params.oidc-issuer-url)"
       script: |
         set -e
+        # Secret volume mounts are read-only; oc project writes to kubeconfig
+        cp /credentials/kubeconfig /tmp/kubeconfig
+        export KUBECONFIG=/tmp/kubeconfig
         # Copy sigstore-e2e to a separate directory to avoid conflicts with parallel file-mode test
         if [ ! -d "$(workspaces.source-code.path)/sigstore-e2e-pkcs11" ]; then
           cp -a "$(workspaces.source-code.path)/sigstore-e2e" "$(workspaces.source-code.path)/sigstore-e2e-pkcs11"
