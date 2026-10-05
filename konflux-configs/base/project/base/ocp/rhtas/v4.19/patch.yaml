@@ -124,6 +124,9 @@
       contexts:
         - description: execute the DAST test when component {{.application}}{{.nameSuffix}}-v4-19 updates
           name: "component_{{.application}}{{.nameSuffix}}-v4-19"
+      params:
+        - name: OCP_VERSION
+          value: "{{.ocpVersion}}"
       resolverRef:
         params:
           - name: url
