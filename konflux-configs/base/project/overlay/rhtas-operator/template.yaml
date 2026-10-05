@@ -25,6 +25,9 @@ spec:
     - name: mintmakerDisabled
       description: Whether to disable mintmaker annotation on the Component
       defaultValue: "false"
+    - name: ocpVersion
+      description: OCP version for e2e tests
+      defaultValue: "4.22"
   resources:
     - apiVersion: appstudio.redhat.com/v1alpha1
       kind: Application
