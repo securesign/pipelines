@@ -16,3 +16,6 @@ patches:
     target:
       kind: ProjectDevelopmentStream
   - path: patch/exclude-rhtas-console.yaml
+  - path: patch/mintmaker.yaml
+    target:
+      kind: ProjectDevelopmentStream
