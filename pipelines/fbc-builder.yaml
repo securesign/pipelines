@@ -433,7 +433,7 @@ spec:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "2817cdae738e5c3d9f08825d009d407fcd7ec54d"
+        value: "bb825a51760c951a54331c0ca0fc5987dee4c525"
       - name: pathInRepo
         value: tasks/validate-fbc-graph-sync.yaml
   workspaces:
