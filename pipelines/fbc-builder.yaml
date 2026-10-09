@@ -70,6 +70,10 @@ spec:
     default: "v4.19"
     type: string
     description: Target OpenShift Container Platform (OCP) release version for which the image is built
+  - name: validation-script
+    default: utils/validate_fbc_graph_sync.sh
+    type: string
+    description: Path to the graph and catalog validation script in the source repository
   - name: enable-package-registry-proxy
     default: 'true'
     description: Use the package registry proxy when prefetching dependencies
@@ -139,7 +143,7 @@ spec:
     - name: input
       value: $(params.prefetch-input)
     - name: SOURCE_ARTIFACT
-      value: $(tasks.fbc-inject-lifecycle.results.SOURCE_ARTIFACT)
+      value: $(tasks.validate-fbc-graph-sync.results.SOURCE_ARTIFACT)
     - name: ociStorage
       value: $(params.output-image).prefetch
     - name: ociArtifactExpiresAfter
@@ -147,7 +151,7 @@ spec:
     - name: enable-package-registry-proxy
       value: $(params.enable-package-registry-proxy)
     runAfter:
-    - fbc-inject-lifecycle
+    - validate-fbc-graph-sync
     taskRef:
       params:
       - name: name
@@ -413,6 +417,25 @@ spec:
       value: $(params.image-expires-after)
     runAfter:
     - clone-repository
+  - name: validate-fbc-graph-sync
+    params:
+    - name: SOURCE_ARTIFACT
+      value: $(tasks.fbc-inject-lifecycle.results.SOURCE_ARTIFACT)
+    - name: path-context
+      value: $(params.path-context)
+    - name: validation-script
+      value: $(params.validation-script)
+    runAfter:
+    - fbc-inject-lifecycle
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: "https://github.com/securesign/pipelines.git"
+      - name: revision
+        value: "2817cdae738e5c3d9f08825d009d407fcd7ec54d"
+      - name: pathInRepo
+        value: tasks/validate-fbc-graph-sync.yaml
   workspaces:
   - name: git-auth
     optional: true
