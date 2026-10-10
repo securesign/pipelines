@@ -315,7 +315,7 @@ spec:
               default: bundled/openapi.json
           steps:
             - name: bundle-spec
-              image: "redocly/cli:2.55.0"
+              image: "redocly/cli:2.59.0"
               workingDir: $(workspaces.source-repo.path)/rekor
 
               script: |
