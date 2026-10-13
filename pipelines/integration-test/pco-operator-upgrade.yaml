@@ -32,8 +32,6 @@ spec:
         default: tas
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
-      - name: UPGRADE_FROM_CHANNEL
-        default: stable
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
@@ -290,7 +288,7 @@ spec:
                 - name: UPGRADE_TO_OPERATOR_INDEX_IMAGE
                   value: "$(tasks.parse-metadata.results.container-image)"
                 - name: UPGRADE_FROM_CHANNEL
-                  value: "$(params.UPGRADE_FROM_CHANNEL)"
+                  value: "$(tasks.release-info.results.channel)"
                 - name: UPGRADE_TO_CHANNEL
                   value: "$(tasks.release-info.results.channel)"
                 - name: DOCKER_CONFIG
