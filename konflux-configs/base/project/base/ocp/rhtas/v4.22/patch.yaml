@@ -36,7 +36,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "disabled"
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
           value: "4.22"
@@ -65,7 +65,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "disabled"
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
           value: "4.22"
@@ -98,7 +98,7 @@
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
         - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "disabled"
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
           value: "4.22"
@@ -113,26 +113,22 @@
         resolver: git
         resourceKind: pipelinerun
 
-# IntegrationTestScenario OLMv1
+# IntegrationTestScenario DAST
 - op: add
   path: /spec/resources/-
   value:
     apiVersion: appstudio.redhat.com/v1beta2
     kind: IntegrationTestScenario
     metadata:
-      labels:
-        test.appstudio.openshift.io/optional: "true"
-      name: "{{.application}}{{.nameSuffix}}-v4-22-e2e-olmv1"
+      name: "{{.application}}{{.nameSuffix}}-v4-22-dast"
     spec:
       application: "{{.application}}{{.nameSuffix}}"
       contexts:
-        - description: execute the integration test when component {{.application}}{{.nameSuffix}}-v4-22 updates
-          name: "disabled"
+        - description: execute the DAST test when component {{.application}}{{.nameSuffix}}-v4-22 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-22"
       params:
         - name: OCP_VERSION
           value: "4.22"
-        - name: OLMv1
-          value: "true"
       resolverRef:
         params:
           - name: url
@@ -140,6 +136,6 @@
           - name: revision
             value: main
           - name: pathInRepo
-            value: pipelines/integration-test/rhtas-fbc-e2e.yaml
+            value: pipelines/integration-test/operator-dast.yaml
         resolver: git
         resourceKind: pipelinerun
