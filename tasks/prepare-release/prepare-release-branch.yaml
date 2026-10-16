@@ -227,7 +227,8 @@ spec:
           --argjson files "$(jq '[.files[] | {path, contents: (.content | @base64)}]' plan.json)" \
           '{query: $q, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $side},
             message: {headline: $msg}, expectedHeadOid: $sha, fileChanges: {additions: $files}}}}' > payload.json
-        resp=$(curl-with-retry -s -X POST -H "Authorization: bearer $GH_TOKEN" https://api.github.com/graphql -d @payload.json)
+        # plain curl: curl-with-retry is not in the pinned release-service-utils image
+        resp=$(curl -sS --fail --retry 5 --retry-delay 5 -X POST -H "Authorization: bearer $GH_TOKEN" https://api.github.com/graphql -d @payload.json)
         if jq -e .errors <<<"$resp" >/dev/null; then
           echo "$resp" >&2
           exit 1
