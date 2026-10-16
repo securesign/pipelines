@@ -10,6 +10,7 @@ metadata:
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "main" && ( "pipeline-tests/fbc/***".pathChanged() || ".tekton/fbc-builder-pull-request.yaml".pathChanged()
       || "pipeline-tests/fbc/catalog.Dockerfile".pathChanged() || "pipelines/fbc-builder.yaml".pathChanged()
+      || "tasks/validate-fbc-graph-sync.yaml".pathChanged()
       )
     pipelinesascode.tekton.dev/pipeline: pipelines/fbc-builder.yaml
   creationTimestamp: null
@@ -35,6 +36,8 @@ spec:
     value: pipeline-tests/fbc
   - name: ocp-release-version
     value: "v4.19"
+  - name: validation-script
+    value: pipeline-tests/fbc/validate.sh
   pipelineRef:
     name: fbc-builder
   taskRunTemplate:
