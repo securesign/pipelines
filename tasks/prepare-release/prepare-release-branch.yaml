@@ -1,0 +1,242 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: prepare-release-branch
+spec:
+  description: >
+    Create or update release-X.Y in one repo and open a PR rewiring its .tekton PipelineRuns
+    to the release stream.
+  params:
+    - name: repo
+      description: 'Compact JSON {"repo":..., "components":{name:sha, ...}} from prepare-release-branch-parse'
+    - name: branch
+    - name: suffix
+    - name: release-version
+  volumes:
+    - name: work
+      emptyDir: {}
+  stepTemplate:
+    image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+    workingDir: /var/work
+    env:
+      - name: HOME
+        value: /var/work
+    volumeMounts:
+      - name: work
+        mountPath: /var/work
+  steps:
+    - name: plan
+      env:
+        - name: REPO
+          value: $(params.repo)
+        - name: BRANCH
+          value: $(params.branch)
+        - name: SUFFIX
+          value: $(params.suffix)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env python3
+        import copy
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        import yaml
+
+        branch = os.environ["BRANCH"]
+        suffix = os.environ["SUFFIX"]
+        release_version = os.environ["RELEASE_VERSION"]
+        info = json.loads(os.environ["REPO"])
+        repo, revisions = info["repo"], info["components"]
+
+
+        def git(repo_dir, *args, check=True):
+            return subprocess.run(["git", "-C", str(repo_dir), *args], capture_output=True, text=True, check=check)
+
+
+        def suffixed(value):
+            return value if value.endswith(suffix) else value + suffix
+
+
+        def checkout(repo):
+            repo_dir = Path("repos", repo.replace("/", "__"))
+            if not repo_dir.exists():
+                subprocess.run(["git", "clone", "--quiet", "--filter=blob:none", "--no-checkout",
+                                f"https://github.com/{repo}.git", str(repo_dir)], check=True)
+            git(repo_dir, "fetch", "--quiet", "origin", branch, check=False)
+            return repo_dir
+
+
+        def newest(repo_dir, revisions):
+            for rev in revisions:
+                git(repo_dir, "fetch", "--quiet", "origin", rev, check=False)
+            for rev in revisions:
+                if all(git(repo_dir, "merge-base", "--is-ancestor", other, rev, check=False).returncode == 0
+                       for other in revisions):
+                    return rev
+            sys.exit(f"ERROR: {repo_dir}: snapshot revisions {sorted(revisions)} have diverged")
+
+
+        def rewire(doc, base, where):
+            meta, spec = doc["metadata"], doc["spec"]
+
+            cel_key = "pipelinesascode.tekton.dev/on-cel-expression"
+            cel = meta["annotations"][cel_key]
+            if 'target_branch == "main"' in cel:
+                meta["annotations"][cel_key] = cel.replace('target_branch == "main"', f'target_branch == "{branch}"')
+            elif f'target_branch == "{branch}"' not in cel:
+                sys.exit(f"ERROR: {where}: unexpected on-cel-expression: {cel}")
+
+            labels = meta["labels"]
+            labels["appstudio.openshift.io/application"] = suffixed(labels["appstudio.openshift.io/application"])
+            labels["appstudio.openshift.io/component"] = base + suffix
+
+            spec["taskRunTemplate"]["serviceAccountName"] = suffixed(spec["taskRunTemplate"]["serviceAccountName"])
+
+            params = {p["name"]: p for p in spec.get("params", [])}
+            if "release-version" not in params:
+                sys.exit(f"ERROR: {where}: no release-version param")
+            params["release-version"]["value"] = release_version
+            if "manager-pipelinerun-selector" in params:
+                selector = params["manager-pipelinerun-selector"]
+                selector["value"] = re.sub(r"((?:application|component)=)([\w-]+)",
+                                           lambda m: m[1] + suffixed(m[2]), selector["value"])
+
+
+        def patch(raw, orig, doc, where):
+            text = raw
+
+            def sub(pattern, repl, field, flags=0):
+                nonlocal text
+                text, n = re.subn(pattern, repl, text, count=0, flags=flags)
+                if n != 1:
+                    sys.exit(f"ERROR: {where}: cannot patch {field}")
+
+            cel_key = "pipelinesascode.tekton.dev/on-cel-expression"
+            old_cel, new_cel = orig["metadata"]["annotations"][cel_key], doc["metadata"]["annotations"][cel_key]
+            if new_cel != old_cel:
+                sub(r'target_branch(\s*)==(\s*)"main"', lambda m: f'target_branch{m[1]}=={m[2]}"{branch}"',
+                    "on-cel-expression")
+
+            for key in ("application", "component"):
+                label = f"appstudio.openshift.io/{key}"
+                old_val, new_val = orig["metadata"]["labels"][label], doc["metadata"]["labels"][label]
+                if new_val != old_val:
+                    sub(rf'^(\s*{re.escape(label)}:\s*)(["\']?){re.escape(old_val)}\2(?=[ \t]*$)',
+                        lambda m: f'{m[1]}{m[2]}{new_val}{m[2]}', f"label {label}", flags=re.M)
+
+            old_sa = orig["spec"]["taskRunTemplate"]["serviceAccountName"]
+            new_sa = doc["spec"]["taskRunTemplate"]["serviceAccountName"]
+            if new_sa != old_sa:
+                sub(rf'^(\s*serviceAccountName:\s*)(["\']?){re.escape(old_sa)}\2(?=[ \t]*$)',
+                    lambda m: f'{m[1]}{m[2]}{new_sa}{m[2]}', "serviceAccountName", flags=re.M)
+
+            orig_params = {p["name"]: p for p in orig["spec"].get("params", [])}
+            new_params = {p["name"]: p for p in doc["spec"].get("params", [])}
+            old_rv, new_rv = orig_params["release-version"]["value"], new_params["release-version"]["value"]
+            if new_rv != old_rv:
+                sub(rf'(-\s*name:\s*release-version\s*\n\s*value:\s*)(["\']?){re.escape(old_rv)}\2',
+                    lambda m: f'{m[1]}{m[2]}{new_rv}{m[2]}', "release-version")
+
+            if "manager-pipelinerun-selector" in new_params:
+                old_sel = orig_params["manager-pipelinerun-selector"]["value"]
+                new_sel = new_params["manager-pipelinerun-selector"]["value"]
+                if new_sel != old_sel:
+                    old_m = list(re.finditer(r'(application|component)=([\w-]+)', old_sel))
+                    new_m = list(re.finditer(r'(application|component)=([\w-]+)', new_sel))
+                    for om, nm in zip(old_m, new_m):
+                        if om[2] != nm[2]:
+                            sub(rf'{om[1]}={re.escape(om[2])}(?![\w-])', f'{om[1]}={nm[2]}',
+                                f"manager-pipelinerun-selector {om[1]}")
+
+            if yaml.safe_load(text) != doc:
+                sys.exit(f"ERROR: {where}: patched file does not match expected content")
+            return text
+
+
+        repo_dir = checkout(repo)
+        existing = git(repo_dir, "rev-parse", "--verify", "-q", f"origin/{branch}", check=False).stdout.strip()
+        sha = existing or newest(repo_dir, set(revisions.values()))
+
+        matched, files = 0, []
+        for path in git(repo_dir, "ls-tree", "-r", "--name-only", sha, "--", ".tekton").stdout.split():
+            raw = git(repo_dir, "show", f"{sha}:{path}").stdout if path.endswith(".yaml") else None
+            doc = yaml.safe_load(raw) if raw is not None else None
+            if not isinstance(doc, dict) or doc.get("kind") != "PipelineRun":
+                continue
+            base = doc["metadata"].get("labels", {}).get("appstudio.openshift.io/component", "").removesuffix(suffix)
+            if base not in revisions:
+                continue
+            matched += 1
+            orig = copy.deepcopy(doc)
+            where = f"{repo}/{path}"
+            rewire(doc, base, where)
+            if doc != orig:
+                files.append({"path": path, "content": patch(raw, orig, doc, where)})
+
+        if not matched:
+            sys.exit(f"ERROR: {repo}: no PipelineRun matches the snapshot components {sorted(revisions)}")
+        if files:
+            print(f"{repo}: {'create' if not existing else 'update'} {branch} @ {sha}: {[f['path'] for f in files]}")
+        else:
+            print(f"{repo}: {branch} up to date")
+
+        with open("plan.json", "w") as f:
+            json.dump({"repo": repo, "sha": sha, "create": not existing, "files": files}, f)
+
+    - name: apply
+      env:
+        - name: BRANCH
+          value: $(params.branch)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+        - name: GH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: git-auth
+              key: token
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [ "$(jq -r '.files | length' plan.json)" = 0 ]; then
+          exit 0
+        fi
+
+        repo=$(jq -r .repo plan.json)
+        sha=$(jq -r .sha plan.json)
+        SIDE="konflux/prepare-${BRANCH}"
+        TITLE="chore: initialise ${RELEASE_VERSION} release"
+        MUTATION='mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }'
+        echo "=== $repo"
+
+        if [ "$(jq -r .create plan.json)" = true ]; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$sha" >/dev/null
+        fi
+        if [ -n "$(gh pr list --repo "$repo" --head "$SIDE" --state open --json number --jq '.[].number')" ]; then
+          echo "PR from $SIDE already open, skipping"
+          exit 0
+        fi
+        gh api -X DELETE "repos/$repo/git/refs/heads/$SIDE" >/dev/null 2>&1 || true
+        gh api "repos/$repo/git/refs" -f ref="refs/heads/$SIDE" -f sha="$sha" >/dev/null
+
+        # createCommitOnBranch commits are signed by GitHub, required on protected release branches
+        jq -n --arg q "$MUTATION" --arg repo "$repo" --arg side "$SIDE" --arg sha "$sha" \
+          --arg msg "$TITLE" \
+          --argjson files "$(jq '[.files[] | {path, contents: (.content | @base64)}]' plan.json)" \
+          '{query: $q, variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $side},
+            message: {headline: $msg}, expectedHeadOid: $sha, fileChanges: {additions: $files}}}}' > payload.json
+        # plain curl: curl-with-retry is not in the pinned release-service-utils image
+        resp=$(curl -sS --fail --retry 5 --retry-delay 5 -X POST -H "Authorization: bearer $GH_TOKEN" https://api.github.com/graphql -d @payload.json)
+        if jq -e .errors <<<"$resp" >/dev/null; then
+          echo "$resp" >&2
+          exit 1
+        fi
+
+        gh pr create --repo "$repo" --base "$BRANCH" --head "$SIDE" \
+          --title "$TITLE" --body "Initialize ${RELEASE_VERSION} release." >/dev/null
+        echo "opened PR $SIDE -> $BRANCH"

@@ -5,3 +5,5 @@ resources:
   # Konflux components
   - konflux/base
   - pipelines/base
+  # Standalone release vehicle for prepare-release-branch (no components/ITS)
+  - base/prepare-release-branch

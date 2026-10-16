@@ -1,0 +1,54 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: prepare-release-branch
+spec:
+  description: Create or update release-X.Y branches from a Snapshot (manually triggered Release).
+  params:
+    - name: release
+      type: string
+      description: The namespaced name (namespace/name) of the Release
+    - name: snapshot
+      type: string
+      description: The namespaced name (namespace/name) of the Snapshot
+  tasks:
+    - name: parse
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/prepare-release/prepare-release-branch-parse.yaml
+      params:
+        - name: release
+          value: $(params.release)
+        - name: snapshot
+          value: $(params.snapshot)
+    - name: prepare-release-branch
+      runAfter:
+        - parse
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/prepare-release/prepare-release-branch.yaml
+      params:
+        - name: branch
+          value: "$(tasks.parse.results.branch)"
+        - name: suffix
+          value: "$(tasks.parse.results.suffix)"
+        - name: release-version
+          value: "$(tasks.parse.results.release-version)"
+      matrix:
+        params:
+          - name: repo
+            value: "$(tasks.parse.results.repos)"
+  workspaces:
+    - name: release-workspace
