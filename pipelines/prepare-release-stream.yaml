@@ -1,0 +1,79 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: prepare-release-stream
+spec:
+  description: Prepare projects for a release stream, including component configuration, operator files and central versions.
+  params:
+    - name: release
+      type: string
+      description: The namespaced name (namespace/name) of the Release
+    - name: snapshot
+      type: string
+      description: The namespaced name (namespace/name) of the Snapshot
+  tasks:
+    - name: parse
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/prepare-release/prepare-release-stream-parse.yaml
+      params:
+        - name: release
+          value: $(params.release)
+        - name: snapshot
+          value: $(params.snapshot)
+    - name: prepare-release-components
+      runAfter:
+        - parse
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/prepare-release/prepare-release-components.yaml
+      params:
+        - name: branch
+          value: "$(tasks.parse.results.branch)"
+        - name: suffix
+          value: "$(tasks.parse.results.suffix)"
+        - name: release-version
+          value: "$(tasks.parse.results.release-version)"
+        - name: version
+          value: "$(tasks.parse.results.version)"
+      matrix:
+        params:
+          - name: repo
+            value: "$(tasks.parse.results.repos)"
+    - name: prepare-release-versions
+      runAfter:
+        - prepare-release-components
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/securesign/pipelines.git"
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: tasks/prepare-release/prepare-release-versions.yaml
+      params:
+        - name: release
+          value: $(params.release)
+        - name: repos
+          value: "$(tasks.parse.results.repos)"
+        - name: branch
+          value: "$(tasks.parse.results.branch)"
+        - name: version
+          value: "$(tasks.parse.results.version)"
+        - name: release-version
+          value: "$(tasks.parse.results.release-version)"
+  workspaces:
+    - name: release-workspace
