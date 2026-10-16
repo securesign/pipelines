@@ -262,7 +262,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: tturek/prepare-release
           - name: pathInRepo
             value: stepactions/github-app-token.yaml
       params:
@@ -321,7 +321,7 @@ spec:
           - name: url
             value: https://github.com/securesign/pipelines.git
           - name: revision
-            value: main
+            value: tturek/prepare-release
           - name: pathInRepo
             value: stepactions/signed-commit.yaml
       params:

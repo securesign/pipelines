@@ -14,6 +14,6 @@ spec:
         - name: url
           value: "https://github.com/securesign/pipelines"
         - name: revision
-          value: main
+          value: tturek/prepare-release
         - name: pathInRepo
           value: "pipelines/prepare-release-stream.yaml"
