@@ -161,6 +161,100 @@ spec:
         with open("plan.json", "w") as f:
             json.dump(plan, f)
 
+    - name: operator-files
+      env:
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env python3
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        import yaml
+
+        version = os.environ["VERSION"] or os.environ["RELEASE_VERSION"]
+        v = re.fullmatch(r"(\d+\.\d+)\.(\d+)", version)
+        stream, patch = v[1], int(v[2])
+
+        plan = json.load(open("plan.json"))
+        repo, sha = plan["repo"], plan["sha"]
+        repo_dir = Path("repos", repo.replace("/", "__"))
+
+
+        def show(path):
+            return subprocess.check_output(["git", "-C", str(repo_dir), "show", f"{sha}:{path}"], text=True)
+
+
+        tree = subprocess.check_output(
+            ["git", "-C", str(repo_dir), "ls-tree", "-r", "--name-only", sha], text=True).splitlines()
+        project = yaml.safe_load(show("PROJECT")) if "PROJECT" in tree else {}
+        markers = [str(x) for x in (project.get("layout") or [])] + list(project.get("plugins") or {})
+        if not any("kubebuilder.io" in x or "operatorframework.io" in x for x in markers):
+            sys.exit(0)
+
+        planned = {f["path"] for f in plan["files"]}
+        texts, matched = {}, 0
+
+
+        def sub(path, pattern, repl):
+            """Edit PATH if PATTERN matches exactly once; skip when absent, fail when ambiguous."""
+            global matched
+            if path not in texts:
+                texts[path] = show(path)
+            assert path not in planned
+            texts[path], n = re.subn(pattern, repl, texts[path], flags=re.M)
+            assert n <= 1
+            matched += n
+            return n
+
+
+        # any Dockerfile in any directory; sub() skips the ones without ARG VERSION/CHANNELS
+        dockerfiles = [p for p in tree if re.fullmatch(r"(?:.*\.)?Dockerfile(?:\..*)?", p.rsplit("/", 1)[-1])]
+        csvs = [p for p in tree if re.fullmatch(r"config/manifests/bases/[^/]+\.clusterserviceversion\.yaml", p)]
+        workflows = [p for p in tree if re.fullmatch(r"\.github/workflows/[^/]+\.ya?ml", p)]
+
+        if "Makefile" in tree:
+            sub("Makefile", r'^(VERSION \?= ).*$', lambda m: m[1] + version)
+            sub("Makefile", r'^(CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if patch == 0 and not re.search(r'^IMAGE_TAG \?= ', texts["Makefile"], re.M):
+                # New streams use the version tag; patches preserve the existing digest pin.
+                sub("Makefile", r'^IMAGE_DIGEST \?= .*$', "IMAGE_TAG ?= $(VERSION)")
+        for path in dockerfiles:
+            sub(path, r'^(ARG VERSION=")[^"\n]*', lambda m: m[1] + version)
+            sub(path, r'^(ARG CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+        for path in csvs:
+            sub(path, r'^(  name: [\w-]+\.v).*$', lambda m: m[1] + version)
+            # keep a pre-release suffix such as -techpreview
+            sub(path, r'^(  version: )\d+\.\d+\.\d+(.*)$', lambda m: m[1] + version + m[2])
+            csv = yaml.safe_load(texts[path])
+            assert csv["metadata"]["name"].endswith(f".v{version}")
+            assert str(csv["spec"]["version"]).startswith(version)
+        for path in workflows:
+            olm = sub(path, r'^(  NEW_OLM_CHANNEL: [\w-]+\.v).*$', lambda m: m[1] + version)
+            sub(path, r'^(\s+CHANNELS: "[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if patch > 0 and olm:
+                # upgrade tests start from the stream's previous release
+                if not sub(path, r'^(\s+TEST_UPGRADE_CHANNEL: ).*$', lambda m: m[1] + f"stable-v{stream}"):
+                    sub(path, r'^( +)(TEST_TARGET_CATALOG: .*)$',
+                        lambda m: f"{m[1]}{m[2]}\n{m[1]}TEST_UPGRADE_CHANNEL: stable-v{stream}")
+            yaml.safe_load(texts[path])
+        if patch == 0 and "config/manager/kustomization.yaml" in tree:
+            # new stream: operators that reference their image by tag follow the version; operators
+            # pinned by digest keep it (their release branches do too)
+            sub("config/manager/kustomization.yaml", r'^(- newTag: ).*$', lambda m: m[1] + version)
+
+        assert matched
+        changed = [{"path": p, "content": t} for p, t in texts.items() if t != show(p)]
+        plan["files"].extend(changed)
+        with open("plan.json", "w") as f:
+            json.dump(plan, f)
+
     - name: github-token
       ref:
         resolver: git
