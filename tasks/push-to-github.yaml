@@ -24,29 +24,39 @@ spec:
     env:
       - name: HOME
         value: /workspace
-      - name: GH_TOKEN
-        valueFrom:
-          secretKeyRef:
-            name: git-auth
-            key: token
   steps:
+    - name: github-token
+      # needs secret github-app-bot-securesign-pr-manager (keys client-id, installation-id,
+      # private-key) in the namespace; see stepactions/github-app-token.yaml
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/github-app-token.yaml
+      params:
+        - name: secret-name
+          value: github-app-bot-securesign-pr-manager
+        - name: output-path
+          value: /workspace/.gh-token
+
     - name: configure-and-clone
       script: |
         #!/usr/bin/env sh
         set +x  # so we don't echo our token
         set -e
 
-        if [ -z "$GH_TOKEN" ]; then
-          echo "GH_TOKEN is not set!"
-          exit 1
-        fi
+        GH_TOKEN=$(cat /workspace/.gh-token)
 
         # Configure Git
         git config --global user.email "RHTAS-build-bot@users.noreply.github.com"
         git config --global user.name "RHTAS-build-bot"
 
         git config --global credential.helper "store --file=/workspace/credentials" 
-        echo "https://${GH_TOKEN}:x-oauth-basic@github.com" > /workspace/credentials
+        echo "https://x-access-token:${GH_TOKEN}@github.com" > /workspace/credentials
         
         git clone "$(params.git-url)" repo
 
