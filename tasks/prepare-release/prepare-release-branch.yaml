@@ -12,6 +12,9 @@ spec:
     - name: branch
     - name: suffix
     - name: release-version
+    - name: version
+      description: Version of the project itself (X.Y.Z); defaults to release-version
+      default: ""
   volumes:
     - name: work
       emptyDir: {}
@@ -35,6 +38,8 @@ spec:
           value: $(params.suffix)
         - name: RELEASE_VERSION
           value: $(params.release-version)
+        - name: VERSION
+          value: $(params.version)
       script: |
         #!/usr/bin/env python3
         import copy
@@ -50,6 +55,9 @@ spec:
         branch = os.environ["BRANCH"]
         suffix = os.environ["SUFFIX"]
         release_version = os.environ["RELEASE_VERSION"]
+        # the project's own version; differs from release_version for projects versioned
+        # independently of the product
+        version = os.environ["VERSION"] or release_version
         info = json.loads(os.environ["REPO"])
         repo, revisions = info["repo"], info["components"]
 
@@ -74,6 +82,8 @@ spec:
         def newest(repo_dir, revisions):
             for rev in revisions:
                 git(repo_dir, "fetch", "--quiet", "origin", rev, check=False)
+                if git(repo_dir, "cat-file", "-e", f"{rev}^{{commit}}", check=False).returncode != 0:
+                    sys.exit(f"ERROR: {repo_dir}: cannot fetch snapshot revision {rev}")
             for rev in revisions:
                 if all(git(repo_dir, "merge-base", "--is-ancestor", other, rev, check=False).returncode == 0
                        for other in revisions):
@@ -86,10 +96,12 @@ spec:
 
             cel_key = "pipelinesascode.tekton.dev/on-cel-expression"
             cel = meta["annotations"][cel_key]
-            if 'target_branch == "main"' in cel:
-                meta["annotations"][cel_key] = cel.replace('target_branch == "main"', f'target_branch == "{branch}"')
-            elif f'target_branch == "{branch}"' not in cel:
+            new_cel, n = re.subn(r'target_branch(\s*)==(\s*)"main"',
+                                 lambda m: f'target_branch{m[1]}=={m[2]}"{branch}"', cel)
+            # tolerate any spacing, like the text patcher below; an already rewired CEL is fine too
+            if n == 0 and not re.search(rf'target_branch\s*==\s*"{re.escape(branch)}"', cel):
                 sys.exit(f"ERROR: {where}: unexpected on-cel-expression: {cel}")
+            meta["annotations"][cel_key] = new_cel
 
             labels = meta["labels"]
             labels["appstudio.openshift.io/application"] = suffixed(labels["appstudio.openshift.io/application"])
@@ -101,6 +113,8 @@ spec:
             if "release-version" not in params:
                 sys.exit(f"ERROR: {where}: no release-version param")
             params["release-version"]["value"] = release_version
+            if "image-version" in params:
+                params["image-version"]["value"] = version
             if "manager-pipelinerun-selector" in params:
                 selector = params["manager-pipelinerun-selector"]
                 selector["value"] = re.sub(r"((?:application|component)=)([\w-]+)",
@@ -142,6 +156,12 @@ spec:
                 sub(rf'(-\s*name:\s*release-version\s*\n\s*value:\s*)(["\']?){re.escape(old_rv)}\2',
                     lambda m: f'{m[1]}{m[2]}{new_rv}{m[2]}', "release-version")
 
+            if "image-version" in new_params:
+                old_iv, new_iv = orig_params["image-version"]["value"], new_params["image-version"]["value"]
+                if new_iv != old_iv:
+                    sub(rf'(-\s*name:\s*image-version\s*\n\s*value:\s*)(["\']?){re.escape(old_iv)}\2',
+                        lambda m: f'{m[1]}{m[2]}{new_iv}{m[2]}', "image-version")
+
             if "manager-pipelinerun-selector" in new_params:
                 old_sel = orig_params["manager-pipelinerun-selector"]["value"]
                 new_sel = new_params["manager-pipelinerun-selector"]["value"]
@@ -163,8 +183,8 @@ spec:
         sha = existing or newest(repo_dir, set(revisions.values()))
 
         matched, files = 0, []
-        for path in git(repo_dir, "ls-tree", "-r", "--name-only", sha, "--", ".tekton").stdout.split():
-            raw = git(repo_dir, "show", f"{sha}:{path}").stdout if path.endswith(".yaml") else None
+        for path in git(repo_dir, "ls-tree", "-r", "--name-only", sha, "--", ".tekton").stdout.split("\n"):
+            raw = git(repo_dir, "show", f"{sha}:{path}").stdout if path.endswith((".yaml", ".yml")) else None
             doc = yaml.safe_load(raw) if raw is not None else None
             if not isinstance(doc, dict) or doc.get("kind") != "PipelineRun":
                 continue
@@ -174,7 +194,10 @@ spec:
             matched += 1
             orig = copy.deepcopy(doc)
             where = f"{repo}/{path}"
-            rewire(doc, base, where)
+            try:
+                rewire(doc, base, where)
+            except KeyError as e:
+                sys.exit(f"ERROR: {where}: PipelineRun is missing {e}")
             if doc != orig:
                 files.append({"path": path, "content": patch(raw, orig, doc, where)})
 
@@ -187,6 +210,115 @@ spec:
 
         with open("plan.json", "w") as f:
             json.dump({"repo": repo, "sha": sha, "create": not existing, "files": files}, f)
+
+    - name: operator-files
+      env:
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env python3
+        # Version bumps that only operator repositories (kubebuilder / operator-sdk projects, found by
+        # their PROJECT file) need, see the "chore: initialise X.Y.Z release" commits of
+        # securesign/secure-sign-operator. Every edit is optional (operators differ in which files they
+        # have) and sets an absolute value, so re-runs are no-ops. Ambiguous matches fail the step.
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        import yaml
+
+        # The project's own version: secure-sign-operator follows the product release version, the
+        # other projects are versioned independently (their Release sets releaseVersion separately).
+        version = os.environ["VERSION"] or os.environ["RELEASE_VERSION"]
+        v = re.fullmatch(r"(\d+\.\d+)\.(\d+)", version)
+        if not v:
+            sys.exit(f"ERROR: version {version} is not X.Y.Z")
+        stream, patch = v[1], int(v[2])
+
+        plan = json.load(open("plan.json"))
+        repo, sha = plan["repo"], plan["sha"]
+        repo_dir = Path("repos", repo.replace("/", "__"))
+
+
+        def show(path):
+            r = subprocess.run(["git", "-C", str(repo_dir), "show", f"{sha}:{path}"],
+                               capture_output=True, text=True)
+            return r.stdout if r.returncode == 0 else None
+
+
+        project = yaml.safe_load(show("PROJECT") or "{}")
+        markers = [str(x) for x in (project.get("layout") or [])] + list(project.get("plugins") or {})
+        if not any("kubebuilder.io" in x or "operatorframework.io" in x for x in markers):
+            print(f"{repo}: not an operator project, nothing to do")
+            sys.exit(0)
+
+        tree = subprocess.run(["git", "-C", str(repo_dir), "ls-tree", "-r", "--name-only", sha],
+                              capture_output=True, text=True, check=True).stdout.split("\n")
+        planned = {f["path"] for f in plan["files"]}
+        texts, matched = {}, 0
+
+
+        def sub(path, pattern, repl):
+            """Edit PATH if PATTERN matches exactly once; skip when absent, fail when ambiguous."""
+            global matched
+            if path not in texts:
+                texts[path] = show(path)
+            if path in planned:
+                sys.exit(f"ERROR: {repo}/{path}: already modified by the plan step")
+            texts[path], n = re.subn(pattern, repl, texts[path], flags=re.M)
+            if n > 1:
+                sys.exit(f"ERROR: {repo}/{path}: {pattern} matches {n} times")
+            matched += n
+            return n
+
+
+        # any Dockerfile in any directory; sub() skips the ones without ARG VERSION/CHANNELS
+        dockerfiles = [p for p in tree if re.fullmatch(r"(?:.*\.)?Dockerfile(?:\..*)?", p.rsplit("/", 1)[-1])]
+        csvs = [p for p in tree if re.fullmatch(r"config/manifests/bases/[^/]+\.clusterserviceversion\.yaml", p)]
+        workflows = [p for p in tree if re.fullmatch(r"\.github/workflows/[^/]+\.ya?ml", p)]
+
+        if "Makefile" in tree:
+            sub("Makefile", r'^(VERSION \?= ).*$', lambda m: m[1] + version)
+            sub("Makefile", r'^(CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if not re.search(r'^IMAGE_TAG \?= ', texts["Makefile"], re.M):
+                # the image used to be pinned by digest, the release branch uses the tag
+                sub("Makefile", r'^IMAGE_DIGEST \?= .*$', "IMAGE_TAG ?= $(VERSION)")
+        for path in dockerfiles:
+            sub(path, r'^(ARG VERSION=")[^"\n]*', lambda m: m[1] + version)
+            sub(path, r'^(ARG CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+        for path in csvs:
+            sub(path, r'^(  name: [\w-]+\.v).*$', lambda m: m[1] + version)
+            # keep a pre-release suffix such as -techpreview
+            sub(path, r'^(  version: )\d+\.\d+\.\d+(.*)$', lambda m: m[1] + version + m[2])
+            csv = yaml.safe_load(texts[path])
+            if not csv["metadata"]["name"].endswith(f".v{version}") or not str(csv["spec"]["version"]).startswith(version):
+                sys.exit(f"ERROR: {repo}/{path}: patched file does not match expected content")
+        for path in workflows:
+            olm = sub(path, r'^(  NEW_OLM_CHANNEL: [\w-]+\.v).*$', lambda m: m[1] + version)
+            sub(path, r'^(\s+CHANNELS: "[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if patch > 0 and olm:
+                # upgrade tests start from the stream's previous release
+                if not sub(path, r'^(\s+TEST_UPGRADE_CHANNEL: ).*$', lambda m: m[1] + f"stable-v{stream}"):
+                    sub(path, r'^( +)(TEST_TARGET_CATALOG: .*)$',
+                        lambda m: f"{m[1]}{m[2]}\n{m[1]}TEST_UPGRADE_CHANNEL: stable-v{stream}")
+            yaml.safe_load(texts[path])
+        if patch == 0 and "config/manager/kustomization.yaml" in tree:
+            # new stream: operators that reference their image by tag follow the version; operators
+            # pinned by digest keep it (their release branches do too)
+            sub("config/manager/kustomization.yaml", r'^(- newTag: ).*$', lambda m: m[1] + version)
+
+        if not matched:
+            sys.exit(f"ERROR: {repo}: operator project without any version to bump")
+        changed = [{"path": p, "content": t} for p, t in texts.items() if t != show(p)]
+        plan["files"].extend(changed)
+        print(f"{repo}: operator files {[f['path'] for f in changed]}")
+        with open("plan.json", "w") as f:
+            json.dump(plan, f)
 
     - name: github-token
       ref:
@@ -210,11 +342,15 @@ spec:
           value: $(params.branch)
         - name: RELEASE_VERSION
           value: $(params.release-version)
+        - name: VERSION
+          value: $(params.version)
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
         GH_TOKEN=$(cat /var/work/.gh-token)
         export GH_TOKEN
+        # the PR describes the project's own release, not the product version
+        VERSION="${VERSION:-$RELEASE_VERSION}"
 
         if [ "$(jq -r '.files | length' plan.json)" = 0 ]; then
           exit 0
@@ -223,19 +359,17 @@ spec:
         repo=$(jq -r .repo plan.json)
         sha=$(jq -r .sha plan.json)
         SIDE="konflux/prepare-${BRANCH}"
-        TITLE="chore: initialise ${RELEASE_VERSION} release"
+        TITLE="chore: initialise ${VERSION} release"
         MUTATION='mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }'
         echo "=== $repo"
 
         if [ "$(jq -r .create plan.json)" = true ]; then
           gh api "repos/$repo/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$sha" >/dev/null
         fi
-        if [ -n "$(gh pr list --repo "$repo" --head "$SIDE" --state open --json number --jq '.[].number')" ]; then
-          echo "PR from $SIDE already open, skipping"
-          exit 0
+        # (re)create the side branch at the target tip; an already open PR from it picks up the new commit
+        if ! gh api -X PATCH "repos/$repo/git/refs/heads/$SIDE" -f sha="$sha" -F force=true >/dev/null 2>&1; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$SIDE" -f sha="$sha" >/dev/null
         fi
-        gh api -X DELETE "repos/$repo/git/refs/heads/$SIDE" >/dev/null 2>&1 || true
-        gh api "repos/$repo/git/refs" -f ref="refs/heads/$SIDE" -f sha="$sha" >/dev/null
 
         # createCommitOnBranch commits are signed by GitHub, required on protected release branches
         jq -n --arg q "$MUTATION" --arg repo "$repo" --arg side "$SIDE" --arg sha "$sha" \
@@ -250,6 +384,12 @@ spec:
           exit 1
         fi
 
-        gh pr create --repo "$repo" --base "$BRANCH" --head "$SIDE" \
-          --title "$TITLE" --body "Initialize ${RELEASE_VERSION} release." >/dev/null
-        echo "opened PR $SIDE -> $BRANCH"
+        pr=$(gh pr list --repo "$repo" --head "$SIDE" --state open --json number --jq '.[].number')
+        if [ -n "$pr" ]; then
+          gh pr edit "$pr" --repo "$repo" --title "$TITLE" --body "Initialize ${VERSION} release." >/dev/null
+          echo "updated PR !${pr} ${SIDE} -> ${BRANCH}"
+        else
+          gh pr create --repo "$repo" --base "$BRANCH" --head "$SIDE" \
+            --title "$TITLE" --body "Initialize ${VERSION} release." >/dev/null
+          echo "opened PR ${SIDE} -> ${BRANCH}"
+        fi

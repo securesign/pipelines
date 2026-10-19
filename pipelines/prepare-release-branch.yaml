@@ -46,6 +46,8 @@ spec:
           value: "$(tasks.parse.results.suffix)"
         - name: release-version
           value: "$(tasks.parse.results.release-version)"
+        - name: version
+          value: "$(tasks.parse.results.version)"
       matrix:
         params:
           - name: repo
