@@ -188,20 +188,33 @@ spec:
         with open("plan.json", "w") as f:
             json.dump({"repo": repo, "sha": sha, "create": not existing, "files": files}, f)
 
+    - name: github-token
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: stepactions/github-app-token.yaml
+      params:
+        - name: secret-name
+          value: github-app-bot-securesign-pr-manager
+        - name: output-path
+          value: /var/work/.gh-token
+
     - name: apply
       env:
         - name: BRANCH
           value: $(params.branch)
         - name: RELEASE_VERSION
           value: $(params.release-version)
-        - name: GH_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: git-auth
-              key: token
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
+        GH_TOKEN=$(cat /var/work/.gh-token)
+        export GH_TOKEN
 
         if [ "$(jq -r '.files | length' plan.json)" = 0 ]; then
           exit 0
