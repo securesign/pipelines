@@ -273,10 +273,13 @@ per-repo overrides are removed, both can be bumped in this repository.
 
 ### Source of truth
 
-Version mappings live in
-[`base/config/rhtas-versions.properties`](base/config/rhtas-versions.properties)
-and are deployed as ConfigMap `rhtas-repo-branch-versions` via the
-configuration-as-code pipeline.
+Version mappings live in separate files for the
+[`main`](base/config/rhtas-versions.main.properties),
+[`1.4`](base/config/rhtas-versions.1.4.properties), and
+[`1.5`](base/config/rhtas-versions.1.5.properties) streams. Kustomize merges
+them into the single `rhtas-repo-branch-versions` ConfigMap, which the
+configuration-as-code pipeline deploys. Keys still include the target branch,
+so the lookup task does not need a stream-specific ConfigMap name.
 
 **Key format:**
 
@@ -312,10 +315,17 @@ mapping and build output.
 
 ### Bumping versions for a release
 
-1. Edit `base/config/rhtas-versions.properties` with the new semver values
+1. Edit the properties file for the affected stream with the new semver values
 2. Open a PR in this repository
 3. On merge to `main`, the CAC pipeline builds and deploys the updated ConfigMap
 4. Subsequent builds on configured branches pick up the new version automatically
+
+When branching a release, copy the current `main` file to a numbered stream
+file (for example, `rhtas-versions.1.6.properties`), replace its `main` and
+other development branch keys with the new release branch keys, and add the
+file to `base/config/kustomization.yaml`. Keep `main` for the next planned
+release. Policy-controller's `release-1.0` branches belong to the 1.4 stream
+despite their branch names.
 
 ### Verifying a build
 

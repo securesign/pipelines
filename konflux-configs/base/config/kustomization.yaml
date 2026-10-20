@@ -10,8 +10,9 @@ configMapGenerator:
       - automerge="true"
       - platformAutomerge="true"
 
-  # Release version mappings for repo+branch
-  # Versions are defined in rhtas-versions.properties
+  # Merge stream-specific release and image mappings into one ConfigMap.
   - name: rhtas-repo-branch-versions
     envs:
-      - rhtas-versions.properties
+      - rhtas-versions.main.properties
+      - rhtas-versions.1.4.properties
+      - rhtas-versions.1.5.properties
