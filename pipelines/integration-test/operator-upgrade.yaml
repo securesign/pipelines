@@ -25,6 +25,11 @@ spec:
         description: Hosted management cluster used to provision the ephemeral cluster.
       - name: TAS_DEPLOY_NAMESPACE
         default: "tas-e2e"
+      - name: FIPS_ENABLED
+        default: "false"
+      - name: CLUSTER_PLATFORM
+        description: "Target environment for Keycloak installation: openshift or kind"
+        default: "openshift"
     workspaces:
       - name: work
     tasks:
@@ -205,7 +210,7 @@ spec:
           - name: timeout
             value: 1h
           - name: env
-            value: '{"COMPUTE_NODE_TYPE":"$(params.COMPUTE_NODE_TYPE)","HOSTED_MANAGEMENT_CLUSTER":"$(params.HOSTED_MANAGEMENT_CLUSTER)"}'
+            value: '{"COMPUTE_NODE_TYPE":"$(params.COMPUTE_NODE_TYPE)","FIPS":"$(params.FIPS_ENABLED)","HOSTED_MANAGEMENT_CLUSTER":"$(params.HOSTED_MANAGEMENT_CLUSTER)"}'
           - name: releases
             value: >-
               {"latest":{"release":{"channel":"stable","version":"$(params.OCP_VERSION)","architecture":"multi"}}}
@@ -243,6 +248,8 @@ spec:
             value: $(tasks.provision-cluster.results.secretRef)
           - name: workdir
             value: "operator"
+          - name: cluster-platform
+            value: "$(params.CLUSTER_PLATFORM)"
         workspaces:
           - name: source-code
             workspace: work
