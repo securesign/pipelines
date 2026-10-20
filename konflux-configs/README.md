@@ -265,12 +265,11 @@ konflux-configs/
 ```
 
 
-## Release Version Mappings
+## Release and Image Version Mappings
 
-Container image `version` labels are resolved centrally from the
-`rhtas-repo-branch-versions` ConfigMap instead of per-repo Tekton params.
-This allows bumping versions for all components and branches in a single PR
-to this repository.
+Release versions for product CPE labels and optional image `version` labels
+are resolved from the `rhtas-repo-branch-versions` ConfigMap. Once existing
+per-repo overrides are removed, both can be bumped in this repository.
 
 ### Source of truth
 
@@ -283,31 +282,45 @@ configuration-as-code pipeline.
 
 | Pattern | Example | When used |
 |---------|---------|-----------|
-| `<repo>__<branch>` | `fulcio__release-1.4=1.4.5` | Exact repo + branch match |
-| `<repo>` | `fulcio=1.6.0-dev` | Fallback when branch-specific key is missing |
+| `<repo>__<branch>` | `fulcio__release-1.4=1.4.5` | Release version for a branch |
+| `<repo>__<branch>__image` | `policy-controller__main__image=1.2.0` | Image label when it differs from the release version |
+| `<repo>__<branch>__<component>__release` | `tough__develop__cli-tuftool__release=1.6.0` | Optional component-specific release version |
+| `<repo>__<branch>__<component>__image` | `tough__develop__cli-tuftool__image=0.0.1` | Optional component-specific image version |
+| `<repo>__<component>__release` / `<repo>__<component>__image` | `tough__cli-tuftool__image=0.0.1` | Component fallback across branches |
+| `<repo>` / `<repo>__image` | `fulcio=1.6.0-dev` | Repo-only fallbacks |
 
 The repo name is derived from the component `git-url` (e.g.
 `https://github.com/securesign/fulcio` → `fulcio`). The branch comes from
 the `target-branch` pipeline parameter, or the Pipelines-as-Code
 `target_branch` annotation when that parameter is empty.
+The component identifier defaults to the last path segment of `output-image`
+without its tag or digest. Set the `version-component` pipeline parameter if
+that image name is not a stable identifier. For each version, lookup tries a
+branch-and-component entry, then a branch entry, then a component entry, and
+finally a repo entry. When no image entry exists, the image version uses the
+existing `image-version` parameter if supplied, or the resolved release
+version.
 
 PR validation and configuration-as-code builds allow the ConfigMap to be
 absent while it is being introduced. They log the missing ConfigMap and use
-the pipeline's `release-version` as the default. Other builds fail if the
-ConfigMap is absent; API access errors always fail the lookup. Once the
-ConfigMap is deployed, all builds use its mappings.
+the pipeline's `release-version` and optional `image-version` as defaults.
+Other builds fail if the ConfigMap is absent; API access errors always fail
+the lookup. A ConfigMap image entry takes precedence over an explicit
+`image-version`. The explicit value remains a fallback during migration.
+Remove it from a component PipelineRun after checking its central image
+mapping and build output.
 
 ### Bumping versions for a release
 
 1. Edit `base/config/rhtas-versions.properties` with the new semver values
-2. Open a PR — only this repo needs to change (no per-component-repo PRs)
+2. Open a PR in this repository
 3. On merge to `main`, the CAC pipeline builds and deploys the updated ConfigMap
-4. Subsequent builds on any branch pick up the new version automatically
+4. Subsequent builds on configured branches pick up the new version automatically
 
 ### Verifying a build
 
-Check the `get-version-from-configmap` task log for the resolved lookup key,
-then confirm the built image label:
+Check both lookup keys in the `get-version-from-configmap` task log, then
+confirm the built image label:
 
 ```bash
 skopeo inspect docker://quay.io/.../component@sha256:... | jq '.Labels.version'

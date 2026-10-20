@@ -19,6 +19,10 @@ spec:
     description: Target branch used to select the component release version
     name: target-branch
     type: string
+  - default: ""
+    description: Stable identifier for version mappings; defaults to the output image name
+    name: version-component
+    type: string
   - default: "false"
     description: Use the default version before the version ConfigMap is deployed
     name: allow-missing-configmap
@@ -193,12 +197,18 @@ spec:
     params:
     - name: git-url
       value: $(params.git-url)
+    - name: component-name
+      value: $(params.version-component)
+    - name: output-image
+      value: $(params.output-image)
     - name: configmap-name
       value: rhtas-repo-branch-versions
     - name: configmap-namespace
       value: $(context.pipelineRun.namespace)
     - name: default-version
       value: $(params.release-version)
+    - name: default-image-version
+      value: $(params.image-version)
     - name: target-branch
       value: $(params.target-branch)
     - name: allow-missing-configmap
@@ -217,7 +227,7 @@ spec:
     - name: release-version
       value: $(tasks.get-version-from-configmap.results.release-version)
     - name: image-version
-      value: $(params.image-version)
+      value: $(tasks.get-version-from-configmap.results.image-version)
     runAfter:
     - get-version-from-configmap
   - name: generate-labels

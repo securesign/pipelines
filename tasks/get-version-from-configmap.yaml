@@ -4,14 +4,22 @@ metadata:
   name: get-version-from-configmap
 spec:
   description: >
-    Looks up a release version from a ConfigMap using the repository and target
-    branch. Lookup order is <repo>__<branch>, <repo>, then the default version.
+    Looks up release and image versions by repository, target branch, and
+    optional component. An image version defaults to the resolved release version.
   params:
     - name: git-url
       description: Source repository URL
       type: string
     - name: target-branch
       description: Target branch for the version lookup; an empty value uses the PipelineRun annotation
+      type: string
+      default: ""
+    - name: component-name
+      description: Stable component identifier; an empty value uses the output image name
+      type: string
+      default: ""
+    - name: output-image
+      description: Output image used to derive the component name when none is supplied
       type: string
       default: ""
     - name: configmap-name
@@ -26,6 +34,10 @@ spec:
       description: Version to use when no mapping exists
       type: string
       default: "0.0.0-dev"
+    - name: default-image-version
+      description: Existing per-component image version used when no ConfigMap image mapping exists
+      type: string
+      default: ""
     - name: allow-missing-configmap
       description: Use the default version when the ConfigMap has not been deployed yet
       type: string
@@ -33,8 +45,12 @@ spec:
   results:
     - name: release-version
       description: Resolved release version
+    - name: image-version
+      description: Resolved image metadata version
     - name: lookup-key
-      description: ConfigMap key that provided the version
+      description: ConfigMap key that provided the release version
+    - name: image-lookup-key
+      description: ConfigMap key or fallback that provided the image version
   steps:
     - name: get-version
       image: quay.io/openshift/origin-cli:4.15
@@ -51,8 +67,11 @@ spec:
         CM_NAME="$(params.configmap-name)"
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
+        DEFAULT_IMAGE_VERSION="$(params.default-image-version)"
         ALLOW_MISSING_CONFIGMAP="$(params.allow-missing-configmap)"
         BRANCH="$(params.target-branch)"
+        COMPONENT_NAME="$(params.component-name)"
+        OUTPUT_IMAGE="$(params.output-image)"
 
         # Pipelines-as-Code sets the target branch on the PipelineRun. Keep the
         # lookup usable for callers that do not pass target-branch explicitly.
@@ -73,9 +92,22 @@ spec:
         fi
 
         REPO_NAME=$(basename "${GIT_URL%.git}")
+        if [[ -z "${COMPONENT_NAME}" && -n "${OUTPUT_IMAGE}" ]]; then
+          COMPONENT_NAME="${OUTPUT_IMAGE##*/}"
+          COMPONENT_NAME="${COMPONENT_NAME%%@*}"
+          COMPONENT_NAME="${COMPONENT_NAME%%:*}"
+        fi
         echo "Repository: ${REPO_NAME}"
         echo "Branch: ${BRANCH}"
+        echo "Component: ${COMPONENT_NAME:-<none>}"
         echo "ConfigMap: ${CM_NAMESPACE}/${CM_NAME}"
+
+        write_results() {
+          printf '%s' "${VERSION}" > "$(results.release-version.path)"
+          printf '%s' "${IMAGE_VERSION}" > "$(results.image-version.path)"
+          printf '%s' "${LOOKUP_KEY}" > "$(results.lookup-key.path)"
+          printf '%s' "${IMAGE_LOOKUP_KEY}" > "$(results.image-lookup-key.path)"
+        }
 
         CONFIGMAP_REF=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
           -o name --ignore-not-found)
@@ -85,8 +117,14 @@ spec:
             exit 1
           fi
           echo "ConfigMap ${CM_NAMESPACE}/${CM_NAME} is not deployed; using default version ${DEFAULT_VERSION}" >&2
-          printf '%s' "${DEFAULT_VERSION}" > "$(results.release-version.path)"
-          printf '%s' default > "$(results.lookup-key.path)"
+          VERSION="${DEFAULT_VERSION}"
+          LOOKUP_KEY=default
+          IMAGE_VERSION="${DEFAULT_IMAGE_VERSION:-${VERSION}}"
+          IMAGE_LOOKUP_KEY=release-version
+          if [[ -n "${DEFAULT_IMAGE_VERSION}" ]]; then
+            IMAGE_LOOKUP_KEY=pipeline-image-version
+          fi
+          write_results
           exit 0
         fi
 
@@ -96,23 +134,53 @@ spec:
             -o go-template --template="{{index .data \"${key}\"}}"
         }
 
-        LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
-        VERSION=$(get_configmap_value "${LOOKUP_KEY}")
-
-        if [[ -n "${VERSION}" ]]; then
-          echo "Found exact match: ${LOOKUP_KEY} = ${VERSION}"
-        else
+        VERSION=""
+        if [[ -n "${COMPONENT_NAME}" ]]; then
+          LOOKUP_KEY="${REPO_NAME}__${BRANCH}__${COMPONENT_NAME}__release"
+          VERSION=$(get_configmap_value "${LOOKUP_KEY}")
+        fi
+        if [[ -z "${VERSION}" ]]; then
+          LOOKUP_KEY="${REPO_NAME}__${BRANCH}"
+          VERSION=$(get_configmap_value "${LOOKUP_KEY}")
+        fi
+        if [[ -z "${VERSION}" && -n "${COMPONENT_NAME}" ]]; then
+          LOOKUP_KEY="${REPO_NAME}__${COMPONENT_NAME}__release"
+          VERSION=$(get_configmap_value "${LOOKUP_KEY}")
+        fi
+        if [[ -z "${VERSION}" ]]; then
           LOOKUP_KEY="${REPO_NAME}"
           VERSION=$(get_configmap_value "${LOOKUP_KEY}")
         fi
-
-        if [[ -n "${VERSION}" ]]; then
-          echo "Found repository fallback: ${LOOKUP_KEY} = ${VERSION}"
-        else
+        if [[ -z "${VERSION}" ]]; then
           LOOKUP_KEY=default
           VERSION="${DEFAULT_VERSION}"
-          echo "No ConfigMap entry found; using default version ${VERSION}"
         fi
+        echo "Release version: ${LOOKUP_KEY} = ${VERSION}"
 
-        printf '%s' "${VERSION}" > "$(results.release-version.path)"
-        printf '%s' "${LOOKUP_KEY}" > "$(results.lookup-key.path)"
+        IMAGE_VERSION=""
+        if [[ -n "${COMPONENT_NAME}" ]]; then
+          IMAGE_LOOKUP_KEY="${REPO_NAME}__${BRANCH}__${COMPONENT_NAME}__image"
+          IMAGE_VERSION=$(get_configmap_value "${IMAGE_LOOKUP_KEY}")
+        fi
+        if [[ -z "${IMAGE_VERSION}" ]]; then
+          IMAGE_LOOKUP_KEY="${REPO_NAME}__${BRANCH}__image"
+          IMAGE_VERSION=$(get_configmap_value "${IMAGE_LOOKUP_KEY}")
+        fi
+        if [[ -z "${IMAGE_VERSION}" && -n "${COMPONENT_NAME}" ]]; then
+          IMAGE_LOOKUP_KEY="${REPO_NAME}__${COMPONENT_NAME}__image"
+          IMAGE_VERSION=$(get_configmap_value "${IMAGE_LOOKUP_KEY}")
+        fi
+        if [[ -z "${IMAGE_VERSION}" ]]; then
+          IMAGE_LOOKUP_KEY="${REPO_NAME}__image"
+          IMAGE_VERSION=$(get_configmap_value "${IMAGE_LOOKUP_KEY}")
+        fi
+        if [[ -z "${IMAGE_VERSION}" ]]; then
+          IMAGE_LOOKUP_KEY=pipeline-image-version
+          IMAGE_VERSION="${DEFAULT_IMAGE_VERSION}"
+        fi
+        if [[ -z "${IMAGE_VERSION}" ]]; then
+          IMAGE_LOOKUP_KEY=release-version
+          IMAGE_VERSION="${VERSION}"
+        fi
+        echo "Image version: ${IMAGE_LOOKUP_KEY} = ${IMAGE_VERSION}"
+        write_results
