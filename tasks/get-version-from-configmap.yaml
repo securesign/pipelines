@@ -26,6 +26,10 @@ spec:
       description: Version to use when no mapping exists
       type: string
       default: "0.0.0-dev"
+    - name: allow-missing-configmap
+      description: Use the default version when the ConfigMap has not been deployed yet
+      type: string
+      default: "false"
   results:
     - name: release-version
       description: Resolved release version
@@ -47,6 +51,7 @@ spec:
         CM_NAME="$(params.configmap-name)"
         CM_NAMESPACE="$(params.configmap-namespace)"
         DEFAULT_VERSION="$(params.default-version)"
+        ALLOW_MISSING_CONFIGMAP="$(params.allow-missing-configmap)"
         BRANCH="$(params.target-branch)"
 
         # Pipelines-as-Code sets the target branch on the PipelineRun. Keep the
@@ -71,6 +76,19 @@ spec:
         echo "Repository: ${REPO_NAME}"
         echo "Branch: ${BRANCH}"
         echo "ConfigMap: ${CM_NAMESPACE}/${CM_NAME}"
+
+        CONFIGMAP_REF=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
+          -o name --ignore-not-found)
+        if [[ -z "${CONFIGMAP_REF}" ]]; then
+          if [[ "${ALLOW_MISSING_CONFIGMAP}" != "true" ]]; then
+            echo "ConfigMap ${CM_NAMESPACE}/${CM_NAME} does not exist" >&2
+            exit 1
+          fi
+          echo "ConfigMap ${CM_NAMESPACE}/${CM_NAME} is not deployed; using default version ${DEFAULT_VERSION}" >&2
+          printf '%s' "${DEFAULT_VERSION}" > "$(results.release-version.path)"
+          printf '%s' default > "$(results.lookup-key.path)"
+          exit 0
+        fi
 
         get_configmap_value() {
           local key="$1"

@@ -19,6 +19,10 @@ spec:
     description: Target branch used to select the component release version
     name: target-branch
     type: string
+  - default: "false"
+    description: Use the default version before the version ConfigMap is deployed
+    name: allow-missing-configmap
+    type: string
   - description: Fully Qualified Output Image
     name: output-image
     type: string
@@ -197,6 +201,8 @@ spec:
       value: $(params.release-version)
     - name: target-branch
       value: $(params.target-branch)
+    - name: allow-missing-configmap
+      value: $(params.allow-missing-configmap)
   - name: derive-product-version
     taskRef:
       resolver: git

@@ -283,12 +283,19 @@ configuration-as-code pipeline.
 
 | Pattern | Example | When used |
 |---------|---------|-----------|
-| `<repo>__<branch>` | `fulcio__release-1.4=1.4.2` | Exact repo + branch match |
-| `<repo>` | `fulcio=1.5.0-dev` | Fallback when branch-specific key is missing |
+| `<repo>__<branch>` | `fulcio__release-1.4=1.4.5` | Exact repo + branch match |
+| `<repo>` | `fulcio=1.6.0-dev` | Fallback when branch-specific key is missing |
 
 The repo name is derived from the component `git-url` (e.g.
 `https://github.com/securesign/fulcio` → `fulcio`). The branch comes from
-the Pipelines-as-Code `target_branch` annotation on each PipelineRun.
+the `target-branch` pipeline parameter, or the Pipelines-as-Code
+`target_branch` annotation when that parameter is empty.
+
+PR validation and configuration-as-code builds allow the ConfigMap to be
+absent while it is being introduced. They log the missing ConfigMap and use
+the pipeline's `release-version` as the default. Other builds fail if the
+ConfigMap is absent; API access errors always fail the lookup. Once the
+ConfigMap is deployed, all builds use its mappings.
 
 ### Bumping versions for a release
 

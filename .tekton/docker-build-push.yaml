@@ -24,6 +24,12 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
+  - name: config-task-revision
+    value: '{{revision}}'
+  - name: target-branch
+    value: '{{target_branch}}'
+  - name: allow-missing-configmap
+    value: "true"
   - name: output-image
     value: quay.io/redhat-user-workloads/rhtas-tenant/docker-build:{{revision}}
   - name: dockerfile
