@@ -35,7 +35,7 @@ spec:
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
       - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
-        default: policy-controller-manager
+        default: policy-controller-operator
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
