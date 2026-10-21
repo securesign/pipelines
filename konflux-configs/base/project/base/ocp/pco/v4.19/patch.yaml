@@ -117,6 +117,39 @@
         resolver: git
         resourceKind: pipelinerun
 
+# IntegrationTestScenario FIPS Upgrade
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "{{.application}}{{.nameSuffix}}-v4-19-upgrade-fips"
+    spec:
+      application: "{{.application}}{{.nameSuffix}}"
+      contexts:
+        - description: execute the FIPS upgrade integration test when component {{.application}}{{.nameSuffix}}-v4-19 updates
+          name: "component_{{.application}}{{.nameSuffix}}-v4-19"
+      params:
+        - name: OCP_VERSION
+          value: "4.19"
+        - name: FIPS_ENABLED
+          value: "true"
+        - name: CLUSTER_PLATFORM
+          value: "openshift"
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/integration-test/pco-operator-upgrade.yaml
+        resolver: git
+        resourceKind: pipelinerun
+
 # ImageRepository
 - op: add
   path: /spec/resources/-

@@ -36,6 +36,11 @@ spec:
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
         default: release-1.4
+      - name: FIPS_ENABLED
+        default: "false"
+      - name: CLUSTER_PLATFORM
+        description: "Target environment for Keycloak installation: openshift or kind"
+        default: "openshift"
     workspaces:
       - name: work
     tasks:
@@ -168,7 +173,7 @@ spec:
           - name: timeout
             value: 1h
           - name: env
-            value: '{"COMPUTE_NODE_TYPE":"$(params.COMPUTE_NODE_TYPE)","HOSTED_MANAGEMENT_CLUSTER":"$(params.HOSTED_MANAGEMENT_CLUSTER)"}'
+            value: '{"COMPUTE_NODE_TYPE":"$(params.COMPUTE_NODE_TYPE)","FIPS":"$(params.FIPS_ENABLED)","HOSTED_MANAGEMENT_CLUSTER":"$(params.HOSTED_MANAGEMENT_CLUSTER)"}'
           - name: releases
             value: >-
               {"latest":{"release":{"channel":"stable","version":"$(params.OCP_VERSION)","architecture":"multi"}}}
@@ -225,6 +230,8 @@ spec:
             value: "tas-operator"
           - name: install-tas
             value: "true"
+          - name: cluster-platform
+            value: "$(params.CLUSTER_PLATFORM)"
           - name: tas-namespace
             value: "$(params.TAS_DEPLOY_NAMESPACE)"
         workspaces:
@@ -320,6 +327,7 @@ spec:
                 source ./test/tas-env-variables.sh
                 go mod vendor
                 mkdir -p $(workspaces.source-code.path)/dump/operator-upgrade
+
                 go test -p 1 -count=1 -tags=upgrade -v -timeout 30m -json ./test/... > $(workspaces.source-code.path)/dump/operator-upgrade/test-result.json
                 status=$?
                 printf "%s" "$status" > "$(step.results.exit-code.path)"
