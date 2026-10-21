@@ -26,10 +26,6 @@ spec:
       description: ConfigMap containing the version mappings
       type: string
       default: rhtas-repo-branch-versions
-    - name: configmap-namespace
-      description: Namespace containing the version ConfigMap
-      type: string
-      default: rhtas-tenant
     - name: default-version
       description: Version to use when no mapping exists
       type: string
@@ -51,9 +47,18 @@ spec:
       description: ConfigMap key that provided the release version
     - name: image-lookup-key
       description: ConfigMap key or fallback that provided the image version
+  volumes:
+    - name: version-config
+      configMap:
+        name: $(params.configmap-name)
+        optional: true
   steps:
     - name: get-version
       image: quay.io/openshift/origin-cli:4.15
+      volumeMounts:
+        - name: version-config
+          mountPath: /etc/rhtas-versions
+          readOnly: true
       env:
         - name: TASKRUN_NAME
           value: $(context.taskRun.name)
@@ -65,7 +70,8 @@ spec:
 
         GIT_URL="$(params.git-url)"
         CM_NAME="$(params.configmap-name)"
-        CM_NAMESPACE="$(params.configmap-namespace)"
+        CM_NAMESPACE="${TASKRUN_NAMESPACE}"
+        CM_DIR=/etc/rhtas-versions
         DEFAULT_VERSION="$(params.default-version)"
         DEFAULT_IMAGE_VERSION="$(params.default-image-version)"
         ALLOW_MISSING_CONFIGMAP="$(params.allow-missing-configmap)"
@@ -109,9 +115,7 @@ spec:
           printf '%s' "${IMAGE_LOOKUP_KEY}" > "$(results.image-lookup-key.path)"
         }
 
-        CONFIGMAP_REF=$(oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-          -o name --ignore-not-found)
-        if [[ -z "${CONFIGMAP_REF}" ]]; then
+        if [[ -z "$(find "${CM_DIR}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
           if [[ "${ALLOW_MISSING_CONFIGMAP}" != "true" ]]; then
             echo "ConfigMap ${CM_NAMESPACE}/${CM_NAME} does not exist" >&2
             exit 1
@@ -130,8 +134,10 @@ spec:
 
         get_configmap_value() {
           local key="$1"
-          oc get configmap "${CM_NAME}" -n "${CM_NAMESPACE}" \
-            -o go-template --template="{{index .data \"${key}\"}}"
+          [[ "${key}" =~ ^[A-Za-z0-9._-]+$ ]] || return 0
+          if [[ -f "${CM_DIR}/${key}" ]]; then
+            cat "${CM_DIR}/${key}"
+          fi
         }
 
         VERSION=""

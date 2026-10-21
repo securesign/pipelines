@@ -203,8 +203,6 @@ spec:
       value: $(params.output-image)
     - name: configmap-name
       value: rhtas-repo-branch-versions
-    - name: configmap-namespace
-      value: $(context.pipelineRun.namespace)
     - name: default-version
       value: $(params.release-version)
     - name: default-image-version

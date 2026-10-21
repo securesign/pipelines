@@ -307,11 +307,19 @@ version.
 PR validation and configuration-as-code builds allow the ConfigMap to be
 absent while it is being introduced. They log the missing ConfigMap and use
 the pipeline's `release-version` and optional `image-version` as defaults.
-Other builds fail if the ConfigMap is absent; API access errors always fail
-the lookup. A ConfigMap image entry takes precedence over an explicit
-`image-version`. The explicit value remains a fallback during migration.
+Other builds fail if the ConfigMap is absent. A ConfigMap image entry takes
+precedence over an explicit `image-version`. The explicit value remains a
+fallback during migration.
 Remove it from a component PipelineRun after checking its central image
 mapping and build output.
+
+The lookup Task mounts the ConfigMap as a read-only, optional volume from the
+TaskRun's own namespace. Kubernetes provides the mounted files, so build
+service accounts do not need API permission to read ConfigMaps. The optional
+mount lets PR and configuration-as-code builds use their defaults until the
+configuration-as-code deployment creates the ConfigMap. The Task still reads
+its owning TaskRun and PipelineRun through the API when `target-branch` is
+empty; those reads use the existing build service account permissions.
 
 ### Bumping versions for a release
 
