@@ -1,0 +1,19 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: 'false'
+  name: prepare-release-branch
+spec:
+  application: rhtas-release
+  tenantPipeline:
+    serviceAccountName: konflux-bot-0
+    pipelineRef:
+      resolver: git
+      params:
+        - name: url
+          value: "https://github.com/securesign/pipelines"
+        - name: revision
+          value: tturek/prepare-release
+        - name: pathInRepo
+          value: "pipelines/prepare-release-branch.yaml"
