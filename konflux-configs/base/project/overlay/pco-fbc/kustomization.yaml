@@ -15,3 +15,4 @@ components:
   - ../../base/ocp/pco/v4.21
   - ../../base/ocp/pco/v4.22
   - ../../base/ocp/pco/v5.0
+  - ../../base/ocp/pco/v4.23
