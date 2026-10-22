@@ -1,0 +1,69 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: validate-fbc-graph-sync
+spec:
+  description: >-
+    Verifies the committed FBC catalog is valid and stays in sync with the
+    graph template before the image build starts.
+  params:
+    - name: SOURCE_ARTIFACT
+      type: string
+      description: Trusted artifact URI containing the FBC source tree to validate.
+    - name: path-context
+      type: string
+      description: Path to the FBC content in the source tree.
+    - name: validation-script
+      type: string
+      default: utils/validate_fbc_graph_sync.sh
+      description: Path to the validation script in the FBC source tree.
+  results:
+    - name: SOURCE_ARTIFACT
+      description: Pass-through trusted artifact URI after validation succeeds.
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+    securityContext:
+      # This Task mixes images that may use different user IDs across steps.
+      runAsUser: 0
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  steps:
+    - name: use-trusted-artifact
+      image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+      args:
+        - use
+        - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+    - name: provide-opm
+      image: registry.redhat.io/openshift4/ose-operator-registry-rhel9:v4.21
+      script: |
+        #!/usr/bin/env sh
+        set -eu
+
+        mkdir -p /var/workdir/bin
+        cp /bin/opm /var/workdir/bin/opm
+    - name: validate-sync
+      image: quay.io/konflux-ci/task-runner:3.2.0@sha256:f9b7681a6c1e00ade5194c06a3ed8d16c47655a73584377b78dd0f3fe9743cb5
+      workingDir: /var/workdir/source
+      env:
+        - name: PATH_CONTEXT
+          value: $(params.path-context)
+        - name: SOURCE_ARTIFACT
+          value: $(params.SOURCE_ARTIFACT)
+        - name: VALIDATION_SCRIPT
+          value: $(params.validation-script)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        export PATH="/var/workdir/bin:${PATH}"
+        script_path="${VALIDATION_SCRIPT#./}"
+        if [[ ! -f "${script_path}" ]]; then
+          echo "Required validation script ${script_path} does not exist under $(pwd)."
+          exit 1
+        fi
+
+        bash "${script_path}" "${PATH_CONTEXT}"
+        printf '%s' "${SOURCE_ARTIFACT}" > "$(results.SOURCE_ARTIFACT.path)"
