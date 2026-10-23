@@ -8,10 +8,9 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
       == "main" && ( ".tekton/docker-build-push.yaml".pathChanged() || "pipeline-tests".pathChanged()
-      || "pipelines/docker-build-oci-ta.yaml".pathChanged()
-      || "tasks/go-unit-test-oci-ta.yaml".pathChanged()
+      || "pipelines/docker-build.yaml".pathChanged()
       )
-    pipelinesascode.tekton.dev/pipeline: pipelines/docker-build-oci-ta.yaml
+    pipelinesascode.tekton.dev/pipeline: pipelines/docker-build.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: pipelines
@@ -25,10 +24,6 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
-  - name: target-branch
-    value: '{{target_branch}}'
-  - name: allow-missing-configmap
-    value: "true"
   - name: output-image
     value: quay.io/redhat-user-workloads/rhtas-tenant/docker-build:{{revision}}
   - name: dockerfile
@@ -40,10 +35,21 @@ spec:
   - name: hermetic
     value: "true"
   pipelineRef:
-    name: docker-build-oci-ta
+    name: docker-build
   taskRunTemplate:
     serviceAccountName: build-pipeline-docker-build
   workspaces:
+  - name: workspace
+    volumeClaimTemplate:
+      metadata:
+        creationTimestamp: null
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+      status: {}
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
