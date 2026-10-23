@@ -41,6 +41,8 @@ spec:
   results:
     - name: release-version
       description: Resolved release version
+    - name: product-version
+      description: Release version without its final dot-separated component, for CPE labels
     - name: image-version
       description: Resolved image metadata version
     - name: lookup-key
@@ -110,6 +112,7 @@ spec:
 
         write_results() {
           printf '%s' "${VERSION}" > "$(results.release-version.path)"
+          printf '%s' "${VERSION%.*}" > "$(results.product-version.path)"
           printf '%s' "${IMAGE_VERSION}" > "$(results.image-version.path)"
           printf '%s' "${LOOKUP_KEY}" > "$(results.lookup-key.path)"
           printf '%s' "${IMAGE_LOOKUP_KEY}" > "$(results.image-lookup-key.path)"
