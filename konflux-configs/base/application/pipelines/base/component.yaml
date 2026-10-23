@@ -4,7 +4,7 @@ apiVersion: appstudio.redhat.com/v1alpha1
 kind: Component
 metadata:
   annotations:
-    build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
     build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/2","configuration-time":"Thu, 21 Nov 2024 16:50:06 UTC"},"message":"done"}'
     git-provider: github
     git-provider-url: https://github.com
