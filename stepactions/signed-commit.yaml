@@ -1,0 +1,68 @@
+apiVersion: tekton.dev/v1beta1
+kind: StepAction
+metadata:
+  name: signed-commit
+spec:
+  description: Create a GitHub-signed commit from staged files and return its SHA. Does not update branches or PRs.
+  image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+  params:
+    - name: working-directory
+    - name: message
+    - name: base-ref
+      default: HEAD
+    - name: extra-parent
+      default: ""
+      description: Optional second parent SHA for a merge commit.
+    - name: token-file
+  results:
+    - name: commit-sha
+      description: Created commit SHA, or empty when there are no staged changes.
+  env:
+    - name: CHECKOUT
+      value: $(params.working-directory)
+    - name: MESSAGE
+      value: $(params.message)
+    - name: BASE_REF
+      value: $(params.base-ref)
+    - name: TOKEN_FILE
+      value: $(params.token-file)
+    - name: EXTRA_PARENT
+      value: $(params.extra-parent)
+  script: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "$CHECKOUT"
+    printf '' > "$(step.results.commit-sha.path)"
+    parent=$(git rev-parse "${BASE_REF}^{commit}")
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+    git diff --cached --raw --no-abbrev --no-renames -z "$parent" > "$work/changes"
+    if [ ! -s "$work/changes" ]; then
+      exit 0
+    fi
+    GH_TOKEN=$(cat "$TOKEN_FILE")
+    export GH_TOKEN
+    repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+    base_tree=$(git rev-parse "${parent}^{tree}")
+    while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
+      read -r old_mode mode old_blob blob status <<< "${metadata#:}"
+      if [ "$status" = D ]; then
+        jq -n --arg path "$path" --arg mode "$old_mode" \
+          '{path: $path, mode: $mode, type: "blob", sha: null}' >> "$work/entries"
+      else
+        git cat-file blob "$blob" | base64 | tr -d '\n' | jq -Rs '{content: ., encoding: "base64"}' > "$work/payload"
+        uploaded=$(gh api -X POST "repos/$repo/git/blobs" -H 'Content-Type: application/json' --input "$work/payload" --jq .sha)
+        test "$uploaded" = "$blob"
+        jq -n --arg path "$path" --arg mode "$mode" --arg sha "$blob" \
+          '{path: $path, mode: $mode, type: "blob", sha: $sha}' >> "$work/entries"
+      fi
+    done < "$work/changes"
+    jq -s --arg base "$base_tree" '{base_tree: $base, tree: .}' "$work/entries" > "$work/payload"
+    tree=$(gh api -X POST "repos/$repo/git/trees" -H 'Content-Type: application/json' --input "$work/payload" --jq .sha)
+    # Omit author/committer so GitHub signs with the authenticated App identity.
+    jq -n --arg message "$MESSAGE" --arg tree "$tree" --arg parent "$parent" --arg extra "$EXTRA_PARENT" \
+      '{message: $message, tree: $tree,
+        parents: ([$parent] + (if $extra == "" or $extra == $parent then [] else [$extra] end))}' > "$work/payload"
+    gh api -X POST "repos/$repo/git/commits" -H 'Content-Type: application/json' --input "$work/payload" > "$work/commit"
+    jq -e '.verification.verified == true' "$work/commit" >/dev/null
+    jq -rj .sha "$work/commit" > "$(step.results.commit-sha.path)"
