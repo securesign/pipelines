@@ -1,0 +1,246 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: prepare-release-versions
+spec:
+  description: Open one PR against pipelines/main updating the selected repositories' central versions.
+  params:
+    - name: release
+    - name: repos
+      type: array
+      description: Compact per-repository JSON strings from prepare-release-stream-parse
+    - name: branch
+    - name: version
+    - name: release-version
+  volumes:
+    - name: work
+      emptyDir: {}
+  stepTemplate:
+    image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+    workingDir: /var/work
+    env:
+      - name: HOME
+        value: /var/work
+    volumeMounts:
+      - name: work
+        mountPath: /var/work
+  steps:
+    - name: checkout
+      env:
+        - name: RELEASE
+          value: $(params.release)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        get-resource release "$RELEASE" | jq '.spec.data // {}' > release-data.json
+        repo_dir=repos/securesign__pipelines
+        if [ ! -d "$repo_dir" ]; then
+          git clone --quiet --filter=blob:none --no-checkout https://github.com/securesign/pipelines.git "$repo_dir"
+        fi
+        git -C "$repo_dir" fetch --quiet origin main
+        sha=$(git -C "$repo_dir" rev-parse origin/main)
+        jq -n --arg sha "$sha" '{repo: "securesign/pipelines", sha: $sha, create: false, files: []}' > plan.json
+
+    - name: plan-versions
+      args:
+        - "$(params.repos[*])"
+      env:
+        - name: BRANCH
+          value: $(params.branch)
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env python3
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+
+        import yaml
+
+        plan = json.load(open("plan.json"))
+        data = json.load(open("release-data.json"))
+        branch = os.environ["BRANCH"]
+        versions = {}
+        for field, kind, env in (("version", "image", "VERSION"), ("releaseVersion", "release", "RELEASE_VERSION")):
+            if field in data:
+                assert isinstance(data[field], str) and data[field]
+                versions[kind] = os.environ[env]
+        for value in versions.values():
+            assert re.fullmatch(r"v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", value)
+        repos = {json.loads(arg)["repo"].rsplit("/", 1)[-1] for arg in sys.argv[1:]}
+        config = "konflux-configs/base/config"
+
+
+        def show(path):
+            return subprocess.check_output(
+                ["git", "-C", "repos/securesign__pipelines", "show", f"{plan['sha']}:{path}"], text=True)
+
+
+        raw = show(f"{config}/kustomization.yaml")
+        kustomization = yaml.safe_load(raw)
+        generator = next(g for g in kustomization["configMapGenerator"] if g["name"] == "rhtas-repo-branch-versions")
+        originals = {name: show(f"{config}/{name}") for name in generator["envs"]}
+        texts = originals.copy()
+        entries = {}
+        for name, text in texts.items():
+            for match in re.finditer(r"^[ \t]*([A-Za-z0-9._-]+)[ \t]*=[^\r\n]*", text, re.M):
+                key = match[1]
+                assert key not in entries
+                entries[key] = name
+
+        product = re.fullmatch(r"v?(\d+\.\d+)\.\d+(?:[-+][0-9A-Za-z.-]+)?", os.environ["RELEASE_VERSION"])
+        stream = product[1]
+        default_file = f"rhtas-versions.{'main' if branch == 'main' else stream}.properties"
+        for repo in sorted(repos):
+            prefix = f"{repo}__{branch}"
+            assert re.fullmatch(r"[A-Za-z0-9._-]+", prefix)
+            branch_keys = [key for key in entries if key == prefix or key.startswith(prefix + "__")]
+            for kind, version in versions.items():
+                base = prefix if kind == "release" else prefix + "__image"
+                keys = {base} | {key for key in branch_keys if key.endswith("__" + kind)}
+                for key in sorted(keys):
+                    name = entries.get(key, default_file)
+                    if key in entries:
+                        texts[name] = re.sub(rf"^([ \t]*{re.escape(key)}[ \t]*=[ \t]*)([^\r\n]*?)([ \t]*)(\r?)$",
+                                             lambda m: f"{m[1]}{version}{m[3]}{m[4]}" if m[2] != version else m[0],
+                                             texts[name], flags=re.M)
+                    else:
+                        text = texts.get(name, "")
+                        texts[name] = text + ("\n" if text and not text.endswith("\n") else "") + f"{key}={version}\n"
+                        entries[key] = name
+
+        new_files = [name for name in texts if name not in originals]
+        if new_files:
+            last = generator["envs"][-1]
+            # Append beside the existing env entry without reserializing the YAML.
+            pattern = rf"^([ \t]*-[ \t]*)([\"']?){re.escape(last)}\2([ \t]*)(\r?)$"
+            updated, count = re.subn(pattern, lambda m: m[0] + "".join(
+                f"\n{m[1]}{m[2]}{name}{m[2]}{m[4]}" for name in new_files), raw, flags=re.M)
+            generator["envs"].extend(new_files)
+            assert count == 1 and yaml.safe_load(updated) == kustomization
+            plan["files"].append({"path": f"{config}/kustomization.yaml", "content": updated})
+        plan["files"].extend({"path": f"{config}/{name}", "content": text}
+                             for name, text in texts.items() if text != originals.get(name, ""))
+        with open("plan.json", "w") as f:
+            json.dump(plan, f)
+
+    - name: github-token
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: tturek/prepare-release
+          - name: pathInRepo
+            value: stepactions/github-app-token.yaml
+      params:
+        - name: secret-name
+          value: github-app-bot-securesign-pr-manager
+        - name: output-path
+          value: /var/work/.gh-token
+
+    - name: prepare-commit
+      results:
+        - name: repository-directory
+        - name: message
+        - name: side-head
+      env:
+        - name: SIDE
+          value: konflux/prepare-versions-$(params.release)
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        repo=$(jq -r .repo plan.json)
+        repo_dir="$PWD/repos/${repo//\//__}"
+        printf '%s' "$repo_dir" > "$(step.results.repository-directory.path)"
+        printf 'chore: initialise %s release' "${VERSION:-$RELEASE_VERSION}" > "$(step.results.message.path)"
+        printf '' > "$(step.results.side-head.path)"
+        git -C "$repo_dir" checkout --detach "$(jq -r .sha plan.json)"
+        if [ "$(jq '.files | length' plan.json)" = 0 ]; then
+          exit 0
+        fi
+        python3 - "$repo_dir" <<'PYTHON'
+        import json
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        files = json.load(open("plan.json"))["files"]
+        for file in files:
+            path = Path(sys.argv[1], file["path"])
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(file["content"])
+        subprocess.run(["git", "-C", sys.argv[1], "add", "--", *[f["path"] for f in files]], check=True)
+        PYTHON
+        GH_TOKEN=$(cat /var/work/.gh-token)
+        export GH_TOKEN
+        side_ref=$(jq -rn --arg ref "$SIDE" '$ref | @uri')
+        gh api "repos/$repo/git/matching-refs/heads/$side_ref" | \
+          jq -rj --arg ref "refs/heads/$SIDE" '.[] | select(.ref == $ref) | .object.sha' > "$(step.results.side-head.path)"
+
+    - name: signed-commit
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: tturek/prepare-release
+          - name: pathInRepo
+            value: stepactions/signed-commit.yaml
+      params:
+        - name: working-directory
+          value: $(steps.prepare-commit.results.repository-directory)
+        - name: message
+          value: $(steps.prepare-commit.results.message)
+        - name: token-file
+          value: /var/work/.gh-token
+        - name: extra-parent
+          value: $(steps.prepare-commit.results.side-head)
+
+    - name: pull-request
+      env:
+        - name: BRANCH
+          value: main
+        - name: SIDE
+          value: konflux/prepare-versions-$(params.release)
+        - name: COMMIT
+          value: $(steps.signed-commit.results.commit-sha)
+        - name: TITLE
+          value: $(steps.prepare-commit.results.message)
+        - name: PREVIOUS_HEAD
+          value: $(steps.prepare-commit.results.side-head)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        if [ -z "$COMMIT" ]; then
+          exit 0
+        fi
+        GH_TOKEN=$(cat /var/work/.gh-token)
+        export GH_TOKEN
+        repo=$(jq -r .repo plan.json)
+        if [ "$(jq -r .create plan.json)" = true ]; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$(jq -r .sha plan.json)"
+        fi
+        # The previous PR head is a commit parent, so updates can use GitHub's fast-forward check.
+        if [ -z "$PREVIOUS_HEAD" ]; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$SIDE" -f sha="$COMMIT"
+        else
+          side_ref=$(jq -rn --arg ref "$SIDE" '$ref | @uri')
+          gh api -X PATCH "repos/$repo/git/refs/heads/$side_ref" -f sha="$COMMIT"
+        fi
+        pr=$(gh pr list --repo "$repo" --head "$SIDE" --state open --json number --jq '.[].number')
+        if [ -n "$pr" ]; then
+          gh pr edit "$pr" --repo "$repo" --title "$TITLE" --body "$TITLE"
+        else
+          gh pr create --repo "$repo" --base "$BRANCH" --head "$SIDE" --title "$TITLE" --body "$TITLE"
+        fi
