@@ -7,8 +7,6 @@ metadata:
 spec:
   application: pipelines
   contexts:
-    - description: "execute the integration test when component docker-build updates"
-      name: "component_docker-build"
     - description: "execute the integration test when component docker-build-oci-ta updates"
       name: "component_docker-build-oci-ta"
     - description: "execute the integration test when component docker-build-multi-platform-oci-ta updates"
