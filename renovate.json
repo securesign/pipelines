@@ -9,5 +9,29 @@
         "tasks/**",
         "stepactions/**"
       ]
-    }
+    },
+    "packageRules": [
+      {
+        "description": "Ignore RHTAS product images that are pinned to specific release versions",
+        "matchDatasources": ["docker"],
+        "matchPackagePatterns": ["^registry\\.redhat\\.io/rhtas/"],
+        "enabled": false
+      }
+    ],
+    "customManagers": [
+      {
+        "customType": "regex",
+        "description": "Update container image references in Tekton parameter defaults",
+        "fileMatch": [
+          "pipelines/.+\\.yaml$",
+          "tasks/.+\\.yaml$",
+          "stepactions/.+\\.yaml$"
+        ],
+        "matchStrings": [
+          "default:\\s*(?<depName>[a-z0-9.\\-]+\\/[^@:\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)",
+          "default:\\s*(?<depName>[a-z0-9.\\-]+\\/[^@:\\s]+):(?<currentValue>[a-z0-9.\\-]+)"
+        ],
+        "datasourceTemplate": "docker"
+      }
+    ]
   }
