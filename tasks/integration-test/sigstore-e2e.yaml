@@ -114,6 +114,9 @@ spec:
           value: "/credentials/kubeconfig"
         - name: CLI_STRATEGY
           value: "openshift"
+        # openshift CLI strategy requires an explicit published RHTAS version; there is no fallback
+        - name: CLI_CGW_VERSION
+          value: "1.5.0"
         - name: TARGET_IMAGE_NAME
           value: "$(steps.push-test-image.results.image)"
         - name: MANUAL_IMAGE_SETUP
