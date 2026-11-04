@@ -25,6 +25,10 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
+  - name: target-branch
+    value: '{{target_branch}}'
+  - name: allow-missing-configmap
+    value: "true"
   - name: output-image
     value: quay.io/redhat-user-workloads/rhtas-tenant/configuration-as-code:on-pr-{{revision}}
   - name: image-expires-after

@@ -9,3 +9,10 @@ configMapGenerator:
     literals:
       - automerge="true"
       - platformAutomerge="true"
+
+  # Merge stream-specific release and image mappings into one ConfigMap.
+  - name: rhtas-repo-branch-versions
+    envs:
+      - rhtas-versions.main.properties
+      - rhtas-versions.1.4.properties
+      - rhtas-versions.1.5.properties
