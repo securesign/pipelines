@@ -26,7 +26,7 @@ spec:
             description: The resolved configuration-as-code image URL
         steps:
           - name: resolve-image
-            image: quay.io/konflux-ci/task-runner:3.3.0@sha256:5bc193136dbe18af00741ad25a70daffc465c4d69a5c4f064be6bd3fecf1fd11
+            image: quay.io/konflux-ci/task-runner:4.0.0@sha256:81160fc5ee7e0c44a350696a2fa0350b24f7efc7fb19c07052918c2eee5b7037
             env:
               - name: SNAPSHOT
                 value: '$(params.SNAPSHOT)'

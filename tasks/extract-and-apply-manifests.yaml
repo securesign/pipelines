@@ -19,7 +19,7 @@ spec:
       emptyDir: {}
   steps:
     - name: extract
-      image: quay.io/konflux-ci/task-runner:3.3.0@sha256:5bc193136dbe18af00741ad25a70daffc465c4d69a5c4f064be6bd3fecf1fd11
+      image: quay.io/konflux-ci/task-runner:4.0.0@sha256:81160fc5ee7e0c44a350696a2fa0350b24f7efc7fb19c07052918c2eee5b7037
       volumeMounts:
         - name: shared-data
           mountPath: /workspace
@@ -61,7 +61,7 @@ spec:
         echo "Manifest saved to: $MANIFESTS_FILE"
         
     - name: verify
-      image: quay.io/konflux-ci/task-runner:3.3.0@sha256:5bc193136dbe18af00741ad25a70daffc465c4d69a5c4f064be6bd3fecf1fd11
+      image: quay.io/konflux-ci/task-runner:4.0.0@sha256:81160fc5ee7e0c44a350696a2fa0350b24f7efc7fb19c07052918c2eee5b7037
       volumeMounts:
         - name: shared-data
           mountPath: /workspace
@@ -94,7 +94,7 @@ spec:
       
         echo "Validation completed"
     - name: apply
-      image: quay.io/konflux-ci/task-runner:3.3.0@sha256:5bc193136dbe18af00741ad25a70daffc465c4d69a5c4f064be6bd3fecf1fd11
+      image: quay.io/konflux-ci/task-runner:4.0.0@sha256:81160fc5ee7e0c44a350696a2fa0350b24f7efc7fb19c07052918c2eee5b7037
       when:
         - input: "$(params.release)"
           operator: in
