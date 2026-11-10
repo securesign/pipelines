@@ -1,0 +1,373 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: prepare-release-components
+spec:
+  description: >
+    Prepare selected components in one repository for a release stream and open a PR
+    with their PipelineRun configuration and operator version updates.
+  params:
+    - name: repo
+      description: 'Compact JSON {"repo":..., "components":{name:sha, ...}} from prepare-release-stream-parse'
+    - name: branch
+    - name: suffix
+    - name: release-version
+    - name: version
+      description: Version of the project itself (X.Y.Z); defaults to release-version
+      default: ""
+  volumes:
+    - name: work
+      emptyDir: {}
+  stepTemplate:
+    image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
+    workingDir: /var/work
+    env:
+      - name: HOME
+        value: /var/work
+    volumeMounts:
+      - name: work
+        mountPath: /var/work
+  steps:
+    - name: checkout
+      env:
+        - name: REPO
+          value: $(params.repo)
+        - name: BRANCH
+          value: $(params.branch)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        repo=$(jq -r .repo <<<"$REPO")
+        repo_dir="repos/${repo//\//__}"
+        if [ ! -d "$repo_dir" ]; then
+          git clone --filter=blob:none --no-checkout "https://github.com/$repo.git" "$repo_dir"
+        fi
+        git -C "$repo_dir" fetch origin
+        create=false
+        if git -C "$repo_dir" show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+          sha=$(git -C "$repo_dir" rev-parse "origin/$BRANCH")
+        else
+          create=true
+          revisions=()
+          while IFS= read -r revision; do
+            git -C "$repo_dir" fetch origin "$revision"
+            revisions+=("$revision")
+          done < <(jq -r '[.components[]] | unique[]' <<<"$REPO")
+          sha=$(git -C "$repo_dir" rev-list --topo-order --max-count=1 "${revisions[@]}")
+          for revision in "${revisions[@]}"; do
+            git -C "$repo_dir" merge-base --is-ancestor "$revision" "$sha"
+          done
+        fi
+        jq -n --arg repo "$repo" --arg sha "$sha" --argjson create "$create" \
+          '{repo: $repo, sha: $sha, create: $create, files: []}' > plan.json
+
+    - name: rewire-pipelineruns
+      env:
+        - name: REPO
+          value: $(params.repo)
+        - name: BRANCH
+          value: $(params.branch)
+        - name: SUFFIX
+          value: $(params.suffix)
+      script: |
+        #!/usr/bin/env python3
+        import copy
+        import json
+        import os
+        import re
+        import subprocess
+        from pathlib import Path
+
+        import yaml
+
+        branch = os.environ["BRANCH"]
+        suffix = os.environ["SUFFIX"]
+        revisions = json.loads(os.environ["REPO"])["components"]
+        plan = json.load(open("plan.json"))
+        repo, sha = plan["repo"], plan["sha"]
+        repo_dir = Path("repos", repo.replace("/", "__"))
+
+
+        def git(*args):
+            return subprocess.check_output(["git", "-C", str(repo_dir), *args], text=True)
+
+
+        def suffixed(value):
+            return value if value.endswith(suffix) else value + suffix
+
+
+        def patch(raw, doc, base):
+            expected = copy.deepcopy(doc)
+            meta, spec = expected["metadata"], expected["spec"]
+            text = raw
+
+            def sub(pattern, replacement):
+                nonlocal text
+                text, count = re.subn(pattern, replacement, text, flags=re.M)
+                assert count == 1
+
+            def scalar(mapping, key, value):
+                old = mapping[key]
+                if old != value:
+                    sub(rf"^([ \t]*{re.escape(key)}:[ \t]*)([\"']?){re.escape(old)}\2(?=[ \t]*$)",
+                        lambda m: f"{m[1]}{m[2]}{value}{m[2]}")
+                    mapping[key] = value
+
+            cel_key = "pipelinesascode.tekton.dev/on-cel-expression"
+            cel = meta["annotations"][cel_key]
+            pattern = r'target_branch(\s*)==(\s*)"main"'
+            replacement = lambda m: f'target_branch{m[1]}=={m[2]}"{branch}"'
+            new_cel = re.sub(pattern, replacement, cel)
+            assert re.search(rf'target_branch\s*==\s*"{re.escape(branch)}"', new_cel)
+            if new_cel != cel:
+                sub(pattern, replacement)
+                meta["annotations"][cel_key] = new_cel
+
+            labels = meta["labels"]
+            scalar(labels, "appstudio.openshift.io/application", suffixed(labels["appstudio.openshift.io/application"]))
+            scalar(labels, "appstudio.openshift.io/component", base + suffix)
+            template = spec["taskRunTemplate"]
+            scalar(template, "serviceAccountName", suffixed(template["serviceAccountName"]))
+
+            for param in spec.get("params", []):
+                if param["name"] == "manager-pipelinerun-selector":
+                    for match in re.finditer(r"(application|component)=([\w-]+)", param["value"]):
+                        old, new = match[0], f"{match[1]}={suffixed(match[2])}"
+                        if new != old:
+                            sub(re.escape(old) + r"(?![\w-])", new)
+                            param["value"] = re.sub(re.escape(old) + r"(?![\w-])", lambda m: new, param["value"])
+
+            # Preserve formatting, but verify that only the intended YAML fields changed.
+            assert yaml.safe_load(text) == expected
+            return text
+
+
+        matched = 0
+        for path in git("ls-tree", "-r", "--name-only", sha, "--", ".tekton").splitlines():
+            if not path.endswith((".yaml", ".yml")):
+                continue
+            raw = git("show", f"{sha}:{path}")
+            doc = yaml.safe_load(raw)
+            if not isinstance(doc, dict) or doc.get("kind") != "PipelineRun":
+                continue
+            base = doc["metadata"].get("labels", {}).get("appstudio.openshift.io/component", "").removesuffix(suffix)
+            if base not in revisions:
+                continue
+            matched += 1
+            text = patch(raw, doc, base)
+            if text != raw:
+                plan["files"].append({"path": path, "content": text})
+        assert matched
+        with open("plan.json", "w") as f:
+            json.dump(plan, f)
+
+    - name: operator-files
+      env:
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env python3
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        import yaml
+
+        version = os.environ["VERSION"] or os.environ["RELEASE_VERSION"]
+        v = re.fullmatch(r"(\d+\.\d+)\.(\d+)", version)
+        stream, patch = v[1], int(v[2])
+
+        plan = json.load(open("plan.json"))
+        repo, sha = plan["repo"], plan["sha"]
+        repo_dir = Path("repos", repo.replace("/", "__"))
+
+
+        def show(path):
+            return subprocess.check_output(["git", "-C", str(repo_dir), "show", f"{sha}:{path}"], text=True)
+
+
+        tree = subprocess.check_output(
+            ["git", "-C", str(repo_dir), "ls-tree", "-r", "--name-only", sha], text=True).splitlines()
+        project = yaml.safe_load(show("PROJECT")) if "PROJECT" in tree else {}
+        markers = [str(x) for x in (project.get("layout") or [])] + list(project.get("plugins") or {})
+        if not any("kubebuilder.io" in x or "operatorframework.io" in x for x in markers):
+            sys.exit(0)
+
+        planned = {f["path"] for f in plan["files"]}
+        texts, matched = {}, 0
+
+
+        def sub(path, pattern, repl):
+            """Edit PATH if PATTERN matches exactly once; skip when absent, fail when ambiguous."""
+            global matched
+            if path not in texts:
+                texts[path] = show(path)
+            assert path not in planned
+            texts[path], n = re.subn(pattern, repl, texts[path], flags=re.M)
+            assert n <= 1
+            matched += n
+            return n
+
+
+        # any Dockerfile in any directory; sub() skips the ones without ARG VERSION/CHANNELS
+        dockerfiles = [p for p in tree if re.fullmatch(r"(?:.*\.)?Dockerfile(?:\..*)?", p.rsplit("/", 1)[-1])]
+        csvs = [p for p in tree if re.fullmatch(r"config/manifests/bases/[^/]+\.clusterserviceversion\.yaml", p)]
+        workflows = [p for p in tree if re.fullmatch(r"\.github/workflows/[^/]+\.ya?ml", p)]
+
+        if "Makefile" in tree:
+            sub("Makefile", r'^(VERSION \?= ).*$', lambda m: m[1] + version)
+            sub("Makefile", r'^(CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if patch == 0 and not re.search(r'^IMAGE_TAG \?= ', texts["Makefile"], re.M):
+                # New streams use the version tag; patches preserve the existing digest pin.
+                sub("Makefile", r'^IMAGE_DIGEST \?= .*$', "IMAGE_TAG ?= $(VERSION)")
+        for path in dockerfiles:
+            sub(path, r'^(ARG VERSION=")[^"\n]*', lambda m: m[1] + version)
+            sub(path, r'^(ARG CHANNELS="[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+        for path in csvs:
+            sub(path, r'^(  name: [\w-]+\.v).*$', lambda m: m[1] + version)
+            # keep a pre-release suffix such as -techpreview
+            sub(path, r'^(  version: )\d+\.\d+\.\d+(.*)$', lambda m: m[1] + version + m[2])
+            csv = yaml.safe_load(texts[path])
+            assert csv["metadata"]["name"].endswith(f".v{version}")
+            assert str(csv["spec"]["version"]).startswith(version)
+        for path in workflows:
+            olm = sub(path, r'^(  NEW_OLM_CHANNEL: [\w-]+\.v).*$', lambda m: m[1] + version)
+            sub(path, r'^(\s+CHANNELS: "[^"\n]*stable-v)[\d.]+', lambda m: m[1] + stream)
+            if patch > 0 and olm:
+                # upgrade tests start from the stream's previous release
+                if not sub(path, r'^(\s+TEST_UPGRADE_CHANNEL: ).*$', lambda m: m[1] + f"stable-v{stream}"):
+                    sub(path, r'^( +)(TEST_TARGET_CATALOG: .*)$',
+                        lambda m: f"{m[1]}{m[2]}\n{m[1]}TEST_UPGRADE_CHANNEL: stable-v{stream}")
+            yaml.safe_load(texts[path])
+        if patch == 0 and "config/manager/kustomization.yaml" in tree:
+            # new stream: operators that reference their image by tag follow the version; operators
+            # pinned by digest keep it (their release branches do too)
+            sub("config/manager/kustomization.yaml", r'^(- newTag: ).*$', lambda m: m[1] + version)
+
+        assert matched
+        changed = [{"path": p, "content": t} for p, t in texts.items() if t != show(p)]
+        plan["files"].extend(changed)
+        with open("plan.json", "w") as f:
+            json.dump(plan, f)
+
+    - name: github-token
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: tturek/prepare-release
+          - name: pathInRepo
+            value: stepactions/github-app-token.yaml
+      params:
+        - name: secret-name
+          value: github-app-bot-securesign-pr-manager
+        - name: output-path
+          value: /var/work/.gh-token
+
+    - name: prepare-commit
+      results:
+        - name: repository-directory
+        - name: message
+        - name: side-head
+      env:
+        - name: SIDE
+          value: konflux/prepare-$(params.branch)
+        - name: VERSION
+          value: $(params.version)
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        repo=$(jq -r .repo plan.json)
+        repo_dir="$PWD/repos/${repo//\//__}"
+        printf '%s' "$repo_dir" > "$(step.results.repository-directory.path)"
+        printf 'chore: initialise %s release' "${VERSION:-$RELEASE_VERSION}" > "$(step.results.message.path)"
+        printf '' > "$(step.results.side-head.path)"
+        git -C "$repo_dir" checkout --detach "$(jq -r .sha plan.json)"
+        if [ "$(jq '.files | length' plan.json)" = 0 ]; then
+          exit 0
+        fi
+        python3 - "$repo_dir" <<'PYTHON'
+        import json
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        files = json.load(open("plan.json"))["files"]
+        for file in files:
+            path = Path(sys.argv[1], file["path"])
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(file["content"])
+        subprocess.run(["git", "-C", sys.argv[1], "add", "--", *[f["path"] for f in files]], check=True)
+        PYTHON
+        GH_TOKEN=$(cat /var/work/.gh-token)
+        export GH_TOKEN
+        side_ref=$(jq -rn --arg ref "$SIDE" '$ref | @uri')
+        gh api "repos/$repo/git/matching-refs/heads/$side_ref" | \
+          jq -rj --arg ref "refs/heads/$SIDE" '.[] | select(.ref == $ref) | .object.sha' > "$(step.results.side-head.path)"
+
+    - name: signed-commit
+      ref:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: tturek/prepare-release
+          - name: pathInRepo
+            value: stepactions/signed-commit.yaml
+      params:
+        - name: working-directory
+          value: $(steps.prepare-commit.results.repository-directory)
+        - name: message
+          value: $(steps.prepare-commit.results.message)
+        - name: token-file
+          value: /var/work/.gh-token
+        - name: extra-parent
+          value: $(steps.prepare-commit.results.side-head)
+
+    - name: pull-request
+      env:
+        - name: BRANCH
+          value: $(params.branch)
+        - name: SIDE
+          value: konflux/prepare-$(params.branch)
+        - name: COMMIT
+          value: $(steps.signed-commit.results.commit-sha)
+        - name: TITLE
+          value: $(steps.prepare-commit.results.message)
+        - name: PREVIOUS_HEAD
+          value: $(steps.prepare-commit.results.side-head)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        if [ -z "$COMMIT" ]; then
+          exit 0
+        fi
+        GH_TOKEN=$(cat /var/work/.gh-token)
+        export GH_TOKEN
+        repo=$(jq -r .repo plan.json)
+        if [ "$(jq -r .create plan.json)" = true ]; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$(jq -r .sha plan.json)"
+        fi
+        # The previous PR head is a commit parent, so updates can use GitHub's fast-forward check.
+        if [ -z "$PREVIOUS_HEAD" ]; then
+          gh api "repos/$repo/git/refs" -f ref="refs/heads/$SIDE" -f sha="$COMMIT"
+        else
+          side_ref=$(jq -rn --arg ref "$SIDE" '$ref | @uri')
+          gh api -X PATCH "repos/$repo/git/refs/heads/$side_ref" -f sha="$COMMIT"
+        fi
+        pr=$(gh pr list --repo "$repo" --head "$SIDE" --state open --json number --jq '.[].number')
+        if [ -n "$pr" ]; then
+          gh pr edit "$pr" --repo "$repo" --title "$TITLE" --body "$TITLE"
+        else
+          gh pr create --repo "$repo" --base "$BRANCH" --head "$SIDE" --title "$TITLE" --body "$TITLE"
+        fi
