@@ -16,10 +16,6 @@ spec:
       type: string
       default: "rhtas-operator"
       description: Name of installed operator
-    - name: operator-deployment-name
-      type: string
-      default: "rhtas-operator-controller-manager"
-      description: Namespace to be used for installation
     - name: installChannel
       type: string
       default: stable
@@ -77,10 +73,35 @@ spec:
         
         
         oc get csv -n $(params.namespace) -o yaml
-        until oc get deployment $(params.operator-deployment-name) -n $(params.namespace) &>/dev/null; do
-          echo "Waiting for the deployment to be created..."
-          oc get csv -n $(params.namespace)
-          oc get pods -n $(params.namespace)
+
+        echo "Waiting for Subscription to report installed CSV..."
+        CSV_NAME=""
+        until [ -n "$CSV_NAME" ]; do
+          CSV_NAME=$(oc get subscription $(params.operator-name) -n $(params.namespace) -o jsonpath='{.status.installedCSV}' 2>/dev/null || true)
+          if [ -z "$CSV_NAME" ]; then
+            echo "Installed CSV not yet available, retrying..."
+            oc get csv -n $(params.namespace) || true
+            oc get pods -n $(params.namespace) || true
+            sleep 5
+          fi
+        done
+        echo "Found installed CSV: $CSV_NAME"
+
+        DEPLOYMENT_NAME=""
+        until [ -n "$DEPLOYMENT_NAME" ]; do
+          DEPLOYMENT_NAME=$(oc get csv "$CSV_NAME" -n $(params.namespace) -o jsonpath='{.spec.install.spec.deployments[0].name}' 2>/dev/null || true)
+          if [ -z "$DEPLOYMENT_NAME" ]; then
+            echo "CSV deployment info not yet available, retrying..."
+            oc get csv -n $(params.namespace) || true
+            sleep 5
+          fi
+        done
+        echo "Discovered deployment name: $DEPLOYMENT_NAME"
+
+        until oc get deployment "$DEPLOYMENT_NAME" -n $(params.namespace) &>/dev/null; do
+          echo "Waiting for deployment $DEPLOYMENT_NAME to be created..."
+          oc get csv -n $(params.namespace) || true
+          oc get pods -n $(params.namespace) || true
           sleep 5
         done
-        oc wait --for=condition=available deployment/$(params.operator-deployment-name) --timeout=2m -n $(params.namespace)
+        oc wait --for=condition=available deployment/"$DEPLOYMENT_NAME" --timeout=2m -n $(params.namespace)
