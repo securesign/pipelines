@@ -40,8 +40,6 @@
       params:
         - name: OCP_VERSION
           value: "4.21"
-        - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
-          value: "{{.policyControllerOperatorDeploymentName}}"
       resolverRef:
         params:
           - name: url

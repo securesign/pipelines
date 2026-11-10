@@ -34,8 +34,6 @@ spec:
         default: policy-controller-operator
       - name: POLICY_CONTROLLER_OPERATOR_GIT_URL
         default: https://github.com/securesign/policy-controller-operator
-      - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
-        default: policy-controller-operator
       - name: RHTAS_GIT_URL
         default: https://github.com/securesign/secure-sign-operator
       - name: RHTAS_GIT_REVISION
@@ -247,8 +245,6 @@ spec:
             value: "$(tasks.parse-metadata.results.container-image)"
           - name: operator-name
             value: "policy-controller-operator"
-          - name: operator-deployment-name
-            value: "$(params.POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME)"
           - name: installChannel
             value: "$(tasks.release-info.results.channel)"
       - name: download-binaries

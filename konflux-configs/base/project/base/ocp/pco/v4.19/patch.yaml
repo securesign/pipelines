@@ -40,8 +40,6 @@
       params:
         - name: OCP_VERSION
           value: "4.19"
-        - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
-          value: "{{.policyControllerOperatorDeploymentName}}"
       resolverRef:
         params:
           - name: url
@@ -75,8 +73,6 @@
           value: "true"
         - name: CLUSTER_PLATFORM
           value: "openshift"
-        - name: POLICY_CONTROLLER_OPERATOR_DEPLOYMENT_NAME
-          value: "{{.policyControllerOperatorDeploymentName}}"
       resolverRef:
         params:
           - name: url
