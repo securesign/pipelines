@@ -27,6 +27,8 @@
     kind: ImageRepository
     metadata:
       name: "imagerepository-for-{{.application}}{{.nameSuffix}}-tufcli"
+      annotations:
+        image-controller.appstudio.redhat.com/update-component-image: 'true'
       labels:
         appstudio.redhat.com/component: "tufcli{{.nameSuffix}}"
     spec:
