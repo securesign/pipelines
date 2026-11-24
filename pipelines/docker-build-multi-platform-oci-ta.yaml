@@ -11,6 +11,22 @@ spec:
     description: Revision of the Source Repository
     name: revision
     type: string
+  - default: b28b99a8e26d03c85b7168e0699a551d2118722f
+    description: Revision of securesign/pipelines containing the version lookup task
+    name: config-task-revision
+    type: string
+  - default: ""
+    description: Target branch used to select the component release version
+    name: target-branch
+    type: string
+  - default: ""
+    description: Stable identifier for version mappings; defaults to the output image name
+    name: version-component
+    type: string
+  - default: "false"
+    description: Use the default version before the version ConfigMap is deployed
+    name: allow-missing-configmap
+    type: string
   - description: Fully Qualified Output Image
     name: output-image
     type: string
@@ -204,30 +220,42 @@ spec:
       workspace: git-auth
     - name: netrc
       workspace: netrc
-  - name: derive-product-version
+  - name: get-version-from-configmap
     taskRef:
       resolver: git
       params:
       - name: url
         value: "https://github.com/securesign/pipelines.git"
       - name: revision
-        value: "df75ceee623c9c7f1b330c19122a6e354641d019"
+        value: $(params.config-task-revision)
       - name: pathInRepo
-        value: tasks/derive-product-version.yaml
+        value: tasks/get-version-from-configmap.yaml
     params:
-    - name: release-version
+    - name: git-url
+      value: $(params.git-url)
+    - name: component-name
+      value: $(params.version-component)
+    - name: output-image
+      value: $(params.output-image)
+    - name: configmap-name
+      value: rhtas-repo-branch-versions
+    - name: default-version
       value: $(params.release-version)
-    - name: image-version
+    - name: default-image-version
       value: $(params.image-version)
+    - name: target-branch
+      value: $(params.target-branch)
+    - name: allow-missing-configmap
+      value: $(params.allow-missing-configmap)
   - name: generate-labels
     params:
     - name: label-templates
       value:
       - "release=$SOURCE_DATE_EPOCH"
-      - "version=$(tasks.derive-product-version.results.image-version)"
+      - "version=$(tasks.get-version-from-configmap.results.image-version)"
       - "vendor=Red Hat, Inc."
       - "maintainer=rhtas-support@redhat.com"
-      - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.derive-product-version.results.product-version)::el9"
+      - "cpe=cpe:/a:redhat:trusted_artifact_signer:$(tasks.get-version-from-configmap.results.product-version)::el9"
       - "org.opencontainers.image.created=$SOURCE_DATE"
       - "com.redhat.license_terms=https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
       - "url=https://catalog.redhat.com/en/software/container-stacks/detail/6604180e80e2fa3e4947d1d5#overview"
@@ -236,7 +264,7 @@ spec:
       value: '$(tasks.clone-repository.results.commit-timestamp)'
     runAfter:
     - clone-repository
-    - derive-product-version
+    - get-version-from-configmap
     taskRef:
       params:
       - name: name

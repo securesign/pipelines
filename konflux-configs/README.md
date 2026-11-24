@@ -264,6 +264,86 @@ konflux-configs/
 └── README.md                   # This file
 ```
 
+
+## Release and Image Version Mappings
+
+Release versions for product CPE labels and optional image `version` labels
+are resolved from the `rhtas-repo-branch-versions` ConfigMap. Once existing
+per-repo overrides are removed, both can be bumped in this repository.
+
+### Source of truth
+
+Version mappings live in separate files for the
+[`main`](base/config/rhtas-versions.main.properties),
+[`1.4`](base/config/rhtas-versions.1.4.properties), and
+[`1.5`](base/config/rhtas-versions.1.5.properties) streams. Kustomize merges
+them into the single `rhtas-repo-branch-versions` ConfigMap, which the
+configuration-as-code pipeline deploys. Keys still include the target branch,
+so the lookup task does not need a stream-specific ConfigMap name.
+
+**Key format:**
+
+| Pattern | Example | When used |
+|---------|---------|-----------|
+| `<repo>__<branch>` | `fulcio__release-1.4=1.4.5` | Release version for a branch |
+| `<repo>__<branch>__image` | `policy-controller__main__image=1.2.0` | Image label when it differs from the release version |
+| `<repo>__<branch>__<component>__release` | `tough__develop__cli-tuftool__release=1.6.0` | Optional component-specific release version |
+| `<repo>__<branch>__<component>__image` | `tough__develop__cli-tuftool__image=0.0.1` | Optional component-specific image version |
+| `<repo>__<component>__release` / `<repo>__<component>__image` | `tough__cli-tuftool__image=0.0.1` | Component fallback across branches |
+| `<repo>` / `<repo>__image` | `fulcio=1.6.0-dev` | Repo-only fallbacks |
+
+The repo name is derived from the component `git-url` (e.g.
+`https://github.com/securesign/fulcio` → `fulcio`). The branch comes from
+the `target-branch` pipeline parameter, or the Pipelines-as-Code
+`target_branch` annotation when that parameter is empty.
+The component identifier defaults to the last path segment of `output-image`
+without its tag or digest. Set the `version-component` pipeline parameter if
+that image name is not a stable identifier. For each version, lookup tries a
+branch-and-component entry, then a branch entry, then a component entry, and
+finally a repo entry. When no image entry exists, the image version uses the
+existing `image-version` parameter if supplied, or the resolved release
+version.
+
+PR validation and configuration-as-code builds allow the ConfigMap to be
+absent while it is being introduced. They log the missing ConfigMap and use
+the pipeline's `release-version` and optional `image-version` as defaults.
+Other builds fail if the ConfigMap is absent. A ConfigMap image entry takes
+precedence over an explicit `image-version`. The explicit value remains a
+fallback during migration.
+Remove it from a component PipelineRun after checking its central image
+mapping and build output.
+
+The lookup Task mounts the ConfigMap as a read-only, optional volume from the
+TaskRun's own namespace. Kubernetes provides the mounted files, so build
+service accounts do not need API permission to read ConfigMaps. The optional
+mount lets PR and configuration-as-code builds use their defaults until the
+configuration-as-code deployment creates the ConfigMap. The Task still reads
+its owning TaskRun and PipelineRun through the API when `target-branch` is
+empty; those reads use the existing build service account permissions.
+
+### Bumping versions for a release
+
+1. Edit the properties file for the affected stream with the new semver values
+2. Open a PR in this repository
+3. On merge to `main`, the CAC pipeline builds and deploys the updated ConfigMap
+4. Subsequent builds on configured branches pick up the new version automatically
+
+When branching a release, copy the current `main` file to a numbered stream
+file (for example, `rhtas-versions.1.6.properties`), replace its `main` and
+other development branch keys with the new release branch keys, and add the
+file to `base/config/kustomization.yaml`. Keep `main` for the next planned
+release. Policy-controller's `release-1.0` branches belong to the 1.4 stream
+despite their branch names.
+
+### Verifying a build
+
+Check both lookup keys in the `get-version-from-configmap` task log, then
+confirm the built image label:
+
+```bash
+skopeo inspect docker://quay.io/.../component@sha256:... | jq '.Labels.version'
+```
+
 ## Customization
 
 See [Directory Structure](#directory-structure) for file locations
