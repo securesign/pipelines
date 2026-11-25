@@ -1,0 +1,30 @@
+# Preserve the mandatory component check while validating its exact build dependencies.
+- op: test
+  path: /spec/resources/2/metadata/name
+  value: '{{.application}}{{.nameSuffix}}-enterprise-contract'
+- op: replace
+  path: /spec/resources/2/spec/resolverRef/params
+  value:
+  - name: url
+    value: https://github.com/securesign/pipelines
+  - name: revision
+    value: main
+  - name: pathInRepo
+    value: pipelines/enterprise-contract-mvo.yaml
+- op: replace
+  path: /spec/resources/2/spec/params
+  value:
+  - name: POLICY_CONFIGURATION
+    value: rhtap-releng-tenant/registry-rhtas
+  - name: SINGLE_COMPONENT
+    value: 'false'
+  - name: STRICT
+    value: 'true'
+  - name: APPLICATION
+    value: '{{.application}}{{.nameSuffix}}'
+  - name: OPERATOR_COMPONENT
+    value: '{{.operator}}{{.nameSuffix}}'
+  - name: AGENT_COMPONENT
+    value: model-validation-operator-agent{{.nameSuffix}}
+  - name: BUNDLE_COMPONENT
+    value: model-validation-operator-bundle{{.nameSuffix}}

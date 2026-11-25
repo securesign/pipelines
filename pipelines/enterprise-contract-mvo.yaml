@@ -1,0 +1,423 @@
+# MVO-specific wrapper of the standard Enterprise Contract pipeline.
+# Vendor EC task bundle, signing parameters and strict policy evaluation remain unchanged.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: enterprise-contract-mvo
+  labels:
+    build.appstudio.redhat.com/pipeline: enterprise-contract
+spec:
+  params:
+  - name: SNAPSHOT
+    type: string
+    description: |
+      Spec section of an ApplicationSnapshot resource. Not all fields of the
+      resource are required. A minimal example:
+        {
+          "components": [
+            {
+              "containerImage": "quay.io/example/repo:latest"
+            }
+          ]
+        }
+      Each "containerImage" in the "components" array is validated.
+  - name: APPLICATION
+    type: string
+    default: model-validation-operator
+  - name: OPERATOR_COMPONENT
+    type: string
+    default: model-validation-operator
+  - name: AGENT_COMPONENT
+    type: string
+    default: model-validation-operator-agent
+  - name: BUNDLE_COMPONENT
+    type: string
+    default: model-validation-operator-bundle
+  - name: WAIT_TIMEOUT_SECONDS
+    type: string
+    default: '1200'
+  - name: POLL_INTERVAL_SECONDS
+    type: string
+    default: '15'
+  - name: REQUEST_TIMEOUT_SECONDS
+    type: string
+    default: '15'
+  - name: POLICY_CONFIGURATION
+    type: string
+    description: |
+      Name of the policy configuration (EnterpriseContractConfiguration
+      object) to use. `namespace/name` or `name` syntax supported. If
+      namespace is omitted the namespace where the task runs is used.
+    default: enterprise-contract-service/default
+  - name: SSL_CERT_DIR
+    type: string
+    description: |
+      Path to a directory containing SSL certs to be used when communicating
+      with external services. This is useful when using the integrated registry
+      and a local instance of Rekor on a development cluster which may use
+      certificates issued by a not-commonly trusted root CA. In such cases,
+      "/var/run/secrets/kubernetes.io/serviceaccount" is a good value. Multiple
+      paths can be provided by using the ":" separator.
+    default: ''
+  - name: PUBLIC_KEY
+    type: string
+    default: k8s://openshift-pipelines/public-key
+    description: |
+      Public key used to verify signatures. Must be a valid k8s cosign
+      reference, e.g. k8s://my-space/my-secret where my-secret contains
+      the expected cosign.pub attribute.
+  - name: WORKERS
+    type: string
+    description: Number of parallel workers to use for policy evaluation.
+    default: '2'
+  - name: CA_TRUST_CONFIGMAP_NAME
+    type: string
+    description: The name of the ConfigMap to read CA bundle data from.
+    default: trusted-ca
+  - name: CA_TRUST_CONFIG_MAP_KEY
+    type: string
+    description: The name of the key in the ConfigMap that contains the CA bundle data.
+    default: ca-bundle.crt
+  - name: EXTRA_RULE_DATA
+    type: string
+    description: Merge additional Rego variables into the policy data. Use syntax "key=value,key2=value2..."
+    default: ''
+  - name: SINGLE_COMPONENT
+    type: string
+    description: Reduce the Snapshot to only the component whose build caused the Snapshot to be created
+    default: 'false'
+  - name: SINGLE_COMPONENT_CUSTOM_RESOURCE
+    type: string
+    description: PipelineRun ID
+    default: pr/$(context.pipelineRun.name)
+  - name: STRICT
+    type: string
+    description: |
+      A boolean flag that determines whether the result of the test will mark the TaskRun as passing or not.
+      Swap to false to make the IntegrationTestScenario informative.
+
+      Setting to false is useful on specific conditions but will always mark the integration test as successful and
+      humans will tend to ignore the test results if they failed. Use with caution.
+    default: 'true'
+  - name: EFFECTIVE_TIME
+    type: string
+    description: Run policy checks with the provided time. Expects a RFC3339 formatted value, e.g. "2026-06-24T00:00:00Z"
+    default: now
+  results:
+  - name: TEST_OUTPUT
+    value: $(tasks.verify.results.TEST_OUTPUT)
+  tasks:
+  - name: collect-keyless-params
+    taskRef:
+      resolver: bundles
+      params:
+      - name: bundle
+        value: quay.io/conforma/tekton-task:konflux@sha256:e5a704109a8b2cc54ee4785589b95d1a110daf77c561721cec17efa645c8f5d9
+      - name: name
+        value: collect-keyless-params
+      - name: kind
+        value: task
+  - name: resolve-mvo-snapshot
+    params:
+    - name: SNAPSHOT
+      value: $(params.SNAPSHOT)
+    - name: APPLICATION
+      value: $(params.APPLICATION)
+    - name: OPERATOR_COMPONENT
+      value: $(params.OPERATOR_COMPONENT)
+    - name: AGENT_COMPONENT
+      value: $(params.AGENT_COMPONENT)
+    - name: BUNDLE_COMPONENT
+      value: $(params.BUNDLE_COMPONENT)
+    - name: WAIT_TIMEOUT_SECONDS
+      value: $(params.WAIT_TIMEOUT_SECONDS)
+    - name: POLL_INTERVAL_SECONDS
+      value: $(params.POLL_INTERVAL_SECONDS)
+    - name: REQUEST_TIMEOUT_SECONDS
+      value: $(params.REQUEST_TIMEOUT_SECONDS)
+    - name: STRICT
+      value: $(params.STRICT)
+    - name: SINGLE_COMPONENT
+      value: $(params.SINGLE_COMPONENT)
+    - name: INTEGRATION_PIPELINERUN
+      value: $(context.pipelineRun.name)
+    taskSpec:
+      params:
+      - name: SNAPSHOT
+        type: string
+      - name: APPLICATION
+        type: string
+      - name: OPERATOR_COMPONENT
+        type: string
+      - name: AGENT_COMPONENT
+        type: string
+      - name: BUNDLE_COMPONENT
+        type: string
+      - name: WAIT_TIMEOUT_SECONDS
+        type: string
+      - name: POLL_INTERVAL_SECONDS
+        type: string
+      - name: REQUEST_TIMEOUT_SECONDS
+        type: string
+      - name: STRICT
+        type: string
+      - name: SINGLE_COMPONENT
+        type: string
+      - name: INTEGRATION_PIPELINERUN
+        type: string
+      results:
+      - name: SNAPSHOT
+        type: string
+        description: Complete, exact MVO cohort snapshot spec.
+      - name: SNAPSHOT_NAME
+        type: string
+        description: Selected controller-created cohort name.
+      steps:
+      - name: resolve
+        image: quay.io/konflux-ci/konflux-test:1.4.41@sha256:afea44d83043be7f528ec2cacaeb0c3b69cdafdd86a1b930957def38400f8a6c
+        env:
+        - name: SNAPSHOT_INPUT
+          value: $(params.SNAPSHOT)
+        - name: INTEGRATION_PIPELINERUN
+          value: $(params.INTEGRATION_PIPELINERUN)
+        - name: NAMESPACE
+          value: $(context.taskRun.namespace)
+        - name: APPLICATION
+          value: $(params.APPLICATION)
+        - name: OPERATOR_COMPONENT
+          value: $(params.OPERATOR_COMPONENT)
+        - name: AGENT_COMPONENT
+          value: $(params.AGENT_COMPONENT)
+        - name: BUNDLE_COMPONENT
+          value: $(params.BUNDLE_COMPONENT)
+        - name: WAIT_TIMEOUT_SECONDS
+          value: $(params.WAIT_TIMEOUT_SECONDS)
+        - name: POLL_INTERVAL_SECONDS
+          value: $(params.POLL_INTERVAL_SECONDS)
+        - name: REQUEST_TIMEOUT_SECONDS
+          value: $(params.REQUEST_TIMEOUT_SECONDS)
+        - name: STRICT
+          value: $(params.STRICT)
+        - name: SINGLE_COMPONENT
+          value: $(params.SINGLE_COMPONENT)
+        - name: RESULT_SNAPSHOT_PATH
+          value: $(results.SNAPSHOT.path)
+        - name: RESULT_NAME_PATH
+          value: $(results.SNAPSHOT_NAME.path)
+        script: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          umask 077
+          fail() { echo "MVO snapshot resolution: $*" >&2; exit 1; }
+          [[ "$STRICT" == true && "$SINGLE_COMPONENT" == false ]] || fail 'STRICT must be true and SINGLE_COMPONENT must be false'
+          for setting in WAIT_TIMEOUT_SECONDS POLL_INTERVAL_SECONDS REQUEST_TIMEOUT_SECONDS; do
+            value=${!setting}
+            [[ "$value" =~ ^[1-9][0-9]*$ && ${#value} -le 4 ]] || fail "invalid $setting"
+          done
+          (( WAIT_TIMEOUT_SECONDS <= 1200 && POLL_INTERVAL_SECONDS <= 30 && REQUEST_TIMEOUT_SECONDS <= 30 )) || fail 'resolution limits exceed allowed bounds'
+          for value in "$NAMESPACE" "$INTEGRATION_PIPELINERUN" "$APPLICATION" "$OPERATOR_COMPONENT" "$AGENT_COMPONENT" "$BUNDLE_COMPONENT"; do
+            [[ "$value" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ && ${#value} -le 253 ]] || fail 'invalid resource name'
+          done
+          [[ "$OPERATOR_COMPONENT" != "$AGENT_COMPONENT" && "$OPERATOR_COMPONENT" != "$BUNDLE_COMPONENT" && "$AGENT_COMPONENT" != "$BUNDLE_COMPONENT" ]] || fail 'component names must be distinct'
+          work_dir=$(mktemp -d)
+          trap 'rm -rf -- "$work_dir"' EXIT
+          read_api() {
+            local destination=$1
+            shift
+            oc --namespace="$NAMESPACE" --request-timeout="${REQUEST_TIMEOUT_SECONDS}s" get "$@" -o json > "$destination"
+            jq -e 'type == "object"' "$destination" >/dev/null
+          }
+          cat > "$work_dir/mvo.jq" <<'JQ'
+          def require($test; $message): if $test then . else error($message) end;
+          def text: require(type == "string" and length > 0; "missing string");
+          def name: text | require(test("^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$") and length <= 253; "invalid name");
+          def repo: text | rtrimstr("/") | rtrimstr(".git");
+          def digest: text | require(test("@sha256:[a-f0-9]{64}$"); "image must be pinned by SHA256") | capture("@(?<digest>sha256:[a-f0-9]{64})$").digest;
+          def image_repository: text | split("@")[0] | sub(":[^/:]+$"; "");
+          def revision: text | require(test("^([a-f0-9]{40}|[a-f0-9]{64})$"); "invalid source revision");
+          def meta($o; $keys):
+            [$keys[] as $key | ($o.metadata.labels[$key] // empty), ($o.metadata.annotations[$key] // empty) | select(. != "")]
+            | require(all(.[]; type == "string"); "non-string metadata") | unique
+            | require(length <= 1; "conflicting metadata") | .[0] // "";
+          def pac($o; $key): meta($o; ["pac.test.appstudio.openshift.io/" + $key, "pac.integration.konflux-ci.dev/" + $key, "pipelinesascode.tekton.dev/" + $key]);
+          def target($s):
+            pac($s; "repo-url") as $url | pac($s; "url-org") as $org | pac($s; "url-repository") as $repository
+            | require(($org == "") == ($repository == ""); "incomplete target repository metadata")
+            | [if $url != "" then $url | repo else empty end,
+               if $org != "" then "https://github.com/\($org)/\($repository)" | repo else empty end]
+            | unique | require(length <= 1; "conflicting target repository metadata") | .[0] // "";
+          def testmeta($o; $key): meta($o; ["test.appstudio.openshift.io/" + $key, "integration.konflux-ci.dev/" + $key]);
+          def identity($o; $key): meta($o; ["appstudio.openshift.io/" + $key, "integration.konflux-ci.dev/" + $key]);
+          def component($spec; $component): [$spec.components[] | select(.name == $component)] | require(length == 1; "missing or duplicate component") | .[0];
+          def succeeded: any(.status.conditions[]?; .type == "Succeeded" and .status == "True");
+          def controller($o): [$o.metadata.ownerReferences[]? | select(.controller == true and (.kind == "Application" or .kind == "ComponentGroup")) | {apiVersion, kind, name, uid}] | require(length <= 1; "ambiguous snapshot owner") | .[0];
+          def context($s):
+            pac($s; "pull-request") as $pr | pac($s; "event-type") as $event
+            | if $pr != "" then
+                require(($pr | test("^[1-9][0-9]*$")) and $event != "push"; "invalid PR context") | "pull_request"
+              else require($event == "" or $event == "push"; "missing PR context") | "push" end;
+          def linked_context($s; $a):
+            pac($s; "pull-request") as $pr | pac($s; "event-type") as $event
+            | pac($s; "sha") as $sha | pac($s; "source-repo-url") as $url
+            | ($pr == "" or $pr == $a.pr)
+              and ($event == "" or (if $a.context == "pull_request" then $event != "push" else $event == "push" end))
+              and ($sha == "" or $sha == $a.revision) and ($url == "" or ($url | repo) == $a.repo)
+              and (target($s) == "" or target($s) == $a.target)
+              and (identity($s; "application") == "" or identity($s; "application") == $a.application);
+          def result($b; $key): [$b.status.results[]? | select(.name == $key)] | require(length == 1; "missing build output identity") | .[0].value | text;
+          def parameter($b; $key): [$b.spec.params[]? | select(.name == $key)] | require(length <= 1; "duplicate build parameter") | .[0].value // "";
+          def valid_spec($spec):
+            $spec | require(.components | type == "array" and length > 0; "invalid components")
+            | require(([.components[].name] | unique | length) == (.components | length); "duplicate components")
+            | require(all(.components[]; (.name | name | length) > 0 and (.containerImage | digest | length) > 0); "invalid image");
+          def anchor($s; $input; $ns; $app; $op; $agent; $bundle):
+            $s | require(.kind == "Snapshot" and .metadata.namespace == $ns and .spec == $input; "original snapshot mismatch")
+            | require(.spec.application == $app; "application mismatch")
+            | valid_spec(.spec) as $unused
+            | component($s.spec; $op) as $operator
+            | ($operator.source.git.url | repo) as $url
+            | require($url | test("^https://github[.]com/[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9_.-]+$"); "unsupported source repository URL")
+            | target($s) as $target
+            | require($target == "https://github.com/securesign/model-validation-operator" or ($target == "" and $url == "https://github.com/securesign/model-validation-operator"); "unverified MVO target repository")
+            | {snapshot: $s.metadata.name, application: $app, namespace: $ns, operator: $op, agent: $agent, bundle: $bundle,
+               operatorImage: $operator.containerImage, revision: ($operator.source.git.revision | revision), repo: $url,
+               target: "https://github.com/securesign/model-validation-operator", fork: ($url != "https://github.com/securesign/model-validation-operator"),
+               build: (identity($s; "build-pipelinerun") | name), context: context($s), pr: pac($s; "pull-request"),
+               groupHash: testmeta($s; "pr-group-sha"), groupName: testmeta($s; "pr-group"), owner: controller($s)}
+            | . as $a | require(linked_context($s; $a); "original snapshot context mismatch")
+            | require(identity($s; "component") == "" or identity($s; "component") == $a.operator; "original component mismatch");
+          def cohort($s; $a):
+            $s | require(.metadata.namespace == $a.namespace and .spec.application == $a.application; "cohort namespace/application mismatch")
+            | valid_spec(.spec) as $unused
+            | require(component(.spec; $a.operator).containerImage == $a.operatorImage; "different operator image")
+            | require((component(.spec; $a.agent).containerImage | digest) == $a.agentDigest; "different consumed agent")
+            | require(all([$a.operator, $a.agent, $a.bundle][] as $n | component(.spec; $n);
+                (.source.git.url | repo) == $a.repo and (.source.git.revision | revision) == $a.revision); "mixed required component sources")
+            | require(all(.spec.components[]; if (.source.git.url? // "" | rtrimstr("/") | rtrimstr(".git")) == $a.repo then .source.git.revision == $a.revision else true end); "mixed MVO revisions")
+            | require($a.owner == null or controller(.) == $a.owner; "different snapshot controller")
+            | if $a.context == "pull_request" then
+                require(testmeta(.; "type") == "group"; "PR requires a group snapshot")
+                | require(linked_context(.; $a); "different PR context")
+                | require($a.groupHash == "" or testmeta(.; "pr-group-sha") == $a.groupHash; "different PR group hash")
+                | require($a.groupName == "" or testmeta(.; "pr-group") == $a.groupName; "different PR group name")
+                | (testmeta(.; "group-test-info") | fromjson) as $info
+                | require($info | type == "array"; "invalid group-test-info")
+                | require(([$info[] | select(.namespace == $a.namespace and .component == $a.operator and .snapshot == $a.snapshot and .buildPipelineRun == $a.build and .pullRequestNumber == $a.pr and (.repoUrl | repo) == $a.target)] | length) == 1; "group lacks original build identity")
+              else
+                require((testmeta(.; "type") == "component" or testmeta(.; "type") == "") and context(.) == "push"; "push requires a coherent push snapshot")
+                | require(linked_context(.; $a); "different push context")
+                | require((identity(.; "build-pipelinerun") | name | length) > 0; "push snapshot lacks build identity")
+              end;
+          JQ
+          read_api "$work_dir/integration.json" pipelineruns.tekton.dev "$INTEGRATION_PIPELINERUN"
+          jq -e --arg ns "$NAMESPACE" --arg name "$INTEGRATION_PIPELINERUN" '.kind == "PipelineRun" and .metadata.namespace == $ns and .metadata.name == $name' "$work_dir/integration.json" >/dev/null
+          original_name=$(jq -L "$work_dir" -er 'include "mvo"; identity(.; "snapshot") | name' "$work_dir/integration.json")
+          read_api "$work_dir/original.json" snapshots.appstudio.redhat.com "$original_name"
+          jq -e --arg name "$original_name" '.metadata.name == $name' "$work_dir/original.json" >/dev/null
+          printf '%s' "$SNAPSHOT_INPUT" > "$work_dir/input.json"
+          jq -L "$work_dir" -nce --slurpfile original "$work_dir/original.json" --slurpfile input "$work_dir/input.json" --arg ns "$NAMESPACE" --arg app "$APPLICATION" --arg op "$OPERATOR_COMPONENT" --arg agent "$AGENT_COMPONENT" --arg bundle "$BUNDLE_COMPONENT" 'include "mvo"; anchor($original[0]; $input[0]; $ns; $app; $op; $agent; $bundle)' > "$work_dir/anchor.json"
+          build_name=$(jq -r '.build' "$work_dir/anchor.json")
+          jq -L "$work_dir" -e --slurpfile a "$work_dir/anchor.json" 'include "mvo"; require(linked_context(.; $a[0]); "integration PipelineRun context mismatch") | require(identity(.; "component") == "" or identity(.; "component") == $a[0].operator; "integration component mismatch")' "$work_dir/integration.json" >/dev/null
+          read_api "$work_dir/build.json" pipelineruns.tekton.dev "$build_name"
+          jq -L "$work_dir" -e --slurpfile a "$work_dir/anchor.json" --arg ns "$NAMESPACE" --arg name "$build_name" 'include "mvo"; $a[0] as $a
+            | require(.kind == "PipelineRun" and .metadata.namespace == $ns and .metadata.name == $name and succeeded; "source build is not successful")
+            | require(linked_context(.; $a); "source build context mismatch")
+            | require(identity(.; "component") == "" or identity(.; "component") == $a.operator; "source build component mismatch")
+            | require(result(.; "IMAGE_DIGEST") == ($a.operatorImage | digest) and (result(.; "IMAGE_URL") | image_repository) == ($a.operatorImage | image_repository); "source build output mismatch")
+            | require((result(.; "IMAGE_URL") | contains("@") | not) or (result(.; "IMAGE_URL") | digest) == ($a.operatorImage | digest); "conflicting build image digest")
+            | require(parameter(.; "revision") == "" or parameter(.; "revision") == $a.revision; "source build revision mismatch")
+            | require(parameter(.; "git-url") == "" or (parameter(.; "git-url") | repo) == $a.repo; "source build repository mismatch")
+            | require(($a.fork | not) or (target(.) == $a.target and parameter(.; "revision") == $a.revision and (parameter(.; "git-url") | repo) == $a.repo); "fork build lacks target/source identity")
+            | .metadata.uid | text' "$work_dir/build.json" >/dev/null
+          jq -er '[.status.childReferences[]? | select(.kind == "TaskRun" and .pipelineTaskName == "build-images") | .name] | if length > 0 and length == (unique | length) then .[] else error("missing or duplicate build-images TaskRun evidence") end' "$work_dir/build.json" > "$work_dir/task-names"
+          while IFS= read -r task_name; do
+            [[ "$task_name" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || fail 'invalid TaskRun name'
+            read_api "$work_dir/task.json" taskruns.tekton.dev "$task_name"
+            jq -L "$work_dir" -er --slurpfile build "$work_dir/build.json" --arg ns "$NAMESPACE" --arg name "$task_name" 'include "mvo";
+              require(.kind == "TaskRun" and .metadata.namespace == $ns and .metadata.name == $name and succeeded; "build task is not successful")
+              | require(any(.metadata.ownerReferences[]?; .controller == true and .kind == "PipelineRun" and .name == $build[0].metadata.name and .uid == $build[0].metadata.uid); "build task owner mismatch")
+              | require((.metadata.labels["tekton.dev/pipelineRun"] // $build[0].metadata.name) == $build[0].metadata.name and (.metadata.labels["tekton.dev/pipelineTask"] // "build-images") == "build-images"; "build task label mismatch")
+              | [.spec.params[]? | select(.name == "BUILD_ARGS")] | require(length == 1; "missing BUILD_ARGS") | .[0].value
+              | require(type == "array" and all(.[]; type == "string"); "invalid BUILD_ARGS")
+              | [.[] | select(startswith("AGENT_IMG="))] | require(length == 1; "ambiguous AGENT_IMG") | .[0] | ltrimstr("AGENT_IMG=") | digest' "$work_dir/task.json"
+          done < "$work_dir/task-names" > "$work_dir/agent-digests"
+          jq -Rsc 'split("\n") | map(select(length > 0)) | unique | if length == 1 then .[0] else error("build platforms disagree on consumed agent") end' "$work_dir/agent-digests" > "$work_dir/agent-digest.json"
+          jq --slurpfile digest "$work_dir/agent-digest.json" '. + {agentDigest: $digest[0]}' "$work_dir/anchor.json" > "$work_dir/expected.json"
+          deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
+          while :; do
+            read_api "$work_dir/candidates.json" snapshots.appstudio.redhat.com --selector="appstudio.openshift.io/application=$APPLICATION"
+            jq -L "$work_dir" -nc --slurpfile list "$work_dir/candidates.json" --slurpfile expected "$work_dir/expected.json" 'include "mvo"; $expected[0] as $a
+              | $list[0] | require(.items | type == "array"; "invalid Snapshot list")
+              | [.items[] | select(.spec.application == $a.application and any(.spec.components[]?; .name == $a.operator and .containerImage == $a.operatorImage))
+                 | select(if $a.context == "pull_request" then testmeta(.; "type") == "group" else testmeta(.; "type") != "group" end)
+                 | try cohort(.; $a) catch if startswith("mixed ") or startswith("different ") or startswith("missing or duplicate component") or startswith("group lacks ") or startswith("push requires ") then empty else error(.) end]
+              | if length == 0 then null
+                elif ([.[] | [.spec.components[] | {name, containerImage}] | sort_by(.name)] | unique | length) != 1 then error("ambiguous different cohort image vectors")
+                else sort_by(.metadata.name) | .[0] | {name: .metadata.name, spec: .spec} end' > "$work_dir/selected.json"
+            if jq -e '. != null' "$work_dir/selected.json" >/dev/null; then
+              jq -cS '.spec' "$work_dir/selected.json" > "$work_dir/result.json"
+              selected_name=$(jq -r '.name' "$work_dir/selected.json")
+              # Leave 1KiB for entrypoint metadata; account for JSON and Go HTML escaping.
+              jq -nac --rawfile snapshot "$work_dir/result.json" --arg name "$selected_name" '[{key:"SNAPSHOT", value:$snapshot, type:1}, {key:"SNAPSHOT_NAME", value:$name, type:1}]' > "$work_dir/result-envelope.json"
+              encoded_bytes=$(wc -c < "$work_dir/result-envelope.json")
+              html_bytes=$(LC_ALL=C tr -cd '<>&' < "$work_dir/result-envelope.json" | wc -c)
+              (( encoded_bytes + 5 * html_bytes <= 3072 )) || fail 'cohort exceeds safe Tekton result size'
+              jq -r '.name' "$work_dir/selected.json" > "$RESULT_NAME_PATH"
+              cat "$work_dir/result.json" > "$RESULT_SNAPSHOT_PATH"
+              echo "Resolved complete $APPLICATION cohort: $(jq -r '.name' "$work_dir/selected.json")" >&2
+              exit 0
+            fi
+            (( SECONDS < deadline )) || fail 'timed out waiting for an exact, complete MVO cohort'
+            sleep "$POLL_INTERVAL_SECONDS"
+          done
+    timeout: 25m
+  - name: verify
+    runAfter:
+    - collect-keyless-params
+    - resolve-mvo-snapshot
+    params:
+    - name: POLICY_CONFIGURATION
+      value: $(params.POLICY_CONFIGURATION)
+    - name: IMAGES
+      value: $(tasks.resolve-mvo-snapshot.results.SNAPSHOT)
+    - name: SSL_CERT_DIR
+      value: $(params.SSL_CERT_DIR)
+    - name: STRICT
+      value: $(params.STRICT)
+    - name: PUBLIC_KEY
+      value: $(params.PUBLIC_KEY)
+    - name: IGNORE_REKOR
+      value: 'true'
+    - name: CERTIFICATE_OIDC_ISSUER
+      value: $(tasks.collect-keyless-params.results.defaultOIDCIssuer)
+    - name: CERTIFICATE_IDENTITY
+      value: $(tasks.collect-keyless-params.results.tektonChainsIdentity)
+    - name: TUF_MIRROR
+      value: $(tasks.collect-keyless-params.results.tufUrl)
+    - name: REKOR_HOST
+      value: $(tasks.collect-keyless-params.results.rekorUrl)
+    - name: WORKERS
+      value: $(params.WORKERS)
+    - name: CA_TRUST_CONFIGMAP_NAME
+      value: $(params.CA_TRUST_CONFIGMAP_NAME)
+    - name: CA_TRUST_CONFIG_MAP_KEY
+      value: $(params.CA_TRUST_CONFIG_MAP_KEY)
+    - name: EXTRA_RULE_DATA
+      value: $(params.EXTRA_RULE_DATA)
+    - name: SINGLE_COMPONENT
+      value: 'false'
+    - name: SINGLE_COMPONENT_CUSTOM_RESOURCE
+      value: $(params.SINGLE_COMPONENT_CUSTOM_RESOURCE)
+    - name: EFFECTIVE_TIME
+      value: $(params.EFFECTIVE_TIME)
+    taskRef:
+      resolver: bundles
+      params:
+      - name: bundle
+        value: quay.io/conforma/tekton-task:konflux@sha256:e5a704109a8b2cc54ee4785589b95d1a110daf77c561721cec17efa645c8f5d9
+      - name: name
+        value: verify-enterprise-contract
+      - name: kind
+        value: task
+    timeout: 4h
+  description: Resolve the exact MVO build cohort before strict Enterprise Contract verification.

@@ -1,0 +1,34 @@
+name: Test MVO EC snapshot selection
+
+on:
+  pull_request:
+    paths:
+      - 'pipelines/enterprise-contract-mvo.yaml'
+      - 'tests/**'
+      - 'konflux-configs/base/project/overlay/model-validation-operator/**'
+      - '.github/workflows/test-mvo-ec-snapshot.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'pipelines/enterprise-contract-mvo.yaml'
+      - 'tests/**'
+      - 'konflux-configs/base/project/overlay/model-validation-operator/**'
+      - '.github/workflows/test-mvo-ec-snapshot.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install test dependency
+        run: |
+          python3 -m venv .test-venv
+          .test-venv/bin/python -m pip install --disable-pip-version-check PyYAML==6.0.3
+          jq --version
+      - name: Test the actual snapshot resolver script
+        run: .test-venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
