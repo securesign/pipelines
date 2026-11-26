@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: derive-product-version
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  description: >
+    Derives product and image metadata versions from release/image inputs.
+  params:
+    - name: release-version
+      description: Full release version (including Patch)
+    - name: image-version
+      default: ""
+      description: Optional image metadata version label. Falls back to release-version when empty.
+  results:
+    - name: product-version
+      description: The truncated version string.
+    - name: image-version
+      description: Image metadata version label.
+  steps:
+    - name: derivative-product-version
+      image: quay.io/konflux-ci/task-runner:4.0.0@sha256:81160fc5ee7e0c44a350696a2fa0350b24f7efc7fb19c07052918c2eee5b7037
+      env:
+        - name: RELEASE_VERSION
+          value: $(params.release-version)
+        - name: IMAGE_VERSION
+          value: $(params.image-version)
+      script: |
+        #!/usr/bin/env sh
+        if [ -n "${IMAGE_VERSION}" ]; then
+          APPLIED_IMAGE_VERSION="${IMAGE_VERSION}"
+        else
+          APPLIED_IMAGE_VERSION="${RELEASE_VERSION}"
+        fi
+
+        echo -n "${RELEASE_VERSION%.*}" > "$(results.product-version.path)"
+        echo -n "${APPLIED_IMAGE_VERSION}" > "$(results.image-version.path)"

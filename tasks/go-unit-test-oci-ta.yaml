@@ -1,3 +1,4 @@
+# DEPRECATED: moved to tasks/go-unit-test-oci-ta/go-unit-test-oci-ta.yaml (built as a Konflux bundle). Kept for git-resolver consumers; do not edit.
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:

@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/securesign/pipelines?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main" && ( "tasks/fips-check/***".pathChanged() || ".tekton/task-fips-check-push.yaml".pathChanged() || "pipelines/tekton-bundle-builder-oci-ta.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/pipeline: pipelines/tekton-bundle-builder-oci-ta.yaml
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: pipelines-tasks
+    appstudio.openshift.io/component: task-fips-check
+    pipelines.appstudio.openshift.io/type: build
+  name: task-fips-check-on-push
+  namespace: rhtas-tenant
+spec:
+  params:
+    - name: git-url
+      value: '{{source_url}}'
+    - name: revision
+      value: '{{revision}}'
+    - name: output-image
+      value: quay.io/redhat-user-workloads/rhtas-tenant/task-fips-check:{{revision}}
+    - name: path-context
+      value: tasks/fips-check
+    - name: sast-target-dirs
+      value: tasks/fips-check
+  pipelineRef:
+    name: tekton-bundle-builder-oci-ta
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-task-fips-check
+  workspaces:
+    - name: git-auth
+      secret:
+        secretName: '{{ git_auth_secret }}'
+status: {}

@@ -1,0 +1,11 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  name: pipelines-tasks-release-to-quay
+  labels:
+    release.appstudio.openshift.io/auto-release: "true"
+    release.appstudio.openshift.io/releasePlanAdmission: rhtas-tasks
+    release.appstudio.openshift.io/standing-attribution: "true"
+spec:
+  application: pipelines-tasks
+  target: rhtap-releng-tenant

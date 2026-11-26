@@ -1,3 +1,4 @@
+# DEPRECATED: moved to tasks/get-version-from-configmap/get-version-from-configmap.yaml (built as a Konflux bundle). Kept for git-resolver consumers; do not edit.
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
