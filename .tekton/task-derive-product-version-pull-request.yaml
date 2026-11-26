@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/securesign/pipelines?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" && ( "tasks/derive-product-version/***".pathChanged() || ".tekton/task-derive-product-version-pull-request.yaml".pathChanged() || "pipelines/tekton-bundle-builder-oci-ta.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/pipeline: pipelines/tekton-bundle-builder-oci-ta.yaml
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: pipelines-tasks
+    appstudio.openshift.io/component: task-derive-product-version
+    pipelines.appstudio.openshift.io/type: build
+  name: task-derive-product-version-on-pull-request
+  namespace: rhtas-tenant
+spec:
+  params:
+    - name: git-url
+      value: '{{source_url}}'
+    - name: revision
+      value: '{{revision}}'
+    - name: output-image
+      value: quay.io/redhat-user-workloads/rhtas-tenant/task-derive-product-version:on-pr-{{revision}}
+    - name: image-expires-after
+      value: 5d
+    - name: path-context
+      value: tasks/derive-product-version
+    - name: sast-target-dirs
+      value: tasks/derive-product-version
+  pipelineRef:
+    name: tekton-bundle-builder-oci-ta
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-task-derive-product-version
+  workspaces:
+    - name: git-auth
+      secret:
+        secretName: '{{ git_auth_secret }}'
+status: {}

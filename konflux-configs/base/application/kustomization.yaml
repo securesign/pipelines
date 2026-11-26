@@ -5,3 +5,4 @@ resources:
   # Konflux components
   - konflux/base
   - pipelines/base
+  - pipelines-tasks/base

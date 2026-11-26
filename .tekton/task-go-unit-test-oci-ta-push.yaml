@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/securesign/pipelines?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main" && ( "tasks/go-unit-test-oci-ta/***".pathChanged() || ".tekton/task-go-unit-test-oci-ta-push.yaml".pathChanged() || "pipelines/tekton-bundle-builder-oci-ta.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/pipeline: pipelines/tekton-bundle-builder-oci-ta.yaml
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: pipelines-tasks
+    appstudio.openshift.io/component: task-go-unit-test-oci-ta
+    pipelines.appstudio.openshift.io/type: build
+  name: task-go-unit-test-oci-ta-on-push
+  namespace: rhtas-tenant
+spec:
+  params:
+    - name: git-url
+      value: '{{source_url}}'
+    - name: revision
+      value: '{{revision}}'
+    - name: output-image
+      value: quay.io/redhat-user-workloads/rhtas-tenant/task-go-unit-test-oci-ta:{{revision}}
+    - name: path-context
+      value: tasks/go-unit-test-oci-ta
+    - name: sast-target-dirs
+      value: tasks/go-unit-test-oci-ta
+  pipelineRef:
+    name: tekton-bundle-builder-oci-ta
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-task-go-unit-test-oci-ta
+  workspaces:
+    - name: git-auth
+      secret:
+        secretName: '{{ git_auth_secret }}'
+status: {}

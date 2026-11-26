@@ -14,3 +14,10 @@ pipelineRef:
       value: 'pipelines/<pipeline>.yaml'
 ```
 
+
+## Task bundles
+
+Tasks under `tasks/<name>/<name>.yaml` are built by Konflux as Tekton bundles with
+`pipelines/tekton-bundle-builder-oci-ta.yaml` (one component per task) and published to
+`quay.io/redhat-user-workloads/rhtas-tenant/task-<name>`. Reference them with the `bundles` resolver.
+Every meaningful change requires an `app.kubernetes.io/version` label bump and a `CHANGELOG.md` entry.

@@ -1,0 +1,99 @@
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"tekton-bundle-builder-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    git-provider: github
+    git-provider-url: https://github.com
+  name: task-get-version-from-configmap
+spec:
+  application: pipelines-tasks
+  componentName: task-get-version-from-configmap
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: tasks/get-version-from-configmap
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"tekton-bundle-builder-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    git-provider: github
+    git-provider-url: https://github.com
+  name: task-wait-for-pipelinerun
+spec:
+  application: pipelines-tasks
+  componentName: task-wait-for-pipelinerun
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: tasks/wait-for-pipelinerun
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"tekton-bundle-builder-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    git-provider: github
+    git-provider-url: https://github.com
+  name: task-go-unit-test-oci-ta
+spec:
+  application: pipelines-tasks
+  componentName: task-go-unit-test-oci-ta
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: tasks/go-unit-test-oci-ta
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"tekton-bundle-builder-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    git-provider: github
+    git-provider-url: https://github.com
+  name: task-fips-check
+spec:
+  application: pipelines-tasks
+  componentName: task-fips-check
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: tasks/fips-check
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"tekton-bundle-builder-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    git-provider: github
+    git-provider-url: https://github.com
+  name: task-derive-product-version
+spec:
+  application: pipelines-tasks
+  componentName: task-derive-product-version
+  source:
+    git:
+      url: https://github.com/securesign/pipelines
+      revision: main
+      context: tasks/derive-product-version
+

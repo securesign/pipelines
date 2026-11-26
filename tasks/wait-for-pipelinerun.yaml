@@ -1,3 +1,4 @@
+# DEPRECATED: moved to tasks/wait-for-pipelinerun/wait-for-pipelinerun.yaml (built as a Konflux bundle). Kept for git-resolver consumers; do not edit.
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:

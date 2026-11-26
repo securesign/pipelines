@@ -1,0 +1,109 @@
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-task-get-version-from-configmap
+  labels:
+    appstudio.redhat.com/application: pipelines-tasks
+    appstudio.redhat.com/component: task-get-version-from-configmap
+spec:
+  image:
+    name: rhtas-tenant/task-get-version-from-configmap
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-task-wait-for-pipelinerun
+  labels:
+    appstudio.redhat.com/application: pipelines-tasks
+    appstudio.redhat.com/component: task-wait-for-pipelinerun
+spec:
+  image:
+    name: rhtas-tenant/task-wait-for-pipelinerun
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-task-go-unit-test-oci-ta
+  labels:
+    appstudio.redhat.com/application: pipelines-tasks
+    appstudio.redhat.com/component: task-go-unit-test-oci-ta
+spec:
+  image:
+    name: rhtas-tenant/task-go-unit-test-oci-ta
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-task-fips-check
+  labels:
+    appstudio.redhat.com/application: pipelines-tasks
+    appstudio.redhat.com/component: task-fips-check
+spec:
+  image:
+    name: rhtas-tenant/task-fips-check
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-task-derive-product-version
+  labels:
+    appstudio.redhat.com/application: pipelines-tasks
+    appstudio.redhat.com/component: task-derive-product-version
+spec:
+  image:
+    name: rhtas-tenant/task-derive-product-version
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
